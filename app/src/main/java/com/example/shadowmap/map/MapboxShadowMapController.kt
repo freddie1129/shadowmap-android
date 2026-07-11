@@ -23,6 +23,9 @@ import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.interactions.standard.generated.StandardBuildings
 import com.mapbox.maps.interactions.standard.generated.StandardBuildingsFeature
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -31,8 +34,8 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 
-class MapboxShadowMapController(
-    private val mapView: MapView
+class MapboxShadowMapController @AssistedInject constructor(
+    @Assisted private val mapView: MapView
 ) {
     @OptIn(MapboxExperimental::class)
     suspend fun fetchBuildings(): List<BuildingFootprint> = withContext(Dispatchers.Main.immediate) {
@@ -172,5 +175,10 @@ class MapboxShadowMapController(
         private const val BUILDINGS_LINE_LAYER_ID = "queried-buildings-outline"
         private const val SHADOWS_SOURCE_ID = "calculated-building-shadows-source"
         private const val SHADOWS_FILL_LAYER_ID = "calculated-building-shadows-fill"
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(mapView: MapView): MapboxShadowMapController
     }
 }

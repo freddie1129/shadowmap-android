@@ -2,6 +2,7 @@ package com.example.shadowmap.presentation
 
 import androidx.lifecycle.SavedStateHandle
 import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.BuildingShadowCalculator
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +35,11 @@ class ShadowMapViewModelTest {
     @Test
     fun angleChanges_updateStateAndSavedState() {
         val savedState = SavedStateHandle()
-        val viewModel = ShadowMapViewModel(savedState, dispatcher)
+        val viewModel = ShadowMapViewModel(
+            savedState,
+            BuildingShadowCalculator(),
+            dispatcher
+        )
 
         viewModel.onAzimuthChanged(240f)
         viewModel.onZenithChanged(35f)
@@ -47,7 +52,7 @@ class ShadowMapViewModelTest {
 
     @Test
     fun buildingLoadFailure_exposesRetryableErrorState() {
-        val viewModel = ShadowMapViewModel(SavedStateHandle(), dispatcher)
+        val viewModel = createViewModel()
 
         viewModel.onBuildingLoadStarted()
         viewModel.onBuildingLoadFailed(IllegalStateException("Map failed"))
@@ -57,7 +62,7 @@ class ShadowMapViewModelTest {
 
     @Test
     fun loadedBuildings_generateShadows() = runTest(dispatcher) {
-        val viewModel = ShadowMapViewModel(SavedStateHandle(), dispatcher)
+        val viewModel = createViewModel()
 
         viewModel.onBuildingsLoaded(listOf(testBuilding()))
         advanceUntilIdle()
@@ -81,4 +86,10 @@ class ShadowMapViewModelTest {
             minHeightMeters = 0.0
         )
     }
+
+    private fun createViewModel() = ShadowMapViewModel(
+        SavedStateHandle(),
+        BuildingShadowCalculator(),
+        dispatcher
+    )
 }

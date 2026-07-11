@@ -33,7 +33,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.presentation.BuildingLoadState
@@ -46,16 +46,25 @@ import com.mapbox.maps.extension.compose.MapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var mapControllerFactory: MapboxShadowMapController.Factory
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             ShadowMapTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ShadowMapRoute(modifier = Modifier.padding(innerPadding))
+                    ShadowMapRoute(
+                        mapControllerFactory = mapControllerFactory,
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
             }
         }
@@ -64,8 +73,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun ShadowMapRoute(
+    mapControllerFactory: MapboxShadowMapController.Factory,
     modifier: Modifier = Modifier,
-    viewModel: ShadowMapViewModel = viewModel()
+    viewModel: ShadowMapViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ShadowMapScreen(
@@ -75,6 +85,7 @@ private fun ShadowMapRoute(
         onLoadStarted = viewModel::onBuildingLoadStarted,
         onBuildingsLoaded = viewModel::onBuildingsLoaded,
         onLoadFailed = viewModel::onBuildingLoadFailed,
+        mapControllerFactory = mapControllerFactory,
         modifier = modifier
     )
 }
@@ -87,6 +98,7 @@ private fun ShadowMapScreen(
     onLoadStarted: () -> Unit,
     onBuildingsLoaded: (List<BuildingFootprint>) -> Unit,
     onLoadFailed: (Throwable) -> Unit,
+    mapControllerFactory: MapboxShadowMapController.Factory,
     modifier: Modifier = Modifier
 ) {
     val mapViewportState = rememberMapViewportState {
@@ -96,7 +108,9 @@ private fun ShadowMapScreen(
         }
     }
     var mapView by remember { mutableStateOf<MapView?>(null) }
-    val controller = remember(mapView) { mapView?.let(::MapboxShadowMapController) }
+    val controller = remember(mapView, mapControllerFactory) {
+        mapView?.let(mapControllerFactory::create)
+    }
     var satelliteSnapshot by remember { mutableStateOf<Bitmap?>(null) }
     var loadRequest by remember { mutableIntStateOf(0) }
 

@@ -5,7 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.domain.BuildingShadowCalculator
-import kotlinx.coroutines.Dispatchers
+import com.example.shadowmap.di.DefaultDispatcher
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -14,23 +15,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ShadowMapViewModel private constructor(
+@HiltViewModel
+class ShadowMapViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val shadowCalculator: BuildingShadowCalculator,
+    @param:DefaultDispatcher
     private val computationDispatcher: CoroutineDispatcher
 ) : ViewModel() {
-    constructor(savedStateHandle: SavedStateHandle) : this(
-        savedStateHandle = savedStateHandle,
-        shadowCalculator = BuildingShadowCalculator(),
-        computationDispatcher = Dispatchers.Default
-    )
-
-    internal constructor(
-        savedStateHandle: SavedStateHandle,
-        computationDispatcher: CoroutineDispatcher
-    ) : this(savedStateHandle, BuildingShadowCalculator(), computationDispatcher)
-
     private var shadowJob: Job? = null
 
     private val _uiState = MutableStateFlow(

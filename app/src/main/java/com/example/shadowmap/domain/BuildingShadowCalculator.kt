@@ -12,8 +12,9 @@ import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.sin
 import kotlin.math.tan
+import javax.inject.Inject
 
-class BuildingShadowCalculator {
+class BuildingShadowCalculator @Inject constructor() {
     fun calculate(
         buildings: List<BuildingFootprint>,
         azimuthDegrees: Double,
