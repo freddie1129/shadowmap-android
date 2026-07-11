@@ -51,12 +51,16 @@ import com.mapbox.maps.extension.style.layers.generated.fillLayer
 import com.mapbox.maps.extension.style.layers.generated.lineLayer
 import com.mapbox.maps.interactions.standard.generated.StandardBuildings
 import com.mapbox.maps.interactions.standard.generated.StandardBuildingsFeature
-import com.mapbox.maps.extension.style.light.generated.DirectionalLight
 import com.mapbox.maps.extension.style.light.generated.ambientLight
 import com.mapbox.maps.extension.style.light.generated.directionalLight
 import com.mapbox.maps.extension.style.light.setLight
 import com.mapbox.maps.extension.style.sources.addSource
+import com.mapbox.maps.extension.style.sources.getSourceAs
+import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,6 +82,8 @@ private const val DEFAULT_ZENITH = 20f
 private const val BUILDINGS_SOURCE_ID = "queried-buildings-source"
 private const val BUILDINGS_FILL_LAYER_ID = "queried-buildings-fill"
 private const val BUILDINGS_LINE_LAYER_ID = "queried-buildings-outline"
+private const val SHADOWS_SOURCE_ID = "calculated-building-shadows-source"
+private const val SHADOWS_FILL_LAYER_ID = "calculated-building-shadows-fill"
 
 @Composable
 fun MapScreen(modifier: Modifier = Modifier) {
@@ -95,10 +101,7 @@ fun MapScreen(modifier: Modifier = Modifier) {
     var isFetchingBuildings by remember { mutableStateOf(false) }
     var satelliteSnapshot by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     var startBuildingFetch by remember { mutableStateOf(false) }
-
-    // Set once the style finishes loading; slider callbacks push updates straight through it,
-    // bypassing the Compose LightsState wrapper (its setStyleLights effect never reliably fires).
-    val directionalLightRef = remember { mutableStateOf<DirectionalLight?>(null) }
+    var buildings by remember { mutableStateOf<List<BuildingFootprint>>(emptyList()) }
 
     LaunchedEffect(startBuildingFetch) {
         if (!startBuildingFetch) return@LaunchedEffect
@@ -107,9 +110,24 @@ fun MapScreen(modifier: Modifier = Modifier) {
         // Let Compose display the snapshot before replacing the live map style.
         withFrameNanos { }
         startBuildingFetch = false
-        fetchBuildingFootprints(currentMapView) {
+        fetchBuildingFootprints(currentMapView, azimuth, zenith) { fetchedBuildings ->
+            buildings = fetchedBuildings
             satelliteSnapshot = null
             isFetchingBuildings = false
+        }
+    }
+
+    LaunchedEffect(buildings, azimuth, zenith, mapView) {
+        if (buildings.isEmpty()) return@LaunchedEffect
+
+        delay(50)
+        val shadows = withContext(Dispatchers.Default) {
+            calculateBuildingShadows(buildings, azimuth.toDouble(), zenith.toDouble())
+        }
+        mapView?.mapboxMap?.getStyle { style ->
+            style.getSourceAs<GeoJsonSource>(SHADOWS_SOURCE_ID)?.featureCollection(
+                shadows.toFeatureCollection()
+            )
         }
     }
 
@@ -131,7 +149,6 @@ fun MapScreen(modifier: Modifier = Modifier) {
                         direction(listOf(azimuth.toDouble(), zenith.toDouble()))
                     }
                     style.setLight(ambient, directional)
-                    directionalLightRef.value = directional
                 }
             }
         }
@@ -178,30 +195,38 @@ fun MapScreen(modifier: Modifier = Modifier) {
                 valueRange = 0f..360f,
                 onValueChange = {
                     azimuth = it
-                    directionalLightRef.value?.direction(listOf(azimuth.toDouble(), zenith.toDouble()))
                 }
             )
             Text(text = "Zenith: ${zenith.toInt()}°")
             Slider(
                 value = zenith,
-                valueRange = 0f..90f,
+                valueRange = 0f..85f,
                 onValueChange = {
                     zenith = it
-                    directionalLightRef.value?.direction(listOf(azimuth.toDouble(), zenith.toDouble()))
                 }
             )
         }
     }
 }
 
-private fun StandardBuildingsFeature.toPolygonRings(): List<List<List<Point>>> {
-    return geometry.toPolygonRings()
+private fun StandardBuildingsFeature.toBuildingFootprints(): List<BuildingFootprint> {
+    val featureHeight = height?.takeIf { it > 0.0 } ?: DEFAULT_BUILDING_HEIGHT_METERS
+    return geometry.toPolygonRings().map { rings ->
+        BuildingFootprint(
+            id = originalFeature.id(),
+            rings = rings,
+            heightMeters = featureHeight,
+            minHeightMeters = minHeight ?: 0.0
+        )
+    }
 }
 
 @OptIn(MapboxExperimental::class)
 private fun fetchBuildingFootprints(
     mapView: MapView,
-    onComplete: () -> Unit
+    azimuth: Float,
+    zenith: Float,
+    onComplete: (List<BuildingFootprint>) -> Unit
 ) {
     val mapboxMap = mapView.mapboxMap
     mapboxMap.loadStyle(Style.STANDARD) {
@@ -209,13 +234,18 @@ private fun fetchBuildingFootprints(
         idleSubscription = mapboxMap.subscribeMapIdle {
             idleSubscription?.cancel()
             mapboxMap.queryRenderedFeatures(StandardBuildings(), null) { features ->
-                val footprints = features.flatMap { it.toPolygonRings() }
+                val buildings = features.flatMap { it.toBuildingFootprints() }
                 mapboxMap.loadStyle(Style.STANDARD_SATELLITE) { satelliteStyle ->
-                    addBuildingFootprintLayers(satelliteStyle, footprints)
+                    addBuildingLayers(
+                        style = satelliteStyle,
+                        buildings = buildings,
+                        azimuth = azimuth.toDouble(),
+                        zenith = zenith.toDouble()
+                    )
                     var satelliteIdleSubscription: Cancelable? = null
                     satelliteIdleSubscription = mapboxMap.subscribeMapIdle {
                         satelliteIdleSubscription?.cancel()
-                        onComplete()
+                        onComplete(buildings)
                     }
                 }
             }
@@ -223,17 +253,32 @@ private fun fetchBuildingFootprints(
     }
 }
 
-private fun addBuildingFootprintLayers(
+private fun addBuildingLayers(
     style: Style,
-    footprints: List<List<List<Point>>>
+    buildings: List<BuildingFootprint>,
+    azimuth: Double,
+    zenith: Double
 ) {
-    val features = footprints.map { rings ->
-        Feature.fromGeometry(Polygon.fromLngLats(rings))
+    val buildingFeatures = buildings.map { building ->
+        Feature.fromGeometry(Polygon.fromLngLats(building.rings))
     }
+    val shadowFeatures = calculateBuildingShadows(buildings, azimuth, zenith)
+
+    style.addSource(
+        geoJsonSource(SHADOWS_SOURCE_ID) {
+            featureCollection(shadowFeatures.toFeatureCollection())
+        }
+    )
+    style.addLayer(
+        fillLayer(SHADOWS_FILL_LAYER_ID, SHADOWS_SOURCE_ID) {
+            fillColor("#111820")
+            fillOpacity(0.55)
+        }
+    )
 
     style.addSource(
         geoJsonSource(BUILDINGS_SOURCE_ID) {
-            featureCollection(FeatureCollection.fromFeatures(features))
+            featureCollection(FeatureCollection.fromFeatures(buildingFeatures))
         }
     )
     style.addLayer(
@@ -250,6 +295,9 @@ private fun addBuildingFootprintLayers(
         }
     )
 }
+
+private fun List<Polygon>.toFeatureCollection(): FeatureCollection =
+    FeatureCollection.fromFeatures(map { Feature.fromGeometry(it) })
 
 private fun Geometry?.toPolygonRings(): List<List<List<Point>>> {
     return when (this) {
