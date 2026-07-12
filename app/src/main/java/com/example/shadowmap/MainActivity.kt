@@ -32,8 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.presentation.BuildingLoadState
@@ -47,8 +47,8 @@ import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -125,11 +125,10 @@ private fun ShadowMapScreen(
         if (loadRequest == 0 || controller == null) return@LaunchedEffect
         withFrameNanos { }
         try {
-            onBuildingsLoaded(controller.fetchBuildings())
-        } catch (cancellation: CancellationException) {
-            throw cancellation
-        } catch (throwable: Throwable) {
-            onLoadFailed(throwable)
+            val result = runCatching { controller.fetchBuildings() }
+            val failure = result.exceptionOrNull()
+            if (failure is CancellationException) throw failure
+            result.fold(onSuccess = onBuildingsLoaded, onFailure = onLoadFailed)
         } finally {
             satelliteSnapshot = null
         }
@@ -159,9 +158,10 @@ private fun ShadowMapScreen(
             )
         }
 
-        Button(
-            onClick = {
-                val currentMapView = mapView ?: return@Button
+        BuildingLoadButton(
+            loadState = uiState.buildingLoadState,
+            onClick = load@{
+                val currentMapView = mapView ?: return@load
                 onLoadStarted()
                 currentMapView.snapshot { bitmap ->
                     currentMapView.post {
@@ -170,50 +170,80 @@ private fun ShadowMapScreen(
                     }
                 }
             },
-            enabled = uiState.buildingLoadState !is BuildingLoadState.Loading,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 24.dp, end = 24.dp)
-        ) {
-            Text(
-                text = if (uiState.buildingLoadState is BuildingLoadState.Loading) {
-                    "Loading buildings..."
-                } else {
-                    "Show buildings"
-                }
-            )
-        }
+            modifier = Modifier.align(Alignment.TopEnd)
+        )
 
-        if (uiState.buildingLoadState is BuildingLoadState.Error) {
-            Text(
-                text = uiState.buildingLoadState.message,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(24.dp)
-            )
-        }
+        BuildingLoadError(
+            loadState = uiState.buildingLoadState,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
-                .padding(horizontal = 24.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(text = "Azimuth: ${uiState.azimuth.toInt()}°")
-            Slider(
-                value = uiState.azimuth,
-                valueRange = 0f..360f,
-                onValueChange = onAzimuthChanged
-            )
-            Text(text = "Zenith: ${uiState.zenith.toInt()}°")
-            Slider(
-                value = uiState.zenith,
-                valueRange = 0f..85f,
-                onValueChange = onZenithChanged
-            )
-        }
+        ShadowControls(
+            uiState = uiState,
+            onAzimuthChanged = onAzimuthChanged,
+            onZenithChanged = onZenithChanged,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+@Composable
+private fun BuildingLoadButton(
+    loadState: BuildingLoadState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        enabled = loadState !is BuildingLoadState.Loading,
+        modifier = modifier.padding(top = 24.dp, end = 24.dp)
+    ) {
+        Text(
+            text = if (loadState is BuildingLoadState.Loading) {
+                "Loading buildings..."
+            } else {
+                "Show buildings"
+            }
+        )
+    }
+}
+
+@Composable
+private fun BuildingLoadError(loadState: BuildingLoadState, modifier: Modifier = Modifier) {
+    if (loadState is BuildingLoadState.Error) {
+        Text(
+            text = loadState.message,
+            color = MaterialTheme.colorScheme.error,
+            modifier = modifier.padding(24.dp)
+        )
+    }
+}
+
+@Composable
+private fun ShadowControls(
+    uiState: ShadowMapUiState,
+    onAzimuthChanged: (Float) -> Unit,
+    onZenithChanged: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(text = "Azimuth: ${uiState.azimuth.toInt()}°")
+        Slider(
+            value = uiState.azimuth,
+            valueRange = 0f..360f,
+            onValueChange = onAzimuthChanged
+        )
+        Text(text = "Zenith: ${uiState.zenith.toInt()}°")
+        Slider(
+            value = uiState.zenith,
+            valueRange = 0f..85f,
+            onValueChange = onZenithChanged
+        )
     }
 }

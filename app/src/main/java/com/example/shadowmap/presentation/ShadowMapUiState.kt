@@ -13,8 +13,11 @@ data class ShadowMapUiState(
 
 sealed interface BuildingLoadState {
     data object Idle : BuildingLoadState
+
     data object Loading : BuildingLoadState
+
     data object Loaded : BuildingLoadState
+
     data class Error(val message: String) : BuildingLoadState
 }
 

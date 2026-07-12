@@ -39,4 +39,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "ShadowMap"
 include(":app")
- 

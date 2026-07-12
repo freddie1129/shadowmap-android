@@ -3,10 +3,11 @@ package com.example.shadowmap.presentation
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.shadowmap.di.DefaultDispatcher
 import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.domain.BuildingShadowCalculator
-import com.example.shadowmap.di.DefaultDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -15,10 +16,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
-class ShadowMapViewModel @Inject constructor(
+class ShadowMapViewModel
+@Inject
+constructor(
     private val savedStateHandle: SavedStateHandle,
     private val shadowCalculator: BuildingShadowCalculator,
     @param:DefaultDispatcher
@@ -26,12 +28,13 @@ class ShadowMapViewModel @Inject constructor(
 ) : ViewModel() {
     private var shadowJob: Job? = null
 
-    private val _uiState = MutableStateFlow(
-        ShadowMapUiState(
-            azimuth = savedStateHandle[AZIMUTH_KEY] ?: DEFAULT_AZIMUTH,
-            zenith = savedStateHandle[ZENITH_KEY] ?: DEFAULT_ZENITH
+    private val _uiState =
+        MutableStateFlow(
+            ShadowMapUiState(
+                azimuth = savedStateHandle[AZIMUTH_KEY] ?: DEFAULT_AZIMUTH,
+                zenith = savedStateHandle[ZENITH_KEY] ?: DEFAULT_ZENITH
+            )
         )
-    )
     val uiState: StateFlow<ShadowMapUiState> = _uiState.asStateFlow()
 
     fun onAzimuthChanged(value: Float) {
@@ -51,20 +54,23 @@ class ShadowMapViewModel @Inject constructor(
     }
 
     fun onBuildingsLoaded(buildings: List<BuildingFootprint>) {
-        _uiState.value = _uiState.value.copy(
-            buildings = buildings,
-            shadows = emptyList(),
-            buildingLoadState = BuildingLoadState.Loaded
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                buildings = buildings,
+                shadows = emptyList(),
+                buildingLoadState = BuildingLoadState.Loaded
+            )
         regenerateShadows()
     }
 
     fun onBuildingLoadFailed(throwable: Throwable) {
-        _uiState.value = _uiState.value.copy(
-            buildingLoadState = BuildingLoadState.Error(
-                throwable.message ?: "Unable to load buildings"
+        _uiState.value =
+            _uiState.value.copy(
+                buildingLoadState =
+                    BuildingLoadState.Error(
+                        throwable.message ?: "Unable to load buildings"
+                    )
             )
-        )
     }
 
     private fun regenerateShadows() {
@@ -75,16 +81,18 @@ class ShadowMapViewModel @Inject constructor(
             return
         }
 
-        shadowJob = viewModelScope.launch(computationDispatcher) {
-            delay(SHADOW_DEBOUNCE_MILLIS)
-            val shadows = shadowCalculator.calculate(
-                buildings = state.buildings,
-                azimuthDegrees = state.azimuth.toDouble(),
-                zenithDegrees = state.zenith.toDouble()
-            )
-            ensureActive()
-            _uiState.value = _uiState.value.copy(shadows = shadows)
-        }
+        shadowJob =
+            viewModelScope.launch(computationDispatcher) {
+                delay(SHADOW_DEBOUNCE_MILLIS)
+                val shadows =
+                    shadowCalculator.calculate(
+                        buildings = state.buildings,
+                        azimuthDegrees = state.azimuth.toDouble(),
+                        zenithDegrees = state.zenith.toDouble()
+                    )
+                ensureActive()
+                _uiState.value = _uiState.value.copy(shadows = shadows)
+            }
     }
 
     companion object {

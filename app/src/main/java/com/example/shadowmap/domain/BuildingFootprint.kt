@@ -1,13 +1,8 @@
 package com.example.shadowmap.domain
 
-data class GeoPoint(
-    val longitude: Double,
-    val latitude: Double
-)
+data class GeoPoint(val longitude: Double, val latitude: Double)
 
-data class GeoPolygon(
-    val rings: List<List<GeoPoint>>
-)
+data class GeoPolygon(val rings: List<List<GeoPoint>>)
 
 data class BuildingFootprint(
     val id: String?,

@@ -32,7 +32,10 @@ class BuildingShadowCalculatorTest {
     @Test
     fun northSun_castsShadowSouthByBuildingHeightAt45Degrees() {
         val building = squareBuilding(heightMeters = 20.0)
-        val footprintSouth = building.polygon.rings.first().minOf { projection.toMeters(it).y }
+        val footprintSouth =
+            building.polygon.rings
+                .first()
+                .minOf { projection.toMeters(it).y }
 
         val shadow = calculator.calculateBuilding(building, 0.0, 45.0)
         val shadowSouth = shadow.flatMap { it.rings.flatten() }.minOf { projection.toMeters(it).y }
@@ -43,7 +46,10 @@ class BuildingShadowCalculatorTest {
     @Test
     fun eastSun_castsShadowWest() {
         val building = squareBuilding(heightMeters = 12.0)
-        val footprintWest = building.polygon.rings.first().minOf { projection.toMeters(it).x }
+        val footprintWest =
+            building.polygon.rings
+                .first()
+                .minOf { projection.toMeters(it).x }
 
         val shadow = calculator.calculateBuilding(building, 90.0, 45.0)
         val shadowWest = shadow.flatMap { it.rings.flatten() }.minOf { projection.toMeters(it).x }
@@ -56,19 +62,21 @@ class BuildingShadowCalculatorTest {
         val shadow = calculator.calculateBuilding(squareBuilding(10.0), 180.0, 90.0)
 
         assertTrue(
-            shadow.flatMap { it.rings.flatten() }
+            shadow
+                .flatMap { it.rings.flatten() }
                 .all { it.longitude.isFinite() && it.latitude.isFinite() }
         )
     }
 
     private fun squareBuilding(heightMeters: Double): BuildingFootprint {
-        val ring = listOf(
-            projection.toPoint(Coordinate(-5.0, -5.0)),
-            projection.toPoint(Coordinate(5.0, -5.0)),
-            projection.toPoint(Coordinate(5.0, 5.0)),
-            projection.toPoint(Coordinate(-5.0, 5.0)),
-            projection.toPoint(Coordinate(-5.0, -5.0))
-        )
+        val ring =
+            listOf(
+                projection.toPoint(Coordinate(-5.0, -5.0)),
+                projection.toPoint(Coordinate(5.0, -5.0)),
+                projection.toPoint(Coordinate(5.0, 5.0)),
+                projection.toPoint(Coordinate(-5.0, 5.0)),
+                projection.toPoint(Coordinate(-5.0, -5.0))
+            )
         return BuildingFootprint(
             id = "test-building",
             polygon = GeoPolygon(listOf(ring)),
