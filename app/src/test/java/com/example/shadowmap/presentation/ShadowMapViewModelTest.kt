@@ -35,11 +35,12 @@ class ShadowMapViewModelTest {
     @Test
     fun angleChanges_updateStateAndSavedState() {
         val savedState = SavedStateHandle()
-        val viewModel = ShadowMapViewModel(
-            savedState,
-            BuildingShadowCalculator(),
-            dispatcher
-        )
+        val viewModel =
+            ShadowMapViewModel(
+                savedState,
+                BuildingShadowCalculator(),
+                dispatcher
+            )
 
         viewModel.onAzimuthChanged(240f)
         viewModel.onZenithChanged(35f)
@@ -57,7 +58,10 @@ class ShadowMapViewModelTest {
         viewModel.onBuildingLoadStarted()
         viewModel.onBuildingLoadFailed(IllegalStateException("Map failed"))
 
-        assertEquals(BuildingLoadState.Error("Map failed"), viewModel.uiState.value.buildingLoadState)
+        assertEquals(
+            BuildingLoadState.Error("Map failed"),
+            viewModel.uiState.value.buildingLoadState
+        )
     }
 
     @Test
@@ -68,17 +72,21 @@ class ShadowMapViewModelTest {
         advanceUntilIdle()
 
         assertEquals(BuildingLoadState.Loaded, viewModel.uiState.value.buildingLoadState)
-        assertTrue(viewModel.uiState.value.shadows.isNotEmpty())
+        assertTrue(
+            viewModel.uiState.value.shadows
+                .isNotEmpty()
+        )
     }
 
     private fun testBuilding(): BuildingFootprint {
-        val ring = listOf(
-            GeoPoint(153.0, -27.0),
-            GeoPoint(153.0001, -27.0),
-            GeoPoint(153.0001, -27.0001),
-            GeoPoint(153.0, -27.0001),
-            GeoPoint(153.0, -27.0)
-        )
+        val ring =
+            listOf(
+                GeoPoint(153.0, -27.0),
+                GeoPoint(153.0001, -27.0),
+                GeoPoint(153.0001, -27.0001),
+                GeoPoint(153.0, -27.0001),
+                GeoPoint(153.0, -27.0)
+            )
         return BuildingFootprint(
             id = "building",
             polygon = GeoPolygon(listOf(ring)),

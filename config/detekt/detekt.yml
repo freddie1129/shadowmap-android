@@ -1,0 +1,21 @@
+complexity:
+  LongMethod:
+    allowedLines: 80
+  TooManyFunctions:
+    allowedFunctionsPerFile: 15
+    allowedFunctionsPerClass: 15
+    allowedFunctionsPerInterface: 12
+
+coroutines:
+  InjectDispatcher:
+    active: true
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ["Composable"]
+
+style:
+  MagicNumber:
+    active: false
+  MaxLineLength:
+    maxLineLength: 120

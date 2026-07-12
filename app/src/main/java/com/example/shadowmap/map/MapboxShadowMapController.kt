@@ -18,47 +18,51 @@ import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.generated.fillLayer
 import com.mapbox.maps.extension.style.layers.generated.lineLayer
 import com.mapbox.maps.extension.style.sources.addSource
-import com.mapbox.maps.extension.style.sources.getSourceAs
 import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
+import com.mapbox.maps.extension.style.sources.getSourceAs
 import com.mapbox.maps.interactions.standard.generated.StandardBuildings
 import com.mapbox.maps.interactions.standard.generated.StandardBuildingsFeature
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
+import kotlin.coroutines.resume
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.coroutines.resume
 
-class MapboxShadowMapController @AssistedInject constructor(
+class MapboxShadowMapController
+@AssistedInject
+constructor(
     @Assisted private val mapView: MapView
 ) {
     @OptIn(MapboxExperimental::class)
-    suspend fun fetchBuildings(): List<BuildingFootprint> = withContext(Dispatchers.Main.immediate) {
-        var switchedToStandard = false
-        try {
-            withTimeout(STYLE_OPERATION_TIMEOUT_MILLIS) {
-                awaitStyle(Style.STANDARD)
-                switchedToStandard = true
-                awaitMapIdle()
-                queryBuildings()
-            }
-        } finally {
-            if (switchedToStandard) {
-                withContext(NonCancellable) {
-                    val restored = withTimeoutOrNull(STYLE_OPERATION_TIMEOUT_MILLIS) {
-                        awaitStyle(Style.STANDARD_SATELLITE)
-                        awaitMapIdle()
+    suspend fun fetchBuildings(): List<BuildingFootprint> =
+        withContext(Dispatchers.Main.immediate) {
+            var switchedToStandard = false
+            try {
+                withTimeout(STYLE_OPERATION_TIMEOUT_MILLIS) {
+                    awaitStyle(Style.STANDARD)
+                    switchedToStandard = true
+                    awaitMapIdle()
+                    queryBuildings()
+                }
+            } finally {
+                if (switchedToStandard) {
+                    withContext(NonCancellable) {
+                        val restored =
+                            withTimeoutOrNull(STYLE_OPERATION_TIMEOUT_MILLIS) {
+                                awaitStyle(Style.STANDARD_SATELLITE)
+                                awaitMapIdle()
+                            }
+                        checkNotNull(restored) { "Timed out restoring the satellite style" }
                     }
-                    checkNotNull(restored) { "Timed out restoring the satellite style" }
                 }
             }
         }
-    }
 
     fun render(buildings: List<BuildingFootprint>, shadows: List<GeoPolygon>) {
         mapView.mapboxMap.getStyle { style ->
@@ -115,10 +119,11 @@ class MapboxShadowMapController @AssistedInject constructor(
     private suspend fun awaitMapIdle() {
         suspendCancellableCoroutine { continuation ->
             var subscription: Cancelable? = null
-            subscription = mapView.mapboxMap.subscribeMapIdle {
-                subscription?.cancel()
-                if (continuation.isActive) continuation.resume(Unit)
-            }
+            subscription =
+                mapView.mapboxMap.subscribeMapIdle {
+                    subscription?.cancel()
+                    if (continuation.isActive) continuation.resume(Unit)
+                }
             continuation.invokeOnCancellation { subscription?.cancel() }
         }
     }
@@ -152,9 +157,10 @@ class MapboxShadowMapController @AssistedInject constructor(
     }
 
     private fun List<List<Point>>.toDomainPolygon(): GeoPolygon = GeoPolygon(
-        rings = map { ring ->
-            ring.map { point -> GeoPoint(point.longitude(), point.latitude()) }
-        }
+        rings =
+            map { ring ->
+                ring.map { point -> GeoPoint(point.longitude(), point.latitude()) }
+            }
     )
 
     private fun List<GeoPolygon>.toFeatureCollection(): FeatureCollection =

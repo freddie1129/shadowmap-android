@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.detekt)
 }
 
 android {
@@ -37,6 +38,26 @@ android {
     buildFeatures {
         compose = true
     }
+    lint {
+        abortOnError = true
+        checkDependencies = true
+        checkReleaseBuilds = true
+        warningsAsErrors = true
+        htmlReport = true
+        sarifReport = true
+        xmlReport = true
+        disable += setOf(
+            "AndroidGradlePluginVersion",
+            "GradleDependency",
+            "NewerVersionAvailable"
+        )
+    }
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    allRules = false
+    config.setFrom(rootProject.files("config/detekt/detekt.yml"))
 }
 
 dependencies {
