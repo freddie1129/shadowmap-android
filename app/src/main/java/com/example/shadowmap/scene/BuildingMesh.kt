@@ -22,8 +22,6 @@ data class BuildingMesh(
 )
 
 object BuildingMeshGenerator {
-    private const val EARTH_RADIUS_METERS = 6_378_137.0
-
     @Suppress("CyclomaticComplexMethod")
     fun generate(
         buildings: List<BuildingFootprint>,
@@ -33,7 +31,7 @@ object BuildingMeshGenerator {
         if (points.isEmpty()) return BuildingMesh(emptyList(), emptyList(), 1f)
         val originLongitude = viewport?.centerLongitude ?: points.map { it.longitude }.average()
         val originLatitude = viewport?.centerLatitude ?: points.map { it.latitude }.average()
-        val latitudeScale = EARTH_RADIUS_METERS * PI / 180.0
+        val latitudeScale = Scene3DGeometry.WGS84_EARTH_RADIUS_METERS * PI / 180.0
         val longitudeScale = latitudeScale * cos(originLatitude * PI / 180.0)
         val vertices = mutableListOf<MeshVertex>()
         val roofIndices = mutableListOf<Int>()
@@ -81,8 +79,10 @@ object BuildingMeshGenerator {
         }
         val radius = (vertices.maxOfOrNull { kotlin.math.sqrt(it.x * it.x + it.z * it.z) } ?: 1f)
             .coerceAtLeast(1f)
-        val groundHalfWidth = viewport?.widthMeters?.div(2f) ?: radius * 1.35f
-        val groundHalfHeight = viewport?.heightMeters?.div(2f) ?: radius * 1.35f
+        val groundHalfWidth = viewport?.widthMeters?.div(2f)
+            ?: radius * Scene3DGeometry.FALLBACK_GROUND_EXTENT_MULTIPLIER
+        val groundHalfHeight = viewport?.heightMeters?.div(2f)
+            ?: radius * Scene3DGeometry.FALLBACK_GROUND_EXTENT_MULTIPLIER
         val rightX = viewport?.screenRightX ?: 1f
         val rightZ = viewport?.screenRightZ ?: 0f
         val downX = viewport?.screenDownX ?: 0f

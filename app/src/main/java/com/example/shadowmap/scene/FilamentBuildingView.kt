@@ -74,14 +74,14 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
     private var wallMaterial: Material? = null
     private var groundMaterial: Material? = null
     private var destroyed = false
-    private var sceneRadius = 40f
-    private var cameraYaw = 0f
-    private var cameraPitch = 42f
-    private var cameraDistance = 72f
+    private var sceneRadius = Scene3DCamera.DEFAULT_SCENE_RADIUS_METERS
+    private var cameraYaw = Scene3DCamera.DEFAULT_YAW_DEGREES
+    private var cameraPitch = Scene3DCamera.DEFAULT_PITCH_DEGREES
+    private var cameraDistance = Scene3DCamera.DEFAULT_DISTANCE_METERS
     private var cameraTargetX = 0f
     private var cameraTargetZ = 0f
     private var alignedTopDown = true
-    private var orthographicZoom = 1f
+    private var orthographicZoom = Scene3DCamera.DEFAULT_ORTHOGRAPHIC_ZOOM
     private var viewportWidth = 1
     private var viewportHeight = 1
     private var sceneViewport: SceneViewport? = null
@@ -119,21 +119,27 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
             clear = true
             clearColor = doubleArrayOf(0.0, 0.0, 0.0, 0.0)
         }
+        val sunColor = Scene3DAppearance.SUN_COLOR
         LightManager.Builder(LightManager.Type.SUN)
-            .color(1f, 0.97f, 0.91f)
-            .intensity(85_000f)
+            .color(sunColor.red, sunColor.green, sunColor.blue)
+            .intensity(Scene3DAppearance.SUN_INTENSITY)
             .castShadows(true)
-            .sunAngularRadius(1.0f)
+            .sunAngularRadius(Scene3DAppearance.SUN_ANGULAR_RADIUS)
             .build(engine, sunEntity)
         scene.addEntity(sunEntity)
+        val fillColor = Scene3DAppearance.FILL_LIGHT_COLOR
+        val fillDirection = Scene3DAppearance.FILL_LIGHT_DIRECTION
         LightManager.Builder(LightManager.Type.DIRECTIONAL)
-            .color(0.76f, 0.84f, 1f)
-            .intensity(22_000f)
-            .direction(0.45f, -0.65f, -0.6f)
+            .color(fillColor.red, fillColor.green, fillColor.blue)
+            .intensity(Scene3DAppearance.FILL_LIGHT_INTENSITY)
+            .direction(fillDirection.x, fillDirection.y, fillDirection.z)
             .castShadows(false)
             .build(engine, fillLightEntity)
         scene.addEntity(fillLightEntity)
-        setSun(135f, 45f)
+        setSun(
+            Scene3DAppearance.DEFAULT_SUN_AZIMUTH_DEGREES,
+            Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES
+        )
         choreographer.postFrameCallback(this)
     }
 
@@ -158,11 +164,17 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
                 override fun onScale(detector: ScaleGestureDetector): Boolean {
                     if (alignedTopDown) {
                         orthographicZoom = (orthographicZoom / detector.scaleFactor)
-                            .coerceIn(0.25f, 8f)
+                            .coerceIn(
+                                Scene3DCamera.MIN_ORTHOGRAPHIC_ZOOM,
+                                Scene3DCamera.MAX_ORTHOGRAPHIC_ZOOM
+                            )
                         updateProjection()
                     } else {
                         cameraDistance = (cameraDistance / detector.scaleFactor)
-                            .coerceIn(sceneRadius * 0.25f, sceneRadius * 8f)
+                            .coerceIn(
+                                sceneRadius * Scene3DCamera.MIN_DISTANCE_MULTIPLIER,
+                                sceneRadius * Scene3DCamera.MAX_DISTANCE_MULTIPLIER
+                            )
                     }
                     updateCamera()
                     return true
@@ -189,9 +201,14 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
                             alignedTopDown = false
                             updateProjection()
                         }
-                        cameraYaw = (cameraYaw - distanceX * ORBIT_DEGREES_PER_PIXEL) % 360f
-                        cameraPitch = (cameraPitch + distanceY * ORBIT_DEGREES_PER_PIXEL)
-                            .coerceIn(MIN_PITCH_DEGREES, MAX_PITCH_DEGREES)
+                        cameraYaw =
+                            (cameraYaw - distanceX * Scene3DCamera.ORBIT_DEGREES_PER_PIXEL) % 360f
+                        cameraPitch =
+                            (cameraPitch + distanceY * Scene3DCamera.ORBIT_DEGREES_PER_PIXEL)
+                                .coerceIn(
+                                    Scene3DCamera.MIN_PITCH_DEGREES,
+                                    Scene3DCamera.MAX_PITCH_DEGREES
+                                )
                         updateCamera()
                     }
                     return true
@@ -297,7 +314,7 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
             .culling(false)
             .build(engine, renderableEntity)
         scene.addEntity(renderableEntity)
-        sceneRadius = max(mesh.radiusMeters, 20f)
+        sceneRadius = max(mesh.radiusMeters, Scene3DCamera.MIN_SCENE_RADIUS_METERS)
         resetCamera()
     }
 
@@ -314,8 +331,8 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
             """
             void material(inout MaterialInputs material) {
                 prepareMaterial(material);
-                material.baseColor = float4(0.82, 0.84, 0.83, 1.0);
-                material.roughness = 0.72;
+                material.baseColor = ${Scene3DAppearance.ROOF_COLOR.toShaderFloat4()};
+                material.roughness = ${Scene3DAppearance.ROOF_ROUGHNESS};
             }
             """.trimIndent()
     )
@@ -326,8 +343,8 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
             """
             void material(inout MaterialInputs material) {
                 prepareMaterial(material);
-                material.baseColor = float4(0.66, 0.70, 0.73, 1.0);
-                material.roughness = 0.82;
+                material.baseColor = ${Scene3DAppearance.WALL_COLOR.toShaderFloat4()};
+                material.roughness = ${Scene3DAppearance.WALL_ROUGHNESS};
             }
             """.trimIndent()
     )
@@ -338,8 +355,8 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
             """
             void material(inout MaterialInputs material) {
                 prepareMaterial(material);
-                material.baseColor = float4(0.246, 0.252, 0.255, 0.30);
-                material.roughness = 1.0;
+                material.baseColor = ${Scene3DAppearance.groundShaderColor()};
+                material.roughness = ${Scene3DAppearance.GROUND_ROUGHNESS};
             }
             """.trimIndent(),
         transparent = true
@@ -368,10 +385,10 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
 
     private fun resetCamera() {
         alignedTopDown = true
-        orthographicZoom = 1f
-        cameraYaw = 0f
-        cameraPitch = 42f
-        cameraDistance = sceneRadius * 1.8f
+        orthographicZoom = Scene3DCamera.DEFAULT_ORTHOGRAPHIC_ZOOM
+        cameraYaw = Scene3DCamera.DEFAULT_YAW_DEGREES
+        cameraPitch = Scene3DCamera.DEFAULT_PITCH_DEGREES
+        cameraDistance = sceneRadius * Scene3DCamera.RESET_DISTANCE_MULTIPLIER
         cameraTargetX = 0f
         cameraTargetZ = 0f
         updateProjection()
@@ -389,14 +406,14 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
             return
         }
         val yawRadians = Math.toRadians(cameraYaw.toDouble())
-        val metersPerPixel = cameraDistance * PAN_SCALE
+        val metersPerPixel = cameraDistance * Scene3DCamera.PAN_SCALE
         val rightX = cos(yawRadians).toFloat()
         val rightZ = -sin(yawRadians).toFloat()
         val forwardX = sin(yawRadians).toFloat()
         val forwardZ = cos(yawRadians).toFloat()
         cameraTargetX += (rightX * distanceX + forwardX * distanceY) * metersPerPixel
         cameraTargetZ += (rightZ * distanceX + forwardZ * distanceY) * metersPerPixel
-        val targetLimit = sceneRadius * 2f
+        val targetLimit = sceneRadius * Scene3DCamera.TARGET_LIMIT_MULTIPLIER
         cameraTargetX = cameraTargetX.coerceIn(-targetLimit, targetLimit)
         cameraTargetZ = cameraTargetZ.coerceIn(-targetLimit, targetLimit)
         updateCamera()
@@ -407,7 +424,10 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
             val viewport = sceneViewport ?: return
             camera.lookAt(
                 cameraTargetX.toDouble(),
-                max(sceneRadius * 4f, 500f).toDouble(),
+                max(
+                    sceneRadius * Scene3DCamera.TOP_DOWN_HEIGHT_MULTIPLIER,
+                    Scene3DCamera.MIN_TOP_DOWN_HEIGHT_METERS
+                ).toDouble(),
                 cameraTargetZ.toDouble(),
                 cameraTargetX.toDouble(),
                 0.0,
@@ -448,15 +468,15 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
                 halfWidth,
                 -halfHeight,
                 halfHeight,
-                0.1,
-                10_000.0
+                Scene3DCamera.NEAR_CLIP_METERS,
+                Scene3DCamera.FAR_CLIP_METERS
             )
         } else {
             camera.setProjection(
-                45.0,
+                Scene3DCamera.PERSPECTIVE_VERTICAL_FOV_DEGREES,
                 viewportWidth.toDouble() / max(viewportHeight, 1),
-                0.1,
-                10_000.0,
+                Scene3DCamera.NEAR_CLIP_METERS,
+                Scene3DCamera.FAR_CLIP_METERS,
                 com.google.android.filament.Camera.Fov.VERTICAL
             )
         }
@@ -519,13 +539,6 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
         engine.destroyScene(scene)
         engine.destroyRenderer(filamentRenderer)
         engine.destroy()
-    }
-
-    private companion object {
-        const val ORBIT_DEGREES_PER_PIXEL = 0.25f
-        const val MIN_PITCH_DEGREES = 8f
-        const val MAX_PITCH_DEGREES = 85f
-        const val PAN_SCALE = 0.0015f
     }
 }
 

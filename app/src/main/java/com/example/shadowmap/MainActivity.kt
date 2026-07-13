@@ -4,11 +4,11 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +46,7 @@ import com.example.shadowmap.presentation.BuildingLoadState
 import com.example.shadowmap.presentation.ShadowMapUiState
 import com.example.shadowmap.presentation.ShadowMapViewModel
 import com.example.shadowmap.scene.FilamentBuildingView
+import com.example.shadowmap.scene.Scene3DAppearance
 import com.example.shadowmap.scene.SceneViewport
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 import com.mapbox.geojson.Point
@@ -232,7 +233,7 @@ private fun ShadowMapScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFDDE2E6))
+                    .background(Color(Scene3DAppearance.HIDDEN_MAP_BACKDROP_ARGB))
             )
         }
 
