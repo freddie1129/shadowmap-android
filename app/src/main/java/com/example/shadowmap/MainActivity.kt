@@ -33,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,6 +47,7 @@ import com.example.shadowmap.scene.FilamentBuildingView
 import com.example.shadowmap.scene.Scene3DAppearance
 import com.example.shadowmap.scene.SceneViewport
 import com.example.shadowmap.ui.theme.ShadowMapTheme
+import com.example.shadowmap.ui.theme.ShadowMapDesign
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
 import com.mapbox.maps.ScreenCoordinate
@@ -114,6 +114,7 @@ private fun ShadowMapScreen(
     modifier: Modifier = Modifier
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val dimensions = ShadowMapDesign.dimensions
     var hasLocationPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -286,7 +287,9 @@ private fun ShadowMapScreen(
         } else {
             Button(
                 onClick = { showSatelliteIn3d = !showSatelliteIn3d },
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 24.dp, end = 24.dp)
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = dimensions.screenPadding, end = dimensions.screenPadding)
             ) {
                 Text(if (showSatelliteIn3d) "Hide satellite" else "Show satellite")
             }
@@ -299,7 +302,9 @@ private fun ShadowMapScreen(
                     }
                     show3d = !show3d
                 },
-                modifier = Modifier.align(Alignment.TopStart).padding(top = 24.dp, start = 24.dp)
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = dimensions.screenPadding, start = dimensions.screenPadding)
             ) { Text(if (show3d) "Map View" else "3D View") }
         }
 
@@ -311,7 +316,6 @@ private fun ShadowMapScreen(
         DateTimeSpinner(
             selectedEpochMillis = uiState.selectedEpochMillis,
             timeZoneId = uiState.displayTimeZoneId,
-            solarPosition = uiState.solarPosition,
             onDateTimeChanged = onDateTimeChanged,
             onNowSelected = onNowSelected,
             modifier = Modifier.align(Alignment.BottomCenter)
@@ -343,10 +347,14 @@ private fun BuildingLoadButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimensions = ShadowMapDesign.dimensions
     Button(
         onClick = onClick,
         enabled = loadState !is BuildingLoadState.Loading,
-        modifier = modifier.padding(top = 24.dp, end = 24.dp)
+        modifier = modifier.padding(
+            top = dimensions.screenPadding,
+            end = dimensions.screenPadding,
+        )
     ) {
         Text(
             text = if (loadState is BuildingLoadState.Loading) {
@@ -361,10 +369,11 @@ private fun BuildingLoadButton(
 @Composable
 private fun BuildingLoadError(loadState: BuildingLoadState, modifier: Modifier = Modifier) {
     if (loadState is BuildingLoadState.Error) {
+        val dimensions = ShadowMapDesign.dimensions
         Text(
             text = loadState.message,
             color = MaterialTheme.colorScheme.error,
-            modifier = modifier.padding(24.dp)
+            modifier = modifier.padding(dimensions.screenPadding)
         )
     }
 }
