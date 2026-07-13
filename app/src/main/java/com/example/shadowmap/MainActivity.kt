@@ -13,12 +13,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -34,11 +36,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.domain.GeoPoint
+import com.example.shadowmap.map.BuildingLoadArea
+import com.example.shadowmap.map.MAX_BUILDING_LOAD_DIMENSION_METERS
 import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.presentation.BuildingLoadState
 import com.example.shadowmap.presentation.ShadowMapUiState
@@ -158,6 +163,27 @@ private fun ShadowMapScreen(
     var show3d by remember { mutableStateOf(false) }
     var showSatelliteIn3d by remember { mutableStateOf(true) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
+    var buildingLoadArea by remember { mutableStateOf<BuildingLoadArea?>(null) }
+
+    DisposableEffect(mapView) {
+        val currentMapView = mapView
+        if (currentMapView == null) {
+            buildingLoadArea = null
+            onDispose { }
+        } else {
+            fun updateBuildingLoadArea() {
+                currentMapView.post {
+                    buildingLoadArea = currentMapView.toBuildingLoadArea()
+                }
+            }
+
+            updateBuildingLoadArea()
+            val mapIdleSubscription = currentMapView.mapboxMap.subscribeMapIdle {
+                updateBuildingLoadArea()
+            }
+            onDispose { mapIdleSubscription.cancel() }
+        }
+    }
 
     DisposableEffect(mapView, hasLocationPermission) {
         val currentMapView = mapView
@@ -278,8 +304,12 @@ private fun ShadowMapScreen(
             if (!show3d) {
                 BuildingLoadButton(
                     loadState = uiState.buildingLoadState,
+                    loadArea = buildingLoadArea,
                     onClick = load@{
                         val currentMapView = mapView ?: return@load
+                        val currentLoadArea = currentMapView.toBuildingLoadArea()
+                        buildingLoadArea = currentLoadArea
+                        if (currentLoadArea?.isWithinLimit != true) return@load
                         val mapCenter = currentMapView.mapboxMap.cameraState.center
                         buildingQueryLocation = GeoPoint(
                             longitude = mapCenter.longitude(),
@@ -353,28 +383,66 @@ private fun MapView.toSceneViewport(): SceneViewport? {
     )
 }
 
+private fun MapView.toBuildingLoadArea(): BuildingLoadArea? =
+    toSceneViewport()?.let { viewport ->
+        BuildingLoadArea(
+            widthMeters = viewport.widthMeters,
+            heightMeters = viewport.heightMeters
+        )
+    }
+
 @Composable
 private fun BuildingLoadButton(
     loadState: BuildingLoadState,
+    loadArea: BuildingLoadArea?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dimensions = ShadowMapDesign.dimensions
-    Button(
-        onClick = onClick,
-        enabled = loadState !is BuildingLoadState.Loading,
-        modifier = modifier.padding(
-            top = dimensions.screenPadding,
-            end = dimensions.screenPadding,
-        )
+    val isLoading = loadState is BuildingLoadState.Loading
+    val isWithinLimit = loadArea?.isWithinLimit == true
+    Surface(
+        modifier = modifier
+            .padding(top = dimensions.screenPadding, end = dimensions.screenPadding)
+            .widthIn(max = dimensions.floatingControlMaxWidth),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+        tonalElevation = dimensions.spacingXxs
     ) {
-        Text(
-            text = if (loadState is BuildingLoadState.Loading) {
-                "Loading buildings..."
-            } else {
-                "Show buildings"
+        Column(
+            horizontalAlignment = Alignment.End,
+            modifier = Modifier.padding(dimensions.spacingMedium)
+        ) {
+            Button(
+                onClick = onClick,
+                enabled = isWithinLimit && !isLoading
+            ) {
+                Text(
+                    text = when {
+                        isLoading -> "Loading buildings…"
+                        isWithinLimit -> "Load buildings"
+                        else -> "Zoom in to load buildings"
+                    }
+                )
             }
-        )
+            Text(
+                text = when {
+                    loadArea == null -> "Checking visible map area…"
+                    isWithinLimit -> "Area ready: ${loadArea.formattedDimensions}"
+                    else -> "Current area: ${loadArea.formattedDimensions}\n" +
+                        "Maximum: ${MAX_BUILDING_LOAD_DIMENSION_METERS.toInt()} m × " +
+                        "${MAX_BUILDING_LOAD_DIMENSION_METERS.toInt()} m"
+                },
+                color = if (loadArea != null && !isWithinLimit) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                style = MaterialTheme.typography.labelMedium,
+                textAlign = TextAlign.End,
+                modifier = Modifier.padding(top = dimensions.spacingSmall)
+            )
+        }
     }
 }
 
