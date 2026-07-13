@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -39,9 +40,12 @@ import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.presentation.BuildingLoadState
 import com.example.shadowmap.presentation.ShadowMapUiState
 import com.example.shadowmap.presentation.ShadowMapViewModel
+import com.example.shadowmap.scene.FilamentBuildingView
+import com.example.shadowmap.scene.SceneViewport
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
+import com.mapbox.maps.ScreenCoordinate
 import com.mapbox.maps.extension.compose.MapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
@@ -91,6 +95,7 @@ private fun ShadowMapRoute(
 }
 
 @Composable
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 private fun ShadowMapScreen(
     uiState: ShadowMapUiState,
     onAzimuthChanged: (Float) -> Unit,
@@ -113,6 +118,9 @@ private fun ShadowMapScreen(
     }
     var satelliteSnapshot by remember { mutableStateOf<Bitmap?>(null) }
     var loadRequest by remember { mutableIntStateOf(0) }
+    var show3d by remember { mutableStateOf(false) }
+    var showSatelliteIn3d by remember { mutableStateOf(true) }
+    var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
 
     DisposableEffect(satelliteSnapshot) {
         val snapshot = satelliteSnapshot
@@ -140,6 +148,17 @@ private fun ShadowMapScreen(
         }
     }
 
+    LaunchedEffect(mapView, show3d, showSatelliteIn3d) {
+        mapView?.visibility =
+            if (show3d &&
+                !showSatelliteIn3d
+            ) {
+                android.view.View.INVISIBLE
+            } else {
+                android.view.View.VISIBLE
+            }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         MapboxMap(
             modifier = Modifier.fillMaxSize(),
@@ -147,6 +166,24 @@ private fun ShadowMapScreen(
             style = { MapboxStandardSatelliteStyle() }
         ) {
             MapEffect(Unit) { currentMapView -> mapView = currentMapView }
+        }
+
+        if (show3d && !showSatelliteIn3d) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFDDE2E6))
+            )
+        }
+
+        if (show3d) {
+            FilamentBuildingView(
+                buildings = uiState.buildings,
+                viewport = sceneViewport,
+                azimuth = uiState.azimuth,
+                zenith = uiState.zenith,
+                modifier = Modifier.fillMaxSize()
+            )
         }
 
         satelliteSnapshot?.let { snapshot ->
@@ -158,20 +195,40 @@ private fun ShadowMapScreen(
             )
         }
 
-        BuildingLoadButton(
-            loadState = uiState.buildingLoadState,
-            onClick = load@{
-                val currentMapView = mapView ?: return@load
-                onLoadStarted()
-                currentMapView.snapshot { bitmap ->
-                    currentMapView.post {
-                        satelliteSnapshot = bitmap
-                        loadRequest++
+        if (!show3d) {
+            BuildingLoadButton(
+                loadState = uiState.buildingLoadState,
+                onClick = load@{
+                    val currentMapView = mapView ?: return@load
+                    onLoadStarted()
+                    currentMapView.snapshot { bitmap ->
+                        currentMapView.post {
+                            satelliteSnapshot = bitmap
+                            loadRequest++
+                        }
                     }
-                }
-            },
-            modifier = Modifier.align(Alignment.TopEnd)
-        )
+                },
+                modifier = Modifier.align(Alignment.TopEnd)
+            )
+        } else {
+            Button(
+                onClick = { showSatelliteIn3d = !showSatelliteIn3d },
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 24.dp, end = 24.dp)
+            ) {
+                Text(if (showSatelliteIn3d) "Hide satellite" else "Show satellite")
+            }
+        }
+        if (uiState.buildings.isNotEmpty()) {
+            Button(
+                onClick = {
+                    if (!show3d) {
+                        sceneViewport = mapView?.toSceneViewport()
+                    }
+                    show3d = !show3d
+                },
+                modifier = Modifier.align(Alignment.TopStart).padding(top = 24.dp, start = 24.dp)
+            ) { Text(if (show3d) "Map View" else "3D View") }
+        }
 
         BuildingLoadError(
             loadState = uiState.buildingLoadState,
@@ -185,6 +242,24 @@ private fun ShadowMapScreen(
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
+}
+
+private fun MapView.toSceneViewport(): SceneViewport? {
+    if (width <= 0 || height <= 0) return null
+    val center = mapboxMap.coordinateForPixel(ScreenCoordinate(width / 2.0, height / 2.0))
+    val topLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, 0.0))
+    val topRight = mapboxMap.coordinateForPixel(ScreenCoordinate(width.toDouble(), 0.0))
+    val bottomLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, height.toDouble()))
+    return SceneViewport.fromScreenCoordinates(
+        center.longitude(),
+        center.latitude(),
+        topLeft.longitude(),
+        topLeft.latitude(),
+        topRight.longitude(),
+        topRight.latitude(),
+        bottomLeft.longitude(),
+        bottomLeft.latitude()
+    )
 }
 
 @Composable

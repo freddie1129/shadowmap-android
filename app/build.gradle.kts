@@ -77,6 +77,8 @@ dependencies {
     implementation(libs.jts.core)
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.filament.android)
+    implementation(libs.filamat.android)
     ksp(libs.hilt.android.compiler)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
