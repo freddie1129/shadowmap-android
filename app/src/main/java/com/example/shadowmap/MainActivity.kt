@@ -29,8 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -150,7 +150,13 @@ private fun ShadowMapScreen(
 
     LaunchedEffect(mapView, show3d, showSatelliteIn3d) {
         mapView?.visibility =
-            if (show3d && !showSatelliteIn3d) android.view.View.INVISIBLE else android.view.View.VISIBLE
+            if (show3d &&
+                !showSatelliteIn3d
+            ) {
+                android.view.View.INVISIBLE
+            } else {
+                android.view.View.VISIBLE
+            }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -245,10 +251,14 @@ private fun MapView.toSceneViewport(): SceneViewport? {
     val topRight = mapboxMap.coordinateForPixel(ScreenCoordinate(width.toDouble(), 0.0))
     val bottomLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, height.toDouble()))
     return SceneViewport.fromScreenCoordinates(
-        center.longitude(), center.latitude(),
-        topLeft.longitude(), topLeft.latitude(),
-        topRight.longitude(), topRight.latitude(),
-        bottomLeft.longitude(), bottomLeft.latitude()
+        center.longitude(),
+        center.latitude(),
+        topLeft.longitude(),
+        topLeft.latitude(),
+        topRight.longitude(),
+        topRight.latitude(),
+        bottomLeft.longitude(),
+        bottomLeft.latitude()
     )
 }
 

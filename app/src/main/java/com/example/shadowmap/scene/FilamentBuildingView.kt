@@ -32,8 +32,8 @@ import com.google.android.filament.android.UiHelper
 import com.google.android.filament.filamat.MaterialBuilder
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import kotlin.math.max
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -189,9 +189,9 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
                             alignedTopDown = false
                             updateProjection()
                         }
-                        cameraYaw = (cameraYaw - distanceX * OrbitDegreesPerPixel) % 360f
-                        cameraPitch = (cameraPitch + distanceY * OrbitDegreesPerPixel)
-                            .coerceIn(MinPitchDegrees, MaxPitchDegrees)
+                        cameraYaw = (cameraYaw - distanceX * ORBIT_DEGREES_PER_PIXEL) % 360f
+                        cameraPitch = (cameraPitch + distanceY * ORBIT_DEGREES_PER_PIXEL)
+                            .coerceIn(MIN_PITCH_DEGREES, MAX_PITCH_DEGREES)
                         updateCamera()
                     }
                     return true
@@ -221,7 +221,9 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
         val mesh = BuildingMeshGenerator.generate(buildings, viewport)
         if (mesh.indices.isEmpty()) return
         val floatsPerVertex = 7
-        val vertexBytes = ByteBuffer.allocateDirect(mesh.vertices.size * floatsPerVertex * Float.SIZE_BYTES)
+        val vertexBytes = ByteBuffer.allocateDirect(
+            mesh.vertices.size * floatsPerVertex * Float.SIZE_BYTES
+        )
             .order(ByteOrder.nativeOrder())
         mesh.vertices.forEach { vertex ->
             val tangent = normalToQuaternion(vertex.normalX, vertex.normalY, vertex.normalZ)
@@ -343,7 +345,11 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
         transparent = true
     )
 
-    private fun createMaterial(name: String, source: String, transparent: Boolean = false): Material {
+    private fun createMaterial(
+        name: String,
+        source: String,
+        transparent: Boolean = false
+    ): Material {
         val builder = MaterialBuilder()
             .name(name)
             .platform(MaterialBuilder.Platform.MOBILE)
@@ -383,7 +389,7 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
             return
         }
         val yawRadians = Math.toRadians(cameraYaw.toDouble())
-        val metersPerPixel = cameraDistance * PanScale
+        val metersPerPixel = cameraDistance * PAN_SCALE
         val rightX = cos(yawRadians).toFloat()
         val rightZ = -sin(yawRadians).toFloat()
         val forwardX = sin(yawRadians).toFloat()
@@ -466,7 +472,9 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
     override fun doFrame(frameTimeNanos: Long) {
         if (destroyed) return
         val chain = swapChain
-        if (chain != null && uiHelper.isReadyToRender && filamentRenderer.beginFrame(chain, frameTimeNanos)) {
+        if (chain != null && uiHelper.isReadyToRender &&
+            filamentRenderer.beginFrame(chain, frameTimeNanos)
+        ) {
             filamentRenderer.render(view)
             filamentRenderer.endFrame()
         }
@@ -514,10 +522,10 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
     }
 
     private companion object {
-        const val OrbitDegreesPerPixel = 0.25f
-        const val MinPitchDegrees = 8f
-        const val MaxPitchDegrees = 85f
-        const val PanScale = 0.0015f
+        const val ORBIT_DEGREES_PER_PIXEL = 0.25f
+        const val MIN_PITCH_DEGREES = 8f
+        const val MAX_PITCH_DEGREES = 85f
+        const val PAN_SCALE = 0.0015f
     }
 }
 

@@ -22,15 +22,18 @@ data class BuildingMesh(
 )
 
 object BuildingMeshGenerator {
-    private const val EarthRadiusMeters = 6_378_137.0
+    private const val EARTH_RADIUS_METERS = 6_378_137.0
 
     @Suppress("CyclomaticComplexMethod")
-    fun generate(buildings: List<BuildingFootprint>, viewport: SceneViewport? = null): BuildingMesh {
+    fun generate(
+        buildings: List<BuildingFootprint>,
+        viewport: SceneViewport? = null
+    ): BuildingMesh {
         val points = buildings.flatMap { it.polygon.rings.firstOrNull().orEmpty() }
         if (points.isEmpty()) return BuildingMesh(emptyList(), emptyList(), 1f)
         val originLongitude = viewport?.centerLongitude ?: points.map { it.longitude }.average()
         val originLatitude = viewport?.centerLatitude ?: points.map { it.latitude }.average()
-        val latitudeScale = EarthRadiusMeters * PI / 180.0
+        val latitudeScale = EARTH_RADIUS_METERS * PI / 180.0
         val longitudeScale = latitudeScale * cos(originLatitude * PI / 180.0)
         val vertices = mutableListOf<MeshVertex>()
         val roofIndices = mutableListOf<Int>()
@@ -104,8 +107,12 @@ object BuildingMeshGenerator {
         vertices += groundVertex(groundHalfWidth, groundHalfHeight)
         vertices += groundVertex(-groundHalfWidth, groundHalfHeight)
         indices += listOf(
-            groundStart, groundStart + 2, groundStart + 1,
-            groundStart, groundStart + 3, groundStart + 2
+            groundStart,
+            groundStart + 2,
+            groundStart + 1,
+            groundStart,
+            groundStart + 3,
+            groundStart + 2
         )
         return BuildingMesh(vertices, indices, radius, wallIndexOffset, groundIndexOffset)
     }
@@ -129,7 +136,12 @@ object BuildingMeshGenerator {
                 isConvex(points[previous], points[current], points[next]) &&
                     remaining.none { candidate ->
                         candidate != previous && candidate != current && candidate != next &&
-                            insideTriangle(points[candidate], points[previous], points[current], points[next])
+                            insideTriangle(
+                                points[candidate],
+                                points[previous],
+                                points[current],
+                                points[next]
+                            )
                     }
             } ?: break
             val previous = remaining[(ear - 1 + remaining.size) % remaining.size]
@@ -143,7 +155,8 @@ object BuildingMeshGenerator {
     }
 
     private fun isConvex(a: Pair<Float, Float>, b: Pair<Float, Float>, c: Pair<Float, Float>) =
-        (b.first - a.first) * (c.second - a.second) - (b.second - a.second) * (c.first - a.first) > 0f
+        (b.first - a.first) * (c.second - a.second) - (b.second - a.second) * (c.first - a.first) >
+            0f
 
     private fun insideTriangle(
         p: Pair<Float, Float>,

@@ -1,5 +1,3 @@
-@file:Suppress("MatchingDeclarationName")
-
 package com.example.shadowmap.scene
 
 import kotlin.math.PI

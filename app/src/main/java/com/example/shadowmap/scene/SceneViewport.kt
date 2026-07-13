@@ -15,7 +15,7 @@ data class SceneViewport(
     val screenDownZ: Float
 ) {
     companion object {
-        private const val EarthRadiusMeters = 6_378_137.0
+        private const val EARTH_RADIUS_METERS = 6_378_137.0
 
         fun fromScreenCoordinates(
             centerLongitude: Double,
@@ -27,7 +27,7 @@ data class SceneViewport(
             bottomLeftLongitude: Double,
             bottomLeftLatitude: Double
         ): SceneViewport {
-            val latitudeScale = EarthRadiusMeters * PI / 180.0
+            val latitudeScale = EARTH_RADIUS_METERS * PI / 180.0
             val longitudeScale = latitudeScale * cos(centerLatitude * PI / 180.0)
             val rightX = ((topRightLongitude - topLeftLongitude) * longitudeScale).toFloat()
             val rightZ = (-(topRightLatitude - topLeftLatitude) * latitudeScale).toFloat()
