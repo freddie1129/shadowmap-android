@@ -43,7 +43,7 @@ import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.presentation.BuildingLoadState
 import com.example.shadowmap.presentation.ShadowMapUiState
 import com.example.shadowmap.presentation.ShadowMapViewModel
-import com.example.shadowmap.presentation.components.DateTimeSlider
+import com.example.shadowmap.presentation.components.DateTimeSpinner
 import com.example.shadowmap.scene.FilamentBuildingView
 import com.example.shadowmap.scene.Scene3DAppearance
 import com.example.shadowmap.scene.SceneViewport
@@ -308,7 +308,7 @@ private fun ShadowMapScreen(
             modifier = Modifier.align(Alignment.TopCenter)
         )
 
-        DateTimeSlider(
+        DateTimeSpinner(
             selectedEpochMillis = uiState.selectedEpochMillis,
             timeZoneId = uiState.displayTimeZoneId,
             solarPosition = uiState.solarPosition,
