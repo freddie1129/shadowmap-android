@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,9 +16,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -68,15 +69,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         setContent {
             ShadowMapTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ShadowMapRoute(
-                        mapControllerFactory = mapControllerFactory,
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                ShadowMapRoute(
+                    mapControllerFactory = mapControllerFactory,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }
@@ -229,6 +231,10 @@ private fun ShadowMapScreen(
         MapboxMap(
             modifier = Modifier.fillMaxSize(),
             mapViewportState = mapViewportState,
+            compass = { Compass(modifier = Modifier.safeDrawingPadding()) },
+            scaleBar = { ScaleBar(modifier = Modifier.safeDrawingPadding()) },
+            logo = { Logo(modifier = Modifier.safeDrawingPadding()) },
+            attribution = { Attribution(modifier = Modifier.safeDrawingPadding()) },
             style = { MapboxStandardSatelliteStyle() }
         ) {
             MapEffect(Unit) { currentMapView -> mapView = currentMapView }
@@ -264,62 +270,68 @@ private fun ShadowMapScreen(
             )
         }
 
-        if (!show3d) {
-            BuildingLoadButton(
-                loadState = uiState.buildingLoadState,
-                onClick = load@{
-                    val currentMapView = mapView ?: return@load
-                    val mapCenter = currentMapView.mapboxMap.cameraState.center
-                    buildingQueryLocation = GeoPoint(
-                        longitude = mapCenter.longitude(),
-                        latitude = mapCenter.latitude()
-                    )
-                    onLoadStarted()
-                    currentMapView.snapshot { bitmap ->
-                        currentMapView.post {
-                            satelliteSnapshot = bitmap
-                            loadRequest++
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+        ) {
+            if (!show3d) {
+                BuildingLoadButton(
+                    loadState = uiState.buildingLoadState,
+                    onClick = load@{
+                        val currentMapView = mapView ?: return@load
+                        val mapCenter = currentMapView.mapboxMap.cameraState.center
+                        buildingQueryLocation = GeoPoint(
+                            longitude = mapCenter.longitude(),
+                            latitude = mapCenter.latitude()
+                        )
+                        onLoadStarted()
+                        currentMapView.snapshot { bitmap ->
+                            currentMapView.post {
+                                satelliteSnapshot = bitmap
+                                loadRequest++
+                            }
                         }
-                    }
-                },
-                modifier = Modifier.align(Alignment.TopEnd)
-            )
-        } else {
-            Button(
-                onClick = { showSatelliteIn3d = !showSatelliteIn3d },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = dimensions.screenPadding, end = dimensions.screenPadding)
-            ) {
-                Text(if (showSatelliteIn3d) "Hide satellite" else "Show satellite")
+                    },
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            } else {
+                Button(
+                    onClick = { showSatelliteIn3d = !showSatelliteIn3d },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = dimensions.screenPadding, end = dimensions.screenPadding)
+                ) {
+                    Text(if (showSatelliteIn3d) "Hide satellite" else "Show satellite")
+                }
             }
-        }
-        if (uiState.buildings.isNotEmpty()) {
-            Button(
-                onClick = {
-                    if (!show3d) {
-                        sceneViewport = mapView?.toSceneViewport()
-                    }
-                    show3d = !show3d
-                },
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = dimensions.screenPadding, start = dimensions.screenPadding)
-            ) { Text(if (show3d) "Map View" else "3D View") }
-        }
+            if (uiState.buildings.isNotEmpty()) {
+                Button(
+                    onClick = {
+                        if (!show3d) {
+                            sceneViewport = mapView?.toSceneViewport()
+                        }
+                        show3d = !show3d
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(top = dimensions.screenPadding, start = dimensions.screenPadding)
+                ) { Text(if (show3d) "Map View" else "3D View") }
+            }
 
-        BuildingLoadError(
-            loadState = uiState.buildingLoadState,
-            modifier = Modifier.align(Alignment.TopCenter)
-        )
+            BuildingLoadError(
+                loadState = uiState.buildingLoadState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
 
-        DateTimeSpinner(
-            selectedEpochMillis = uiState.selectedEpochMillis,
-            timeZoneId = uiState.displayTimeZoneId,
-            onDateTimeChanged = onDateTimeChanged,
-            onNowSelected = onNowSelected,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+            DateTimeSpinner(
+                selectedEpochMillis = uiState.selectedEpochMillis,
+                timeZoneId = uiState.displayTimeZoneId,
+                onDateTimeChanged = onDateTimeChanged,
+                onNowSelected = onNowSelected,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
 }
 
