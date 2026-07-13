@@ -43,6 +43,7 @@ fun FilamentBuildingView(
     viewport: SceneViewport?,
     azimuth: Float,
     zenith: Float,
+    sunVisible: Boolean,
     modifier: Modifier = Modifier
 ) {
     val renderer = remember { FilamentBuildingRenderer() }
@@ -51,7 +52,9 @@ fun FilamentBuildingView(
         modifier = modifier
     )
     LaunchedEffect(buildings, viewport) { renderer.setBuildings(buildings, viewport) }
-    LaunchedEffect(azimuth, zenith) { renderer.setSun(azimuth, zenith) }
+    LaunchedEffect(azimuth, zenith, sunVisible) {
+        renderer.setSun(azimuth, zenith, sunVisible)
+    }
     DisposableEffect(renderer) { onDispose(renderer::destroy) }
 }
 
@@ -138,7 +141,8 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
         scene.addEntity(fillLightEntity)
         setSun(
             Scene3DAppearance.DEFAULT_SUN_AZIMUTH_DEGREES,
-            Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES
+            Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES,
+            visible = true
         )
         choreographer.postFrameCallback(this)
     }
@@ -318,11 +322,15 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
         resetCamera()
     }
 
-    fun setSun(azimuth: Float, zenith: Float) {
+    fun setSun(azimuth: Float, zenith: Float, visible: Boolean) {
         if (destroyed) return
         val direction = sunLightDirection(azimuth, zenith)
         val instance = engine.lightManager.getInstance(sunEntity)
         engine.lightManager.setDirection(instance, direction.x, direction.y, direction.z)
+        engine.lightManager.setIntensity(
+            instance,
+            if (visible) Scene3DAppearance.SUN_INTENSITY else 0f
+        )
     }
 
     private fun createRoofMaterial(): Material = createMaterial(

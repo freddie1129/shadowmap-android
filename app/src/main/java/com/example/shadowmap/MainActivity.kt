@@ -11,16 +11,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -41,10 +38,12 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.presentation.BuildingLoadState
 import com.example.shadowmap.presentation.ShadowMapUiState
 import com.example.shadowmap.presentation.ShadowMapViewModel
+import com.example.shadowmap.presentation.components.DateTimeSlider
 import com.example.shadowmap.scene.FilamentBuildingView
 import com.example.shadowmap.scene.Scene3DAppearance
 import com.example.shadowmap.scene.SceneViewport
@@ -92,8 +91,8 @@ private fun ShadowMapRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ShadowMapScreen(
         uiState = uiState,
-        onAzimuthChanged = viewModel::onAzimuthChanged,
-        onZenithChanged = viewModel::onZenithChanged,
+        onDateTimeChanged = viewModel::onDateTimeChanged,
+        onNowSelected = viewModel::onNowSelected,
         onLoadStarted = viewModel::onBuildingLoadStarted,
         onBuildingsLoaded = viewModel::onBuildingsLoaded,
         onLoadFailed = viewModel::onBuildingLoadFailed,
@@ -106,10 +105,10 @@ private fun ShadowMapRoute(
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 private fun ShadowMapScreen(
     uiState: ShadowMapUiState,
-    onAzimuthChanged: (Float) -> Unit,
-    onZenithChanged: (Float) -> Unit,
+    onDateTimeChanged: (Long) -> Unit,
+    onNowSelected: () -> Unit,
     onLoadStarted: () -> Unit,
-    onBuildingsLoaded: (List<BuildingFootprint>) -> Unit,
+    onBuildingsLoaded: (List<BuildingFootprint>, GeoPoint) -> Unit,
     onLoadFailed: (Throwable) -> Unit,
     mapControllerFactory: MapboxShadowMapController.Factory,
     modifier: Modifier = Modifier
@@ -152,6 +151,7 @@ private fun ShadowMapScreen(
     }
     var satelliteSnapshot by remember { mutableStateOf<Bitmap?>(null) }
     var loadRequest by remember { mutableIntStateOf(0) }
+    var buildingQueryLocation by remember { mutableStateOf<GeoPoint?>(null) }
     var show3d by remember { mutableStateOf(false) }
     var showSatelliteIn3d by remember { mutableStateOf(true) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
@@ -192,12 +192,16 @@ private fun ShadowMapScreen(
 
     LaunchedEffect(loadRequest, controller) {
         if (loadRequest == 0 || controller == null) return@LaunchedEffect
+        val calculationLocation = buildingQueryLocation ?: return@LaunchedEffect
         withFrameNanos { }
         try {
             val result = runCatching { controller.fetchBuildings() }
             val failure = result.exceptionOrNull()
             if (failure is CancellationException) throw failure
-            result.fold(onSuccess = onBuildingsLoaded, onFailure = onLoadFailed)
+            result.fold(
+                onSuccess = { buildings -> onBuildingsLoaded(buildings, calculationLocation) },
+                onFailure = onLoadFailed
+            )
         } finally {
             satelliteSnapshot = null
         }
@@ -241,8 +245,11 @@ private fun ShadowMapScreen(
             FilamentBuildingView(
                 buildings = uiState.buildings,
                 viewport = sceneViewport,
-                azimuth = uiState.azimuth,
-                zenith = uiState.zenith,
+                azimuth = uiState.solarPosition?.azimuthDegrees?.toFloat()
+                    ?: Scene3DAppearance.DEFAULT_SUN_AZIMUTH_DEGREES,
+                zenith = uiState.solarPosition?.zenithDegrees?.toFloat()
+                    ?: Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES,
+                sunVisible = uiState.solarPosition?.isAboveHorizon == true,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -261,6 +268,11 @@ private fun ShadowMapScreen(
                 loadState = uiState.buildingLoadState,
                 onClick = load@{
                     val currentMapView = mapView ?: return@load
+                    val mapCenter = currentMapView.mapboxMap.cameraState.center
+                    buildingQueryLocation = GeoPoint(
+                        longitude = mapCenter.longitude(),
+                        latitude = mapCenter.latitude()
+                    )
                     onLoadStarted()
                     currentMapView.snapshot { bitmap ->
                         currentMapView.post {
@@ -296,10 +308,12 @@ private fun ShadowMapScreen(
             modifier = Modifier.align(Alignment.TopCenter)
         )
 
-        ShadowControls(
-            uiState = uiState,
-            onAzimuthChanged = onAzimuthChanged,
-            onZenithChanged = onZenithChanged,
+        DateTimeSlider(
+            selectedEpochMillis = uiState.selectedEpochMillis,
+            timeZoneId = uiState.displayTimeZoneId,
+            solarPosition = uiState.solarPosition,
+            onDateTimeChanged = onDateTimeChanged,
+            onNowSelected = onNowSelected,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
@@ -351,35 +365,6 @@ private fun BuildingLoadError(loadState: BuildingLoadState, modifier: Modifier =
             text = loadState.message,
             color = MaterialTheme.colorScheme.error,
             modifier = modifier.padding(24.dp)
-        )
-    }
-}
-
-@Composable
-private fun ShadowControls(
-    uiState: ShadowMapUiState,
-    onAzimuthChanged: (Float) -> Unit,
-    onZenithChanged: (Float) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(text = "Azimuth: ${uiState.azimuth.toInt()}°")
-        Slider(
-            value = uiState.azimuth,
-            valueRange = 0f..360f,
-            onValueChange = onAzimuthChanged
-        )
-        Text(text = "Zenith: ${uiState.zenith.toInt()}°")
-        Slider(
-            value = uiState.zenith,
-            valueRange = 0f..85f,
-            onValueChange = onZenithChanged
         )
     }
 }

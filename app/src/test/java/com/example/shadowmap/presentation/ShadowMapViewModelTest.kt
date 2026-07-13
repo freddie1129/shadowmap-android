@@ -5,6 +5,11 @@ import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.domain.BuildingShadowCalculator
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
+import com.example.shadowmap.domain.SolarPositionCalculator
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -33,22 +38,15 @@ class ShadowMapViewModelTest {
     }
 
     @Test
-    fun angleChanges_updateStateAndSavedState() {
+    fun dateTimeChanges_updateStateAndSavedState() {
         val savedState = SavedStateHandle()
-        val viewModel =
-            ShadowMapViewModel(
-                savedState,
-                BuildingShadowCalculator(),
-                dispatcher
-            )
+        val viewModel = createViewModel(savedState)
+        val selectedTime = Instant.parse("2026-12-21T01:15:00Z").toEpochMilli()
 
-        viewModel.onAzimuthChanged(240f)
-        viewModel.onZenithChanged(35f)
+        viewModel.onDateTimeChanged(selectedTime)
 
-        assertEquals(240f, viewModel.uiState.value.azimuth)
-        assertEquals(35f, viewModel.uiState.value.zenith)
-        assertEquals(240f, savedState.get<Float>("azimuth"))
-        assertEquals(35f, savedState.get<Float>("zenith"))
+        assertEquals(selectedTime, viewModel.uiState.value.selectedEpochMillis)
+        assertEquals(selectedTime, savedState.get<Long>("selected_time"))
     }
 
     @Test
@@ -68,7 +66,7 @@ class ShadowMapViewModelTest {
     fun loadedBuildings_generateShadows() = runTest(dispatcher) {
         val viewModel = createViewModel()
 
-        viewModel.onBuildingsLoaded(listOf(testBuilding()))
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
         advanceUntilIdle()
 
         assertEquals(BuildingLoadState.Loaded, viewModel.uiState.value.buildingLoadState)
@@ -76,6 +74,20 @@ class ShadowMapViewModelTest {
             viewModel.uiState.value.shadows
                 .isNotEmpty()
         )
+    }
+
+    @Test
+    fun nighttimeSelection_removesDirectShadows() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.shadows.isNotEmpty())
+
+        viewModel.onDateTimeChanged(Instant.parse("2026-07-13T14:00:00Z").toEpochMilli())
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.solarPosition?.isAboveHorizon == false)
+        assertTrue(viewModel.uiState.value.shadows.isEmpty())
     }
 
     private fun testBuilding(): BuildingFootprint {
@@ -95,9 +107,18 @@ class ShadowMapViewModelTest {
         )
     }
 
-    private fun createViewModel() = ShadowMapViewModel(
-        SavedStateHandle(),
-        BuildingShadowCalculator(),
-        dispatcher
-    )
+    private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()) =
+        ShadowMapViewModel(
+            savedStateHandle = savedStateHandle,
+            shadowCalculator = BuildingShadowCalculator(),
+            solarPositionCalculator = SolarPositionCalculator(),
+            clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
+            systemZoneId = ZoneId.of("Australia/Brisbane"),
+            computationDispatcher = dispatcher
+        )
+
+    private companion object {
+        val DEFAULT_TIME: Instant = Instant.parse("2026-07-14T02:00:00Z")
+        val TEST_LOCATION = GeoPoint(153.0251, -27.4698)
+    }
 }
