@@ -1,7 +1,11 @@
 package com.example.shadowmap
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -33,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.shadowmap.domain.BuildingFootprint
@@ -50,6 +55,8 @@ import com.mapbox.maps.extension.compose.MapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
+import com.mapbox.maps.plugin.locationcomponent.location
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -106,6 +113,32 @@ private fun ShadowMapScreen(
     mapControllerFactory: MapboxShadowMapController.Factory,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasLocationPermission = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+    }
+    LaunchedEffect(Unit) {
+        if (!hasLocationPermission) {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
     val mapViewportState = rememberMapViewportState {
         setCameraOptions {
             center(Point.fromLngLat(153.4038943, -28.0870458))
@@ -121,6 +154,33 @@ private fun ShadowMapScreen(
     var show3d by remember { mutableStateOf(false) }
     var showSatelliteIn3d by remember { mutableStateOf(true) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
+
+    DisposableEffect(mapView, hasLocationPermission) {
+        val currentMapView = mapView
+        if (currentMapView == null || !hasLocationPermission) {
+            onDispose { }
+        } else {
+            val locationComponent = currentMapView.location
+            var firstLocationReceived = false
+            val positionListener = OnIndicatorPositionChangedListener { point ->
+                if (!firstLocationReceived) {
+                    firstLocationReceived = true
+                    mapViewportState.setCameraOptions {
+                        center(point)
+                        zoom(17.0)
+                    }
+                }
+            }
+            locationComponent.updateSettings {
+                enabled = true
+                pulsingEnabled = true
+            }
+            locationComponent.addOnIndicatorPositionChangedListener(positionListener)
+            onDispose {
+                locationComponent.removeOnIndicatorPositionChangedListener(positionListener)
+            }
+        }
+    }
 
     DisposableEffect(satelliteSnapshot) {
         val snapshot = satelliteSnapshot
