@@ -6,13 +6,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -79,71 +86,124 @@ fun ActiveDrawingControls(
     onUndo: () -> Unit,
     onDone: () -> Unit,
     onCancel: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    error: String? = null
 ) {
-    val canFinish = when (mode) {
-        DrawMode.BUILDING -> vertexCount >= 3
-        DrawMode.WALL -> vertexCount >= 2
-        DrawMode.TREE -> false
-    }
-    val addText = when (mode) {
-        DrawMode.BUILDING -> "Add corner"
-        DrawMode.WALL -> "Add end"
-        DrawMode.TREE -> "Add tree"
-    }
-    val hint = when (mode) {
-        DrawMode.BUILDING -> "Move the map under the crosshair, then add each building corner."
-        DrawMode.WALL -> "Move the map under the crosshair, then add each wall point."
-        DrawMode.TREE -> "Move the map under the crosshair, then add the tree."
-    }
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    val config = mode.toDrawingPanelConfig(vertexCount)
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .widthIn(max = 560.dp),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 10.dp
     ) {
-        Text(
-            text = hint,
-            color = Color.White,
-            modifier = Modifier
-                .background(Color.Black.copy(alpha = 0.72f), RoundedCornerShape(12.dp))
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-        )
-        Row(
-            modifier = Modifier
-                .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(24.dp))
-                .padding(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Button(
-                onClick = onCancel,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF45484D),
-                    contentColor = Color.White
+            DrawingPanelHeader(config.title, config.canUndo, onCancel, onUndo)
+            Text(text = config.hint, style = MaterialTheme.typography.bodyMedium)
+            if (config.progress != null) {
+                Text(
+                    text = config.progress,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge
                 )
-            ) {
-                Text("Cancel")
             }
-            if (vertexCount > 0 && mode != DrawMode.TREE) {
-                Button(
-                    onClick = onUndo,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE1E3E6),
-                        contentColor = Color(0xFF242629)
-                    )
-                ) {
-                    Text("Undo")
-                }
+            if (error != null) {
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
-            Button(onClick = onAdd) { Text(addText) }
-            if (canFinish) {
-                Button(onClick = onDone) {
-                    Text("Finish")
-                }
+            DrawingPanelActions(config, onAdd, onDone)
+        }
+    }
+}
+
+@Composable
+private fun DrawingPanelHeader(
+    title: String,
+    canUndo: Boolean?,
+    onCancel: () -> Unit,
+    onUndo: () -> Unit
+) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onCancel) {
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Cancel drawing")
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.weight(1f)
+        )
+        if (canUndo != null) {
+            IconButton(onClick = onUndo, enabled = canUndo) {
+                Icon(Icons.AutoMirrored.Outlined.Undo, contentDescription = "Undo last point")
             }
         }
     }
 }
+
+@Composable
+private fun DrawingPanelActions(
+    config: DrawingPanelConfig,
+    onAdd: () -> Unit,
+    onDone: () -> Unit
+) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = onAdd, modifier = Modifier.weight(1f)) {
+            Text(config.addText)
+        }
+        if (config.canFinish != null) {
+            OutlinedButton(
+                onClick = onDone,
+                enabled = config.canFinish,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Finish")
+            }
+        }
+    }
+}
+
+private fun DrawMode.toDrawingPanelConfig(vertexCount: Int): DrawingPanelConfig = when (this) {
+    DrawMode.BUILDING -> DrawingPanelConfig(
+        title = "Draw building",
+        hint = "Move the map under the crosshair, then add each building corner.",
+        addText = "Add corner",
+        progress = "$vertexCount ${if (vertexCount == 1) "corner" else "corners"}",
+        canUndo = vertexCount > 0,
+        canFinish = vertexCount >= 3
+    )
+    DrawMode.WALL -> DrawingPanelConfig(
+        title = "Draw wall",
+        hint = "Move the map under the crosshair, then add each wall point.",
+        addText = "Add point",
+        progress = "$vertexCount ${if (vertexCount == 1) "point" else "points"}",
+        canUndo = vertexCount > 0,
+        canFinish = vertexCount >= 2
+    )
+    DrawMode.TREE -> DrawingPanelConfig(
+        title = "Place tree",
+        hint = "Move the map under the crosshair, then add the tree.",
+        addText = "Place tree",
+        progress = null,
+        canUndo = null,
+        canFinish = null
+    )
+}
+
+private data class DrawingPanelConfig(
+    val title: String,
+    val hint: String,
+    val addText: String,
+    val progress: String?,
+    val canUndo: Boolean?,
+    val canFinish: Boolean?
+)
 
 @Preview(
     name = "Drawing crosshair",
@@ -198,6 +258,7 @@ private fun ActiveDrawingControlsPreview() {
             onUndo = {},
             onDone = {},
             onCancel = {},
+            error = null,
             modifier = Modifier.padding(12.dp)
         )
     }

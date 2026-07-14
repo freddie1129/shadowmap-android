@@ -116,6 +116,55 @@ class ShadowMapViewModelTest {
     }
 
     @Test
+    fun drawingBeforeAutomaticLoad_createsRenderableScene() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.onMapCenterChanged(TEST_LOCATION)
+        viewModel.selectDrawMode(DrawMode.BUILDING)
+        buildingVertices().forEach(viewModel::addVertex)
+
+        assertTrue(viewModel.finishBuilding())
+        viewModel.commitPendingDrawing(heightMeters = 7.5)
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.buildings.size)
+        assertEquals(null, viewModel.uiState.value.activeDrawMode)
+        assertTrue(viewModel.uiState.value.shadows.isNotEmpty())
+    }
+
+    @Test
+    fun automaticLoadAfterDrawing_mergesWithoutRemovingManualObjects() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.onMapCenterChanged(TEST_LOCATION)
+        viewModel.selectDrawMode(DrawMode.BUILDING)
+        buildingVertices().forEach(viewModel::addVertex)
+        viewModel.finishBuilding()
+        viewModel.commitPendingDrawing(heightMeters = 6.0)
+
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.drawnBuildings.size)
+        assertEquals(1, viewModel.uiState.value.loadedBuildings.size)
+        assertEquals(2, viewModel.uiState.value.buildings.size)
+    }
+
+    @Test
+    fun repeatedAutomaticLoads_mergeAndDeduplicateBySourceId() {
+        val viewModel = createViewModel()
+
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        viewModel.onBuildingsLoaded(
+            listOf(
+                testBuilding(),
+                testBuilding().copy(id = "second-building")
+            ),
+            TEST_LOCATION
+        )
+
+        assertEquals(2, viewModel.uiState.value.loadedBuildings.size)
+    }
+
+    @Test
     fun switchingTools_requiresDraftDiscardConfirmation() {
         val viewModel = createViewModel()
         viewModel.selectDrawMode(DrawMode.BUILDING)
@@ -144,6 +193,21 @@ class ShadowMapViewModelTest {
         assertEquals(1, viewModel.uiState.value.loadedBuildings.size)
         assertEquals(1, viewModel.uiState.value.buildings.size)
         assertTrue(!viewModel.uiState.value.hasDrawings)
+    }
+
+    @Test
+    fun clearScene_removesAutomaticAndManualObjects() {
+        val viewModel = createViewModel()
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        viewModel.selectDrawMode(DrawMode.TREE)
+        viewModel.startTree(TEST_LOCATION)
+        viewModel.commitPendingDrawing(heightMeters = 8.0, radiusMeters = 2.5)
+
+        viewModel.clearScene()
+
+        assertTrue(viewModel.uiState.value.buildings.isEmpty())
+        assertTrue(viewModel.uiState.value.drawnTrees.isEmpty())
+        assertEquals(BuildingLoadState.Idle, viewModel.uiState.value.buildingLoadState)
     }
 
     private fun testBuilding(): BuildingFootprint {

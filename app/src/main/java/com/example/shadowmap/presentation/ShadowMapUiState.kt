@@ -10,6 +10,7 @@ import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.SolarPosition
+import com.example.shadowmap.domain.SceneBuildingMerger
 
 data class ShadowMapUiState(
     val selectedEpochMillis: Long,
@@ -17,6 +18,7 @@ data class ShadowMapUiState(
     val calculationLocation: GeoPoint? = null,
     val solarPosition: SolarPosition? = null,
     val loadedBuildings: List<BuildingFootprint> = emptyList(),
+    val automaticBuildingKeysCoveredByManual: Set<String> = emptySet(),
     val drawnBuildings: List<DrawnBuilding> = emptyList(),
     val drawnWalls: List<DrawnWall> = emptyList(),
     val drawnTrees: List<DrawnTree> = emptyList(),
@@ -28,8 +30,13 @@ data class ShadowMapUiState(
     val shadows: List<GeoPolygon> = emptyList(),
     val buildingLoadState: BuildingLoadState = BuildingLoadState.Idle
 ) {
+    val visibleLoadedBuildings: List<BuildingFootprint>
+        get() = loadedBuildings.filterNot { building ->
+            SceneBuildingMerger.automaticKey(building) in automaticBuildingKeysCoveredByManual
+        }
+
     val buildings: List<BuildingFootprint>
-        get() = loadedBuildings + drawnBuildings.map { building ->
+        get() = visibleLoadedBuildings + drawnBuildings.map { building ->
             BuildingFootprint(
                 id = building.id,
                 polygon = building.polygon,
@@ -40,6 +47,9 @@ data class ShadowMapUiState(
 
     val hasDrawings: Boolean
         get() = drawnBuildings.isNotEmpty() || drawnWalls.isNotEmpty() || drawnTrees.isNotEmpty()
+
+    val hasSceneObjects: Boolean
+        get() = loadedBuildings.isNotEmpty() || hasDrawings
 
     val hasDraft: Boolean
         get() = inProgressVertices.isNotEmpty() || pendingDrawing != null

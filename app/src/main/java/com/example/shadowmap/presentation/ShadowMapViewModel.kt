@@ -16,6 +16,7 @@ import com.example.shadowmap.domain.DrawingGeometryValidator
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.SolarPositionCalculator
+import com.example.shadowmap.domain.SceneBuildingMerger
 import com.example.shadowmap.domain.UserObjectShadowCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
@@ -76,16 +77,27 @@ constructor(
         _uiState.value = _uiState.value.copy(buildingLoadState = BuildingLoadState.Loading)
     }
 
+    fun onMapCenterChanged(location: GeoPoint) {
+        val previous = _uiState.value.calculationLocation
+        if (previous == location) return
+        savedStateHandle[LOCATION_LATITUDE_KEY] = location.latitude
+        savedStateHandle[LOCATION_LONGITUDE_KEY] = location.longitude
+        _uiState.value = _uiState.value.copy(calculationLocation = location)
+        recalculateSunAndShadows()
+    }
+
     fun onBuildingsLoaded(buildings: List<BuildingFootprint>, location: GeoPoint) {
         savedStateHandle[LOCATION_LATITUDE_KEY] = location.latitude
         savedStateHandle[LOCATION_LONGITUDE_KEY] = location.longitude
+        val mergedBuildings = (_uiState.value.loadedBuildings + buildings)
+            .distinctBy(SceneBuildingMerger::automaticKey)
         _uiState.value =
             _uiState.value.copy(
                 calculationLocation = location,
-                loadedBuildings = buildings,
+                loadedBuildings = mergedBuildings,
                 shadows = emptyList(),
                 buildingLoadState = BuildingLoadState.Loaded
-            )
+            ).withRefreshedAutomaticOverlapSuppression()
         recalculateSunAndShadows()
     }
 
@@ -203,6 +215,7 @@ constructor(
                     polygon = DrawingGeometryValidator.closedPolygon(pending.vertices),
                     heightMeters = heightMeters
                 ),
+                activeDrawMode = null,
                 pendingDrawing = null
             )
             is PendingDrawing.Wall -> state.copy(
@@ -210,6 +223,7 @@ constructor(
                     points = pending.points,
                     heightMeters = heightMeters
                 ),
+                activeDrawMode = null,
                 pendingDrawing = null
             )
             is PendingDrawing.Tree -> state.copy(
@@ -218,9 +232,10 @@ constructor(
                     heightMeters = heightMeters,
                     radiusMeters = radiusMeters ?: return
                 ),
+                activeDrawMode = null,
                 pendingDrawing = null
             )
-        }
+        }.withRefreshedAutomaticOverlapSuppression()
         recalculateSunAndShadows()
     }
 
@@ -266,7 +281,7 @@ constructor(
             drawnWalls = state.drawnWalls.filterNot { it.id == selection.id },
             drawnTrees = state.drawnTrees.filterNot { it.id == selection.id },
             selectedDrawing = null
-        )
+        ).withRefreshedAutomaticOverlapSuppression()
         recalculateSunAndShadows()
     }
 
@@ -275,11 +290,30 @@ constructor(
             drawnBuildings = emptyList(),
             drawnWalls = emptyList(),
             drawnTrees = emptyList(),
+            automaticBuildingKeysCoveredByManual = emptySet(),
             activeDrawMode = null,
             inProgressVertices = emptyList(),
             pendingDrawing = null,
             selectedDrawing = null,
             drawingError = null
+        )
+        recalculateSunAndShadows()
+    }
+
+    fun clearScene() {
+        _uiState.value = _uiState.value.copy(
+            loadedBuildings = emptyList(),
+            automaticBuildingKeysCoveredByManual = emptySet(),
+            drawnBuildings = emptyList(),
+            drawnWalls = emptyList(),
+            drawnTrees = emptyList(),
+            activeDrawMode = null,
+            inProgressVertices = emptyList(),
+            pendingDrawing = null,
+            selectedDrawing = null,
+            drawingError = null,
+            shadows = emptyList(),
+            buildingLoadState = BuildingLoadState.Idle
         )
         recalculateSunAndShadows()
     }
@@ -346,6 +380,14 @@ constructor(
 
     private fun Long.roundToTimeStep(): Long =
         ((this + TIME_STEP_MILLIS / 2) / TIME_STEP_MILLIS) * TIME_STEP_MILLIS
+
+    private fun ShadowMapUiState.withRefreshedAutomaticOverlapSuppression(): ShadowMapUiState = copy(
+        automaticBuildingKeysCoveredByManual =
+            SceneBuildingMerger.automaticKeysCoveredByManualBuildings(
+                automaticBuildings = loadedBuildings,
+                manualBuildings = drawnBuildings
+            )
+    )
 
     companion object {
         private const val SELECTED_TIME_KEY = "selected_time"

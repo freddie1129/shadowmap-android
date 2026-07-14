@@ -6,23 +6,27 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -38,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.core.content.ContextCompat
@@ -54,16 +58,16 @@ import com.example.shadowmap.domain.DrawnObjectType
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.map.BuildingLoadArea
-import com.example.shadowmap.map.MAX_BUILDING_LOAD_DIMENSION_METERS
 import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.presentation.BuildingLoadState
 import com.example.shadowmap.presentation.ShadowMapUiState
 import com.example.shadowmap.presentation.ShadowMapViewModel
 import com.example.shadowmap.presentation.components.DateTimeSpinner
 import com.example.shadowmap.presentation.components.ActiveDrawingControls
+import com.example.shadowmap.presentation.components.AutoToolState
 import com.example.shadowmap.presentation.components.DrawingCrosshair
 import com.example.shadowmap.presentation.components.DrawingPropertiesSheet
-import com.example.shadowmap.presentation.components.DrawingToolChooser
+import com.example.shadowmap.presentation.components.MapToolBar
 import com.example.shadowmap.scene.FilamentBuildingView
 import com.example.shadowmap.scene.Scene3DAppearance
 import com.example.shadowmap.scene.SceneViewport
@@ -80,7 +84,10 @@ import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListen
 import com.mapbox.maps.plugin.locationcomponent.location
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.math.ln
+import kotlin.math.max
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -118,8 +125,8 @@ private fun ShadowMapRoute(
         onLoadStarted = viewModel::onBuildingLoadStarted,
         onBuildingsLoaded = viewModel::onBuildingsLoaded,
         onLoadFailed = viewModel::onBuildingLoadFailed,
+        onMapCenterChanged = viewModel::onMapCenterChanged,
         onSelectDrawMode = viewModel::selectDrawMode,
-        onDiscardDraftAndSelectMode = viewModel::discardDraftAndSelectDrawMode,
         onStopDrawing = viewModel::stopDrawing,
         onAddVertex = viewModel::addVertex,
         onUndo = viewModel::undoLastVertex,
@@ -132,7 +139,7 @@ private fun ShadowMapRoute(
         onUpdateSelectedDrawing = viewModel::updateSelectedDrawing,
         onDeleteSelectedDrawing = viewModel::deleteSelectedDrawing,
         onSelectDrawing = viewModel::selectDrawing,
-        onClearDrawings = viewModel::clearDrawings,
+        onClearScene = viewModel::clearScene,
         mapControllerFactory = mapControllerFactory,
         modifier = modifier
     )
@@ -147,8 +154,8 @@ private fun ShadowMapScreen(
     onLoadStarted: () -> Unit,
     onBuildingsLoaded: (List<BuildingFootprint>, GeoPoint) -> Unit,
     onLoadFailed: (Throwable) -> Unit,
+    onMapCenterChanged: (GeoPoint) -> Unit,
     onSelectDrawMode: (DrawMode) -> Boolean,
-    onDiscardDraftAndSelectMode: (DrawMode) -> Unit,
     onStopDrawing: () -> Unit,
     onAddVertex: (GeoPoint) -> Unit,
     onUndo: () -> Unit,
@@ -161,7 +168,7 @@ private fun ShadowMapScreen(
     onUpdateSelectedDrawing: (Double, Double?) -> Unit,
     onDeleteSelectedDrawing: () -> Unit,
     onSelectDrawing: (com.example.shadowmap.domain.DrawnObjectSelection?) -> Unit,
-    onClearDrawings: () -> Unit,
+    onClearScene: () -> Unit,
     mapControllerFactory: MapboxShadowMapController.Factory,
     modifier: Modifier = Modifier
 ) {
@@ -211,11 +218,13 @@ private fun ShadowMapScreen(
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
     var buildingLoadArea by remember { mutableStateOf<BuildingLoadArea?>(null) }
     var crosshairPoint by remember { mutableStateOf<GeoPoint?>(null) }
-    var showToolChooser by remember { mutableStateOf(false) }
-    var pendingModeSwitch by remember { mutableStateOf<DrawMode?>(null) }
+    var showDateTime by remember { mutableStateOf(false) }
+    var autoLoadAfterZoom by remember { mutableStateOf(false) }
     var showClearConfirmation by remember { mutableStateOf(false) }
-    var showReloadConfirmation by remember { mutableStateOf(false) }
+    var showDiscardDraftConfirmation by remember { mutableStateOf(false) }
     var showDraft3dConfirmation by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     DisposableEffect(mapView) {
         val currentMapView = mapView
@@ -226,6 +235,8 @@ private fun ShadowMapScreen(
             fun updateBuildingLoadArea() {
                 currentMapView.post {
                     buildingLoadArea = currentMapView.toBuildingLoadArea()
+                    val center = currentMapView.mapboxMap.cameraState.center
+                    onMapCenterChanged(GeoPoint(center.longitude(), center.latitude()))
                 }
             }
 
@@ -291,18 +302,34 @@ private fun ShadowMapScreen(
             val failure = result.exceptionOrNull()
             if (failure is CancellationException) throw failure
             result.fold(
-                onSuccess = { buildings -> onBuildingsLoaded(buildings, calculationLocation) },
-                onFailure = onLoadFailed
+                onSuccess = { buildings ->
+                    onBuildingsLoaded(buildings, calculationLocation)
+                    snackbarHostState.showSnackbar(
+                        message = if (buildings.isEmpty()) {
+                            "No buildings found in this area"
+                        } else {
+                            "${buildings.size} buildings loaded"
+                        },
+                        duration = SnackbarDuration.Short
+                    )
+                },
+                onFailure = { throwable ->
+                    onLoadFailed(throwable)
+                    snackbarHostState.showSnackbar(
+                        message = throwable.message ?: "Unable to load buildings",
+                        duration = SnackbarDuration.Short
+                    )
+                }
             )
         } finally {
             satelliteSnapshot = null
         }
     }
 
-    LaunchedEffect(controller, uiState, crosshairPoint) {
-        if (controller != null && uiState.buildingLoadState is BuildingLoadState.Loaded) {
+    LaunchedEffect(controller, uiState, crosshairPoint, buildingLoadArea) {
+        if (controller != null) {
             controller.render(
-                loadedBuildings = uiState.loadedBuildings,
+                loadedBuildings = uiState.visibleLoadedBuildings,
                 drawnBuildings = uiState.drawnBuildings,
                 drawnWalls = uiState.drawnWalls,
                 drawnTrees = uiState.drawnTrees,
@@ -346,9 +373,82 @@ private fun ShadowMapScreen(
         }
     }
 
+    fun zoomToValidAreaAndLoad() {
+        val currentMapView = mapView ?: return
+        val area = buildingLoadArea ?: return
+        val largestDimension = max(area.widthMeters, area.heightMeters).toDouble()
+        val zoomIncrease = if (largestDimension > MAX_AUTO_LOAD_METERS) {
+            ln(largestDimension / MAX_AUTO_LOAD_METERS) / ln(2.0) + AUTO_LOAD_ZOOM_PADDING
+        } else {
+            0.0
+        }
+        mapViewportState.setCameraOptions {
+            center(currentMapView.mapboxMap.cameraState.center)
+            zoom(currentMapView.mapboxMap.cameraState.zoom + zoomIncrease)
+        }
+        autoLoadAfterZoom = true
+    }
+
+    LaunchedEffect(autoLoadAfterZoom, buildingLoadArea) {
+        if (autoLoadAfterZoom && buildingLoadArea?.isWithinLimit == true) {
+            autoLoadAfterZoom = false
+            startBuildingLoad()
+        }
+    }
+
     fun enter3d() {
         sceneViewport = mapView?.toSceneViewport()
         show3d = true
+    }
+
+    val pendingType = when (uiState.pendingDrawing) {
+        is PendingDrawing.Building -> DrawnObjectType.BUILDING
+        is PendingDrawing.Wall -> DrawnObjectType.WALL
+        is PendingDrawing.Tree -> DrawnObjectType.TREE
+        null -> null
+    }
+    val selectedType = uiState.selectedDrawing?.type
+    val propertyType = pendingType ?: selectedType
+    val selectionId = uiState.selectedDrawing?.id
+    val selectedBuilding = uiState.drawnBuildings.find { it.id == selectionId }
+    val selectedWall = uiState.drawnWalls.find { it.id == selectionId }
+    val selectedTree = uiState.drawnTrees.find { it.id == selectionId }
+    val propertyInitialHeight = propertyType?.let { type ->
+        selectedBuilding?.heightMeters
+            ?: selectedWall?.heightMeters
+            ?: selectedTree?.heightMeters
+            ?: when (type) {
+                DrawnObjectType.BUILDING -> DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
+                DrawnObjectType.WALL -> DEFAULT_DRAWN_WALL_HEIGHT_METERS
+                DrawnObjectType.TREE -> DEFAULT_DRAWN_TREE_HEIGHT_METERS
+            }
+    }
+    val autoToolState = when {
+        uiState.buildingLoadState is BuildingLoadState.Loading -> AutoToolState.LOADING
+        buildingLoadArea == null -> AutoToolState.CHECKING
+        buildingLoadArea?.isWithinLimit == false -> AutoToolState.TOO_LARGE
+        uiState.buildingLoadState is BuildingLoadState.Error -> AutoToolState.ERROR
+        uiState.buildingLoadState is BuildingLoadState.Loaded -> AutoToolState.LOADED
+        else -> AutoToolState.READY
+    }
+
+    fun requestDrawingExit() {
+        if (uiState.hasDraft) {
+            showDiscardDraftConfirmation = true
+        } else {
+            onStopDrawing()
+        }
+    }
+
+    BackHandler(
+        enabled = !show3d &&
+            (uiState.activeDrawMode != null || uiState.pendingDrawing != null || selectedType != null)
+    ) {
+        when {
+            pendingType != null -> onReturnPendingToDrawing()
+            selectedType != null -> onSelectDrawing(null)
+            else -> requestDrawingExit()
+        }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -370,7 +470,7 @@ private fun ShadowMapScreen(
             MapEffect(Unit) { currentMapView -> mapView = currentMapView }
         }
 
-        if (!show3d && uiState.activeDrawMode != null) {
+        if (!show3d && uiState.activeDrawMode != null && uiState.pendingDrawing == null) {
             DrawingCrosshair(modifier = Modifier.align(Alignment.Center))
         }
 
@@ -411,20 +511,7 @@ private fun ShadowMapScreen(
                 .fillMaxSize()
                 .safeDrawingPadding()
         ) {
-            if (!show3d) {
-                BuildingLoadButton(
-                    loadState = uiState.buildingLoadState,
-                    loadArea = buildingLoadArea,
-                    onClick = {
-                        if (uiState.hasDrawings || uiState.hasDraft) {
-                            showReloadConfirmation = true
-                        } else {
-                            startBuildingLoad()
-                        }
-                    },
-                    modifier = Modifier.align(Alignment.TopEnd)
-                )
-            } else {
+            if (show3d) {
                 Button(
                     onClick = { showSatelliteIn3d = !showSatelliteIn3d },
                     modifier = Modifier
@@ -451,113 +538,139 @@ private fun ShadowMapScreen(
                 ) { Text(if (show3d) "Map View" else "3D View") }
             }
 
-            BuildingLoadError(
-                loadState = uiState.buildingLoadState,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
-
-            DateTimeSpinner(
-                selectedEpochMillis = uiState.selectedEpochMillis,
-                timeZoneId = uiState.displayTimeZoneId,
-                onDateTimeChanged = onDateTimeChanged,
-                onNowSelected = onNowSelected,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
-
-            if (!show3d && uiState.buildingLoadState is BuildingLoadState.Loaded) {
-                val mode = uiState.activeDrawMode
-                if (mode == null) {
-                    DrawingToolChooser(
-                        expanded = showToolChooser,
-                        onExpand = { showToolChooser = true },
-                        onSelect = { selectedMode ->
-                            if (!onSelectDrawMode(selectedMode)) {
-                                pendingModeSwitch = selectedMode
-                            }
-                            showToolChooser = false
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(start = dimensions.screenPadding, bottom = 132.dp)
-                    )
-                    if (uiState.hasDrawings) {
-                        OutlinedButton(
-                            onClick = { showClearConfirmation = true },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(end = dimensions.screenPadding, bottom = 132.dp)
-                        ) { Text("Clear drawings") }
-                    }
-                } else {
-                    ActiveDrawingControls(
-                        mode = mode,
-                        vertexCount = uiState.inProgressVertices.size,
-                        onAdd = {
-                            val point = crosshairPoint ?: return@ActiveDrawingControls
-                            if (mode == DrawMode.TREE) {
-                                onStartTree(point)
+            val mode = uiState.activeDrawMode
+            if (!show3d && mode == null && propertyType == null) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+                ) {
+                    MapToolBar(
+                        autoState = autoToolState,
+                        hasSceneObjects = uiState.hasSceneObjects,
+                        isTimeVisible = showDateTime,
+                        onDrawMode = { selectedMode -> onSelectDrawMode(selectedMode) },
+                        onAutoLoad = {
+                            if (buildingLoadArea?.isWithinLimit == true) {
+                                startBuildingLoad()
                             } else {
-                                val last = uiState.inProgressVertices.lastOrNull()
-                                val threshold = with(density) { MIN_POINT_SPACING_DP.dp.toPx() }
-                                if (last == null || mapView?.isFarEnoughFrom(last, point, threshold) != false) {
-                                    onAddVertex(point)
-                                } else {
-                                    onDrawingError("Move farther from the previous point")
+                                coroutineScope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    val area = buildingLoadArea
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = if (area == null) {
+                                            "Checking the visible map area"
+                                        } else {
+                                            "Zoom in to load buildings · ${area.formattedDimensions}"
+                                        },
+                                        actionLabel = if (area == null) null else "Zoom & load",
+                                        duration = if (area == null) {
+                                            SnackbarDuration.Short
+                                        } else {
+                                            SnackbarDuration.Long
+                                        }
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        zoomToValidAreaAndLoad()
+                                    }
                                 }
                             }
                         },
-                        onUndo = onUndo,
-                        onDone = {
-                            if (mode == DrawMode.BUILDING) onFinishBuilding() else onFinishWall()
-                        },
-                        onCancel = onStopDrawing,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 132.dp)
+                        onClear = { showClearConfirmation = true },
+                        onToggleTime = { showDateTime = !showDateTime },
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
+                    AnimatedVisibility(visible = showDateTime) {
+                        DateTimeSpinner(
+                            selectedEpochMillis = uiState.selectedEpochMillis,
+                            timeZoneId = uiState.displayTimeZoneId,
+                            onDateTimeChanged = onDateTimeChanged,
+                            onNowSelected = onNowSelected
+                        )
+                    }
                 }
             }
 
-            uiState.drawingError?.let { error ->
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
-                        .padding(12.dp)
+            if (!show3d && mode != null && pendingType == null) {
+                ActiveDrawingControls(
+                    mode = mode,
+                    vertexCount = uiState.inProgressVertices.size,
+                    onAdd = {
+                        val point = crosshairPoint ?: return@ActiveDrawingControls
+                        if (mode == DrawMode.TREE) {
+                            onStartTree(point)
+                        } else {
+                            val last = uiState.inProgressVertices.lastOrNull()
+                            val threshold = with(density) { MIN_POINT_SPACING_DP.dp.toPx() }
+                            if (last == null || mapView?.isFarEnoughFrom(last, point, threshold) != false) {
+                                onAddVertex(point)
+                            } else {
+                                onDrawingError("Move farther from the previous point")
+                            }
+                        }
+                    },
+                    onUndo = onUndo,
+                    onDone = {
+                        if (mode == DrawMode.BUILDING) onFinishBuilding() else onFinishWall()
+                    },
+                    onCancel = ::requestDrawingExit,
+                    error = uiState.drawingError,
+                    modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
-        }
-    }
 
-    pendingModeSwitch?.let { mode ->
-        AlertDialog(
-            onDismissRequest = { pendingModeSwitch = null },
-            title = { Text("Discard drawing?") },
-            text = { Text("Switching tools will discard the current unfinished drawing.") },
-            confirmButton = {
-                Button(onClick = {
-                    onDiscardDraftAndSelectMode(mode)
-                    pendingModeSwitch = null
-                }) { Text("Discard and switch") }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { pendingModeSwitch = null }) { Text("Keep drawing") }
+            if (!show3d && propertyType != null && propertyInitialHeight != null) {
+                DrawingPropertiesSheet(
+                    type = propertyType,
+                    initialHeightMeters = propertyInitialHeight,
+                    initialRadiusMeters = selectedTree?.radiusMeters
+                        ?: if (propertyType == DrawnObjectType.TREE) {
+                            DEFAULT_DRAWN_TREE_RADIUS_METERS
+                        } else {
+                            null
+                        },
+                    isCreating = pendingType != null,
+                    onBack = {
+                        if (pendingType != null) onReturnPendingToDrawing() else onSelectDrawing(null)
+                    },
+                    onApply = { height, radius ->
+                        if (pendingType != null) {
+                            onCommitPendingDrawing(height, radius)
+                        } else {
+                            onUpdateSelectedDrawing(height, radius)
+                        }
+                    },
+                    onDelete = onDeleteSelectedDrawing,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
-        )
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = if (showDateTime) 156.dp else 64.dp)
+            )
+        }
     }
 
     if (showClearConfirmation) {
         AlertDialog(
             onDismissRequest = { showClearConfirmation = false },
-            title = { Text("Clear all drawings?") },
-            text = { Text("Loaded buildings will remain on the map.") },
+            title = { Text("Clear scene?") },
+            text = {
+                Text(
+                    "Remove ${uiState.loadedBuildings.size} automatic buildings, " +
+                        "${uiState.drawnBuildings.size} manual buildings, " +
+                        "${uiState.drawnWalls.size} walls, and ${uiState.drawnTrees.size} trees?"
+                )
+            },
             confirmButton = {
                 Button(onClick = {
-                    onClearDrawings()
+                    onClearScene()
                     showClearConfirmation = false
-                }) { Text("Clear") }
+                }) { Text("Clear all") }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showClearConfirmation = false }) { Text("Cancel") }
@@ -565,20 +678,21 @@ private fun ShadowMapScreen(
         )
     }
 
-    if (showReloadConfirmation) {
+    if (showDiscardDraftConfirmation) {
         AlertDialog(
-            onDismissRequest = { showReloadConfirmation = false },
-            title = { Text("Clear drawings and reload?") },
-            text = { Text("Loading buildings for a new area will remove all user drawings.") },
+            onDismissRequest = { showDiscardDraftConfirmation = false },
+            title = { Text("Discard drawing?") },
+            text = { Text("Your unfinished points will be removed.") },
             confirmButton = {
                 Button(onClick = {
-                    onClearDrawings()
-                    showReloadConfirmation = false
-                    startBuildingLoad()
-                }) { Text("Clear and load") }
+                    onStopDrawing()
+                    showDiscardDraftConfirmation = false
+                }) { Text("Discard") }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showReloadConfirmation = false }) { Text("Cancel") }
+                OutlinedButton(onClick = { showDiscardDraftConfirmation = false }) {
+                    Text("Keep drawing")
+                }
             }
         )
     }
@@ -602,46 +716,6 @@ private fun ShadowMapScreen(
         )
     }
 
-    val pendingType = when (uiState.pendingDrawing) {
-        is PendingDrawing.Building -> DrawnObjectType.BUILDING
-        is PendingDrawing.Wall -> DrawnObjectType.WALL
-        is PendingDrawing.Tree -> DrawnObjectType.TREE
-        null -> null
-    }
-    val selectedType = uiState.selectedDrawing?.type
-    val propertyType = pendingType ?: selectedType
-    if (propertyType != null) {
-        val selectionId = uiState.selectedDrawing?.id
-        val selectedBuilding = uiState.drawnBuildings.find { it.id == selectionId }
-        val selectedWall = uiState.drawnWalls.find { it.id == selectionId }
-        val selectedTree = uiState.drawnTrees.find { it.id == selectionId }
-        val initialHeight = selectedBuilding?.heightMeters
-            ?: selectedWall?.heightMeters
-            ?: selectedTree?.heightMeters
-            ?: when (propertyType) {
-                DrawnObjectType.BUILDING -> DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
-                DrawnObjectType.WALL -> DEFAULT_DRAWN_WALL_HEIGHT_METERS
-                DrawnObjectType.TREE -> DEFAULT_DRAWN_TREE_HEIGHT_METERS
-            }
-        DrawingPropertiesSheet(
-            type = propertyType,
-            initialHeightMeters = initialHeight,
-            initialRadiusMeters = selectedTree?.radiusMeters
-                ?: if (propertyType == DrawnObjectType.TREE) DEFAULT_DRAWN_TREE_RADIUS_METERS else null,
-            isCreating = pendingType != null,
-            onBack = {
-                if (pendingType != null) onReturnPendingToDrawing() else onSelectDrawing(null)
-            },
-            onApply = { height, radius ->
-                if (pendingType != null) {
-                    onCommitPendingDrawing(height, radius)
-                } else {
-                    onUpdateSelectedDrawing(height, radius)
-                }
-            },
-            onDelete = onDeleteSelectedDrawing
-        )
-    }
 }
 
 private fun MapView.toSceneViewport(): SceneViewport? {
@@ -678,71 +752,6 @@ private fun MapView.toBuildingLoadArea(): BuildingLoadArea? =
         )
     }
 
-@Composable
-private fun BuildingLoadButton(
-    loadState: BuildingLoadState,
-    loadArea: BuildingLoadArea?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val dimensions = ShadowMapDesign.dimensions
-    val isLoading = loadState is BuildingLoadState.Loading
-    val isWithinLimit = loadArea?.isWithinLimit == true
-    Surface(
-        modifier = modifier
-            .padding(top = dimensions.screenPadding, end = dimensions.screenPadding)
-            .widthIn(max = dimensions.floatingControlMaxWidth),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-        tonalElevation = dimensions.spacingXxs
-    ) {
-        Column(
-            horizontalAlignment = Alignment.End,
-            modifier = Modifier.padding(dimensions.spacingMedium)
-        ) {
-            Button(
-                onClick = onClick,
-                enabled = isWithinLimit && !isLoading
-            ) {
-                Text(
-                    text = when {
-                        isLoading -> "Loading buildings…"
-                        isWithinLimit -> "Load buildings"
-                        else -> "Zoom in to load buildings"
-                    }
-                )
-            }
-            Text(
-                text = when {
-                    loadArea == null -> "Checking visible map area…"
-                    isWithinLimit -> "Area ready: ${loadArea.formattedDimensions}"
-                    else -> "Current area: ${loadArea.formattedDimensions}\n" +
-                        "Maximum: ${MAX_BUILDING_LOAD_DIMENSION_METERS.toInt()} m × " +
-                        "${MAX_BUILDING_LOAD_DIMENSION_METERS.toInt()} m"
-                },
-                color = if (loadArea != null && !isWithinLimit) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                style = MaterialTheme.typography.labelMedium,
-                textAlign = TextAlign.End,
-                modifier = Modifier.padding(top = dimensions.spacingSmall)
-            )
-        }
-    }
-}
-
-@Composable
-private fun BuildingLoadError(loadState: BuildingLoadState, modifier: Modifier = Modifier) {
-    if (loadState is BuildingLoadState.Error) {
-        val dimensions = ShadowMapDesign.dimensions
-        Text(
-            text = loadState.message,
-            color = MaterialTheme.colorScheme.error,
-            modifier = modifier.padding(dimensions.screenPadding)
-        )
-    }
-}
-
 private const val MIN_POINT_SPACING_DP = 12f
+private const val MAX_AUTO_LOAD_METERS = 500.0
+private const val AUTO_LOAD_ZOOM_PADDING = 0.1
