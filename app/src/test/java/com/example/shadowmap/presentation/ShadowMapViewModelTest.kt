@@ -3,9 +3,12 @@ package com.example.shadowmap.presentation
 import androidx.lifecycle.SavedStateHandle
 import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.domain.BuildingShadowCalculator
+import com.example.shadowmap.domain.DrawMode
+import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.SolarPositionCalculator
+import com.example.shadowmap.domain.UserObjectShadowCalculator
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -90,6 +93,59 @@ class ShadowMapViewModelTest {
         assertTrue(viewModel.uiState.value.shadows.isEmpty())
     }
 
+    @Test
+    fun buildingDraft_canReturnFromPropertiesAndCommit() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        viewModel.selectDrawMode(DrawMode.BUILDING)
+        buildingVertices().forEach(viewModel::addVertex)
+
+        assertTrue(viewModel.finishBuilding())
+        assertTrue(viewModel.uiState.value.pendingDrawing is PendingDrawing.Building)
+
+        viewModel.returnPendingToDrawing()
+        assertEquals(4, viewModel.uiState.value.inProgressVertices.size)
+
+        assertTrue(viewModel.finishBuilding())
+        viewModel.commitPendingDrawing(heightMeters = 7.5)
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.drawnBuildings.size)
+        assertEquals(7.5, viewModel.uiState.value.drawnBuildings.single().heightMeters, 0.0)
+        assertEquals(2, viewModel.uiState.value.buildings.size)
+    }
+
+    @Test
+    fun switchingTools_requiresDraftDiscardConfirmation() {
+        val viewModel = createViewModel()
+        viewModel.selectDrawMode(DrawMode.BUILDING)
+        viewModel.addVertex(GeoPoint(153.0, -28.0))
+
+        assertTrue(!viewModel.selectDrawMode(DrawMode.WALL))
+        assertEquals(DrawMode.BUILDING, viewModel.uiState.value.activeDrawMode)
+
+        viewModel.discardDraftAndSelectDrawMode(DrawMode.WALL)
+        assertEquals(DrawMode.WALL, viewModel.uiState.value.activeDrawMode)
+        assertTrue(viewModel.uiState.value.inProgressVertices.isEmpty())
+    }
+
+    @Test
+    fun clearDrawings_keepsLoadedBuildings() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        viewModel.selectDrawMode(DrawMode.BUILDING)
+        buildingVertices().forEach(viewModel::addVertex)
+        viewModel.finishBuilding()
+        viewModel.commitPendingDrawing(6.0)
+
+        viewModel.clearDrawings()
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.loadedBuildings.size)
+        assertEquals(1, viewModel.uiState.value.buildings.size)
+        assertTrue(!viewModel.uiState.value.hasDrawings)
+    }
+
     private fun testBuilding(): BuildingFootprint {
         val ring =
             listOf(
@@ -107,10 +163,18 @@ class ShadowMapViewModelTest {
         )
     }
 
+    private fun buildingVertices() = listOf(
+        GeoPoint(153.0, -28.0),
+        GeoPoint(153.0001, -28.0),
+        GeoPoint(153.0001, -28.0001),
+        GeoPoint(153.0, -28.0001)
+    )
+
     private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()) =
         ShadowMapViewModel(
             savedStateHandle = savedStateHandle,
             shadowCalculator = BuildingShadowCalculator(),
+            userObjectShadowCalculator = UserObjectShadowCalculator(),
             solarPositionCalculator = SolarPositionCalculator(),
             clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
             systemZoneId = ZoneId.of("Australia/Brisbane"),

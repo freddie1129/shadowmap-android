@@ -6,8 +6,17 @@ import androidx.lifecycle.viewModelScope
 import com.example.shadowmap.di.DefaultDispatcher
 import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.domain.BuildingShadowCalculator
+import com.example.shadowmap.domain.DrawMode
+import com.example.shadowmap.domain.DrawnBuilding
+import com.example.shadowmap.domain.DrawnObjectSelection
+import com.example.shadowmap.domain.DrawnObjectType
+import com.example.shadowmap.domain.DrawnTree
+import com.example.shadowmap.domain.DrawnWall
+import com.example.shadowmap.domain.DrawingGeometryValidator
 import com.example.shadowmap.domain.GeoPoint
+import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.SolarPositionCalculator
+import com.example.shadowmap.domain.UserObjectShadowCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
 import java.time.ZoneId
@@ -22,11 +31,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 @HiltViewModel
+@Suppress("TooManyFunctions")
 class ShadowMapViewModel
 @Inject
 constructor(
     private val savedStateHandle: SavedStateHandle,
     private val shadowCalculator: BuildingShadowCalculator,
+    private val userObjectShadowCalculator: UserObjectShadowCalculator,
     private val solarPositionCalculator: SolarPositionCalculator,
     private val clock: Clock,
     systemZoneId: ZoneId,
@@ -71,10 +82,205 @@ constructor(
         _uiState.value =
             _uiState.value.copy(
                 calculationLocation = location,
-                buildings = buildings,
+                loadedBuildings = buildings,
                 shadows = emptyList(),
                 buildingLoadState = BuildingLoadState.Loaded
             )
+        recalculateSunAndShadows()
+    }
+
+    /** Returns false when switching would discard an unfinished building or wall. */
+    @Suppress("ReturnCount")
+    fun selectDrawMode(mode: DrawMode): Boolean {
+        val state = _uiState.value
+        if (state.activeDrawMode == mode) return true
+        if (state.hasDraft) return false
+        _uiState.value = state.copy(activeDrawMode = mode, selectedDrawing = null, drawingError = null)
+        return true
+    }
+
+    fun discardDraftAndSelectDrawMode(mode: DrawMode) {
+        _uiState.value = _uiState.value.copy(
+            activeDrawMode = mode,
+            inProgressVertices = emptyList(),
+            pendingDrawing = null,
+            selectedDrawing = null,
+            drawingError = null
+        )
+    }
+
+    fun stopDrawing() {
+        _uiState.value = _uiState.value.copy(
+            activeDrawMode = null,
+            inProgressVertices = emptyList(),
+            pendingDrawing = null,
+            drawingError = null
+        )
+    }
+
+    fun addVertex(point: GeoPoint) {
+        val state = _uiState.value
+        if (state.activeDrawMode != DrawMode.BUILDING && state.activeDrawMode != DrawMode.WALL) return
+        _uiState.value = state.copy(
+            inProgressVertices = state.inProgressVertices + point,
+            drawingError = null
+        )
+    }
+
+    fun undoLastVertex() {
+        val vertices = _uiState.value.inProgressVertices
+        if (vertices.isEmpty()) return
+        _uiState.value = _uiState.value.copy(
+            inProgressVertices = vertices.dropLast(1),
+            drawingError = null
+        )
+    }
+
+    fun setDrawingError(message: String) {
+        _uiState.value = _uiState.value.copy(drawingError = message)
+    }
+
+    fun finishBuilding(): Boolean {
+        val vertices = _uiState.value.inProgressVertices
+        val error = DrawingGeometryValidator.validateBuilding(vertices)
+        if (error != null) {
+            _uiState.value = _uiState.value.copy(drawingError = error)
+            return false
+        }
+        _uiState.value = _uiState.value.copy(
+            inProgressVertices = emptyList(),
+            pendingDrawing = PendingDrawing.Building(vertices),
+            drawingError = null
+        )
+        return true
+    }
+
+    fun finishWall(): Boolean {
+        val points = _uiState.value.inProgressVertices
+        val error = DrawingGeometryValidator.validateWall(points)
+        if (error != null) {
+            _uiState.value = _uiState.value.copy(drawingError = error)
+            return false
+        }
+        _uiState.value = _uiState.value.copy(
+            inProgressVertices = emptyList(),
+            pendingDrawing = PendingDrawing.Wall(points),
+            drawingError = null
+        )
+        return true
+    }
+
+    fun startTree(point: GeoPoint) {
+        if (_uiState.value.activeDrawMode != DrawMode.TREE) return
+        _uiState.value = _uiState.value.copy(
+            pendingDrawing = PendingDrawing.Tree(point),
+            selectedDrawing = null,
+            drawingError = null
+        )
+    }
+
+    fun returnPendingToDrawing() {
+        val pending = _uiState.value.pendingDrawing ?: return
+        _uiState.value = when (pending) {
+            is PendingDrawing.Building -> _uiState.value.copy(
+                inProgressVertices = pending.vertices,
+                pendingDrawing = null
+            )
+            is PendingDrawing.Wall -> _uiState.value.copy(
+                inProgressVertices = pending.points,
+                pendingDrawing = null
+            )
+            is PendingDrawing.Tree -> _uiState.value.copy(pendingDrawing = null)
+        }
+    }
+
+    fun commitPendingDrawing(heightMeters: Double, radiusMeters: Double? = null) {
+        val state = _uiState.value
+        val pending = state.pendingDrawing ?: return
+        _uiState.value = when (pending) {
+            is PendingDrawing.Building -> state.copy(
+                drawnBuildings = state.drawnBuildings + DrawnBuilding(
+                    polygon = DrawingGeometryValidator.closedPolygon(pending.vertices),
+                    heightMeters = heightMeters
+                ),
+                pendingDrawing = null
+            )
+            is PendingDrawing.Wall -> state.copy(
+                drawnWalls = state.drawnWalls + DrawnWall(
+                    points = pending.points,
+                    heightMeters = heightMeters
+                ),
+                pendingDrawing = null
+            )
+            is PendingDrawing.Tree -> state.copy(
+                drawnTrees = state.drawnTrees + DrawnTree(
+                    center = pending.center,
+                    heightMeters = heightMeters,
+                    radiusMeters = radiusMeters ?: return
+                ),
+                pendingDrawing = null
+            )
+        }
+        recalculateSunAndShadows()
+    }
+
+    fun selectDrawing(selection: DrawnObjectSelection?) {
+        _uiState.value = _uiState.value.copy(selectedDrawing = selection)
+    }
+
+    fun updateSelectedDrawing(heightMeters: Double, radiusMeters: Double? = null) {
+        val state = _uiState.value
+        val selection = state.selectedDrawing ?: return
+        _uiState.value = when (selection.type) {
+            DrawnObjectType.BUILDING -> state.copy(
+                drawnBuildings = state.drawnBuildings.map {
+                    if (it.id == selection.id) it.copy(heightMeters = heightMeters) else it
+                },
+                selectedDrawing = null
+            )
+            DrawnObjectType.WALL -> state.copy(
+                drawnWalls = state.drawnWalls.map {
+                    if (it.id == selection.id) it.copy(heightMeters = heightMeters) else it
+                },
+                selectedDrawing = null
+            )
+            DrawnObjectType.TREE -> state.copy(
+                drawnTrees = state.drawnTrees.map {
+                    if (it.id == selection.id) {
+                        it.copy(heightMeters = heightMeters, radiusMeters = radiusMeters ?: it.radiusMeters)
+                    } else {
+                        it
+                    }
+                },
+                selectedDrawing = null
+            )
+        }
+        recalculateSunAndShadows()
+    }
+
+    fun deleteSelectedDrawing() {
+        val state = _uiState.value
+        val selection = state.selectedDrawing ?: return
+        _uiState.value = state.copy(
+            drawnBuildings = state.drawnBuildings.filterNot { it.id == selection.id },
+            drawnWalls = state.drawnWalls.filterNot { it.id == selection.id },
+            drawnTrees = state.drawnTrees.filterNot { it.id == selection.id },
+            selectedDrawing = null
+        )
+        recalculateSunAndShadows()
+    }
+
+    fun clearDrawings() {
+        _uiState.value = _uiState.value.copy(
+            drawnBuildings = emptyList(),
+            drawnWalls = emptyList(),
+            drawnTrees = emptyList(),
+            activeDrawMode = null,
+            inProgressVertices = emptyList(),
+            pendingDrawing = null,
+            selectedDrawing = null,
+            drawingError = null
+        )
         recalculateSunAndShadows()
     }
 
@@ -102,7 +308,9 @@ constructor(
             longitudeDegrees = location.longitude
         )
         _uiState.value = state.copy(solarPosition = solarPosition)
-        if (state.buildings.isEmpty() || !solarPosition.isAboveHorizon) {
+        val hasShadowCasters = state.buildings.isNotEmpty() ||
+            state.drawnWalls.isNotEmpty() || state.drawnTrees.isNotEmpty()
+        if (!hasShadowCasters || !solarPosition.isAboveHorizon) {
             _uiState.value = _uiState.value.copy(shadows = emptyList())
             return
         }
@@ -110,9 +318,14 @@ constructor(
         shadowJob =
             viewModelScope.launch(computationDispatcher) {
                 delay(SHADOW_DEBOUNCE_MILLIS)
-                val shadows =
-                    shadowCalculator.calculate(
+                val shadows = shadowCalculator.calculate(
                         buildings = state.buildings,
+                        azimuthDegrees = solarPosition.azimuthDegrees,
+                        zenithDegrees = solarPosition.zenithDegrees
+                    ) + userObjectShadowCalculator.calculate(
+                        walls = state.drawnWalls,
+                        trees = state.drawnTrees,
+                        origin = location,
                         azimuthDegrees = solarPosition.azimuthDegrees,
                         zenithDegrees = solarPosition.zenithDegrees
                     )

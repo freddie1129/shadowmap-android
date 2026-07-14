@@ -14,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.DrawnTree
+import com.example.shadowmap.domain.DrawnWall
 import com.google.android.filament.Box
 import com.google.android.filament.Engine
 import com.google.android.filament.EntityManager
@@ -40,18 +42,22 @@ import kotlin.math.sqrt
 @Composable
 fun FilamentBuildingView(
     buildings: List<BuildingFootprint>,
+    modifier: Modifier = Modifier,
+    walls: List<DrawnWall> = emptyList(),
+    trees: List<DrawnTree> = emptyList(),
     viewport: SceneViewport?,
     azimuth: Float,
     zenith: Float,
-    sunVisible: Boolean,
-    modifier: Modifier = Modifier
+    sunVisible: Boolean
 ) {
     val renderer = remember { FilamentBuildingRenderer() }
     AndroidView(
         factory = { context -> renderer.createSurface(context) },
         modifier = modifier
     )
-    LaunchedEffect(buildings, viewport) { renderer.setBuildings(buildings, viewport) }
+    LaunchedEffect(buildings, walls, trees, viewport) {
+        renderer.setBuildings(buildings, walls, trees, viewport)
+    }
     LaunchedEffect(azimuth, zenith, sunVisible) {
         renderer.setSun(azimuth, zenith, sunVisible)
     }
@@ -235,11 +241,16 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
     }
 
     @Suppress("LongMethod")
-    fun setBuildings(buildings: List<BuildingFootprint>, viewport: SceneViewport?) {
+    fun setBuildings(
+        buildings: List<BuildingFootprint>,
+        walls: List<DrawnWall>,
+        trees: List<DrawnTree>,
+        viewport: SceneViewport?
+    ) {
         if (destroyed) return
         clearMesh()
         sceneViewport = viewport
-        val mesh = BuildingMeshGenerator.generate(buildings, viewport)
+        val mesh = BuildingMeshGenerator.generate(buildings, walls, trees, viewport)
         if (mesh.indices.isEmpty()) return
         val floatsPerVertex = 7
         val vertexBytes = ByteBuffer.allocateDirect(

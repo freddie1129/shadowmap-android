@@ -1,8 +1,13 @@
 package com.example.shadowmap.scene
 
 import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.DrawnTree
+import com.example.shadowmap.domain.DrawnWall
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.sin
 
 data class MeshVertex(
     val x: Float,
@@ -22,12 +27,15 @@ data class BuildingMesh(
 )
 
 object BuildingMeshGenerator {
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     fun generate(
         buildings: List<BuildingFootprint>,
+        walls: List<DrawnWall> = emptyList(),
+        trees: List<DrawnTree> = emptyList(),
         viewport: SceneViewport? = null
     ): BuildingMesh {
-        val points = buildings.flatMap { it.polygon.rings.firstOrNull().orEmpty() }
+        val points = buildings.flatMap { it.polygon.rings.firstOrNull().orEmpty() } +
+            walls.flatMap(DrawnWall::points) + trees.map(DrawnTree::center)
         if (points.isEmpty()) return BuildingMesh(emptyList(), emptyList(), 1f)
         val originLongitude = viewport?.centerLongitude ?: points.map { it.longitude }.average()
         val originLatitude = viewport?.centerLatitude ?: points.map { it.latitude }.average()
@@ -77,12 +85,91 @@ object BuildingMeshGenerator {
                 wallIndices += listOf(start, start + 2, start + 1, start, start + 3, start + 2)
             }
         }
+        walls.forEach { wall ->
+            wall.points.zipWithNext().forEach { (first, second) ->
+                val x0 = ((first.longitude - originLongitude) * longitudeScale).toFloat()
+                val z0 = (-(first.latitude - originLatitude) * latitudeScale).toFloat()
+                val x1 = ((second.longitude - originLongitude) * longitudeScale).toFloat()
+                val z1 = (-(second.latitude - originLatitude) * latitudeScale).toFloat()
+                val dx = x1 - x0
+                val dz = z1 - z0
+                val length = kotlin.math.sqrt(dx * dx + dz * dz).coerceAtLeast(0.0001f)
+                val nx = -dz / length
+                val nz = dx / length
+                addWallFace(vertices, wallIndices, x0, z0, x1, z1, wall.heightMeters.toFloat(), nx, nz)
+                addWallFace(vertices, wallIndices, x1, z1, x0, z0, wall.heightMeters.toFloat(), -nx, -nz)
+            }
+        }
+        trees.forEach { tree ->
+            val centerX = ((tree.center.longitude - originLongitude) * longitudeScale).toFloat()
+            val centerZ = (-(tree.center.latitude - originLatitude) * latitudeScale).toFloat()
+            val height = tree.heightMeters.coerceAtLeast(0.1).toFloat()
+            val canopyRadius = tree.radiusMeters.coerceAtLeast(0.1).toFloat()
+            val trunkHeight = height * TREE_TRUNK_HEIGHT_RATIO
+            val trunkRadius = canopyRadius * TREE_TRUNK_RADIUS_RATIO
+            repeat(TREE_TRUNK_SEGMENTS) { index ->
+                val angle0 = index.toDouble() / TREE_TRUNK_SEGMENTS * 2.0 * PI
+                val angle1 = (index + 1).toDouble() / TREE_TRUNK_SEGMENTS * 2.0 * PI
+                val x0 = centerX + sin(angle0).toFloat() * trunkRadius
+                val z0 = centerZ + cos(angle0).toFloat() * trunkRadius
+                val x1 = centerX + sin(angle1).toFloat() * trunkRadius
+                val z1 = centerZ + cos(angle1).toFloat() * trunkRadius
+                val middle = (angle0 + angle1) / 2.0
+                addWallFace(
+                    vertices,
+                    wallIndices,
+                    x0,
+                    z0,
+                    x1,
+                    z1,
+                    trunkHeight,
+                    sin(middle).toFloat(),
+                    cos(middle).toFloat()
+                )
+            }
+            val coneHeight = (height - trunkHeight).coerceAtLeast(0.1f)
+            val normalLength = kotlin.math.sqrt(coneHeight * coneHeight + canopyRadius * canopyRadius)
+            repeat(TREE_CANOPY_SEGMENTS) { index ->
+                val angle0 = index.toDouble() / TREE_CANOPY_SEGMENTS * 2.0 * PI
+                val angle1 = (index + 1).toDouble() / TREE_CANOPY_SEGMENTS * 2.0 * PI
+                val middle = (angle0 + angle1) / 2.0
+                val normalHorizontal = coneHeight / normalLength
+                val normalY = canopyRadius / normalLength
+                val nx = sin(middle).toFloat() * normalHorizontal
+                val nz = cos(middle).toFloat() * normalHorizontal
+                val start = vertices.size
+                vertices += MeshVertex(
+                    centerX + sin(angle0).toFloat() * canopyRadius,
+                    trunkHeight,
+                    centerZ + cos(angle0).toFloat() * canopyRadius,
+                    nx,
+                    normalY,
+                    nz
+                )
+                vertices += MeshVertex(
+                    centerX + sin(angle1).toFloat() * canopyRadius,
+                    trunkHeight,
+                    centerZ + cos(angle1).toFloat() * canopyRadius,
+                    nx,
+                    normalY,
+                    nz
+                )
+                vertices += MeshVertex(centerX, height, centerZ, nx, normalY, nz)
+                roofIndices += listOf(start, start + 1, start + 2)
+            }
+        }
         val radius = (vertices.maxOfOrNull { kotlin.math.sqrt(it.x * it.x + it.z * it.z) } ?: 1f)
             .coerceAtLeast(1f)
-        val groundHalfWidth = viewport?.widthMeters?.div(2f)
-            ?: radius * Scene3DGeometry.FALLBACK_GROUND_EXTENT_MULTIPLIER
-        val groundHalfHeight = viewport?.heightMeters?.div(2f)
-            ?: radius * Scene3DGeometry.FALLBACK_GROUND_EXTENT_MULTIPLIER
+        val geometryHalfWidth = vertices.maxOfOrNull { abs(it.x) } ?: radius
+        val geometryHalfHeight = vertices.maxOfOrNull { abs(it.z) } ?: radius
+        val groundHalfWidth = max(
+            viewport?.widthMeters?.div(2f) ?: 0f,
+            geometryHalfWidth * Scene3DGeometry.FALLBACK_GROUND_EXTENT_MULTIPLIER
+        )
+        val groundHalfHeight = max(
+            viewport?.heightMeters?.div(2f) ?: 0f,
+            geometryHalfHeight * Scene3DGeometry.FALLBACK_GROUND_EXTENT_MULTIPLIER
+        )
         val rightX = viewport?.screenRightX ?: 1f
         val rightZ = viewport?.screenRightZ ?: 0f
         val downX = viewport?.screenDownX ?: 0f
@@ -115,6 +202,25 @@ object BuildingMeshGenerator {
             groundStart + 2
         )
         return BuildingMesh(vertices, indices, radius, wallIndexOffset, groundIndexOffset)
+    }
+
+    private fun addWallFace(
+        vertices: MutableList<MeshVertex>,
+        indices: MutableList<Int>,
+        x0: Float,
+        z0: Float,
+        x1: Float,
+        z1: Float,
+        height: Float,
+        normalX: Float,
+        normalZ: Float
+    ) {
+        val start = vertices.size
+        vertices += MeshVertex(x0, 0f, z0, normalX, 0f, normalZ)
+        vertices += MeshVertex(x1, 0f, z1, normalX, 0f, normalZ)
+        vertices += MeshVertex(x1, height, z1, normalX, 0f, normalZ)
+        vertices += MeshVertex(x0, height, z0, normalX, 0f, normalZ)
+        indices += listOf(start, start + 1, start + 2, start, start + 2, start + 3)
     }
 
     // Ear clipping supports the concave outer rings returned by Mapbox.
@@ -175,4 +281,9 @@ object BuildingMeshGenerator {
 
     private fun <T> List<T>.dropClosingPoint(): List<T> =
         if (size > 1 && first() == last()) dropLast(1) else this
+
+    private const val TREE_TRUNK_SEGMENTS = 8
+    private const val TREE_CANOPY_SEGMENTS = 12
+    private const val TREE_TRUNK_HEIGHT_RATIO = 0.35f
+    private const val TREE_TRUNK_RADIUS_RATIO = 0.15f
 }
