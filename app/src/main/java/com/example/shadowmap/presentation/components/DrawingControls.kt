@@ -3,12 +3,14 @@ package com.example.shadowmap.presentation.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -18,8 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.domain.DrawMode
+import com.example.shadowmap.ui.theme.ShadowMapTheme
 
 @Composable
 fun DrawingCrosshair(modifier: Modifier = Modifier) {
@@ -104,17 +108,97 @@ fun ActiveDrawingControls(
                 .background(Color.Black.copy(alpha = 0.72f), RoundedCornerShape(12.dp))
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onCancel) { Text("Cancel") }
+        Row(
+            modifier = Modifier
+                .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(24.dp))
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                onClick = onCancel,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF45484D),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Cancel")
+            }
             if (vertexCount > 0 && mode != DrawMode.TREE) {
-                OutlinedButton(onClick = onUndo) { Text("Undo") }
+                Button(
+                    onClick = onUndo,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE1E3E6),
+                        contentColor = Color(0xFF242629)
+                    )
+                ) {
+                    Text("Undo")
+                }
             }
             Button(onClick = onAdd) { Text(addText) }
             if (canFinish) {
                 Button(onClick = onDone) {
-                    Text(if (mode == DrawMode.BUILDING) "Close building" else "Done")
+                    Text("Finish")
                 }
             }
         }
+    }
+}
+
+@Preview(
+    name = "Drawing crosshair",
+    widthDp = 80,
+    heightDp = 80,
+    showBackground = true,
+    backgroundColor = 0xFF52654B
+)
+@Composable
+private fun DrawingCrosshairPreview() {
+    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
+        Box(
+            modifier = Modifier.size(80.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            DrawingCrosshair()
+        }
+    }
+}
+
+@Preview(
+    name = "Drawing tool chooser",
+    widthDp = 380,
+    showBackground = true,
+    backgroundColor = 0xFF52654B
+)
+@Composable
+private fun DrawingToolChooserPreview() {
+    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
+        DrawingToolChooser(
+            expanded = true,
+            onExpand = {},
+            onSelect = {},
+            modifier = Modifier.padding(12.dp)
+        )
+    }
+}
+
+@Preview(
+    name = "Active building controls",
+    widthDp = 540,
+    showBackground = true,
+    backgroundColor = 0xFF52654B
+)
+@Composable
+private fun ActiveDrawingControlsPreview() {
+    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
+        ActiveDrawingControls(
+            mode = DrawMode.BUILDING,
+            vertexCount = 3,
+            onAdd = {},
+            onUndo = {},
+            onDone = {},
+            onCancel = {},
+            modifier = Modifier.padding(12.dp)
+        )
     }
 }
