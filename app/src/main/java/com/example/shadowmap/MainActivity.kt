@@ -606,11 +606,21 @@ private fun ShadowMapScreen(
                 }
             }
 
+            if (show3d) {
+                DateTimeSpinner(
+                    selectedEpochMillis = uiState.selectedEpochMillis,
+                    timeZoneId = uiState.displayTimeZoneId,
+                    onDateTimeChanged = onDateTimeChanged,
+                    onNowSelected = onNowSelected,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
+
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = if (showDateTime) 156.dp else 64.dp)
+                    .padding(bottom = if (show3d || showDateTime) 156.dp else 64.dp)
             )
         }
 
