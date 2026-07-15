@@ -445,6 +445,7 @@ private fun ShadowMapScreen(
         uiState.buildingLoadState is BuildingLoadState.Loaded -> AutoToolState.LOADED
         else -> AutoToolState.READY
     }
+    val mode = uiState.activeDrawMode
 
     fun requestDrawingExit() {
         if (uiState.hasDraft) {
@@ -552,7 +553,6 @@ private fun ShadowMapScreen(
                 ) { Text(if (show3d) "Map View" else "3D View") }
             }
 
-            val mode = uiState.activeDrawMode
             if (!show3d && mode == null && propertyType == null) {
                 Column(
                     modifier = Modifier
@@ -606,82 +606,82 @@ private fun ShadowMapScreen(
                 }
             }
 
-            if (!show3d && mode != null && pendingType == null) {
-                ActiveDrawingControls(
-                    mode = mode,
-                    vertexCount = uiState.inProgressVertices.size,
-                    onAdd = {
-                        val point = crosshairPoint ?: return@ActiveDrawingControls
-                        if (mode == DrawMode.TREE) {
-                            onStartTree(point)
-                        } else {
-                            val last = uiState.inProgressVertices.lastOrNull()
-                            val threshold = with(density) { MIN_POINT_SPACING_DP.dp.toPx() }
-                            if (last == null || mapView?.isFarEnoughFrom(last, point, threshold) != false) {
-                                onAddVertex(point)
-                            } else {
-                                onDrawingError("Move farther from the previous point")
-                            }
-                        }
-                    },
-                    onUndo = onUndo,
-                    onDone = {
-                        if (mode == DrawMode.BUILDING) onFinishBuilding() else onFinishWall()
-                    },
-                    onCancel = ::requestDrawingExit,
-                    error = uiState.drawingError,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
-
-            if (!show3d && propertyType != null && propertyInitialHeight != null) {
-                DrawingPropertiesSheet(
-                    type = propertyType,
-                    initialHeightMeters = propertyInitialHeight,
-                    initialRadiusMeters = selectedTree?.radiusMeters
-                        ?: if (propertyType == DrawnObjectType.TREE) {
-                            DEFAULT_DRAWN_TREE_RADIUS_METERS
-                        } else {
-                            null
-                        },
-                    isCreating = pendingType != null,
-                    objectSource = uiState.selectedDrawing?.source ?: SceneObjectSource.MANUAL,
-                    isEditedAutomaticObject = selectionId?.let(uiState::isLoadedBuildingEdited) == true,
-                    loadedHeightMeters = selectedOriginalLoadedBuilding?.heightMeters,
-                    onBack = {
-                        if (pendingType != null) onReturnPendingToDrawing() else onSelectDrawing(null)
-                    },
-                    onApply = { height, radius ->
-                        if (pendingType != null) {
-                            onCommitPendingDrawing(height, radius)
-                        } else {
-                            onUpdateSelectedDrawing(height, radius)
-                        }
-                    },
-                    onDelete = {
-                        if (onDeleteSelectedDrawing()) {
-                            coroutineScope.launch {
-                                snackbarHostState.currentSnackbarData?.dismiss()
-                                val result = snackbarHostState.showSnackbar(
-                                    message = "Object deleted",
-                                    actionLabel = "Undo",
-                                    duration = SnackbarDuration.Long
-                                )
-                                if (result == SnackbarResult.ActionPerformed) {
-                                    onRestoreDeletedObject()
-                                }
-                            }
-                        }
-                    },
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
-
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = if (showDateTime) 156.dp else 64.dp)
+            )
+        }
+
+        if (!show3d && mode != null && pendingType == null) {
+            ActiveDrawingControls(
+                mode = mode,
+                vertexCount = uiState.inProgressVertices.size,
+                onAdd = {
+                    val point = crosshairPoint ?: return@ActiveDrawingControls
+                    if (mode == DrawMode.TREE) {
+                        onStartTree(point)
+                    } else {
+                        val last = uiState.inProgressVertices.lastOrNull()
+                        val threshold = with(density) { MIN_POINT_SPACING_DP.dp.toPx() }
+                        if (last == null || mapView?.isFarEnoughFrom(last, point, threshold) != false) {
+                            onAddVertex(point)
+                        } else {
+                            onDrawingError("Move farther from the previous point")
+                        }
+                    }
+                },
+                onUndo = onUndo,
+                onDone = {
+                    if (mode == DrawMode.BUILDING) onFinishBuilding() else onFinishWall()
+                },
+                onCancel = ::requestDrawingExit,
+                error = uiState.drawingError,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+
+        if (!show3d && propertyType != null && propertyInitialHeight != null) {
+            DrawingPropertiesSheet(
+                type = propertyType,
+                initialHeightMeters = propertyInitialHeight,
+                initialRadiusMeters = selectedTree?.radiusMeters
+                    ?: if (propertyType == DrawnObjectType.TREE) {
+                        DEFAULT_DRAWN_TREE_RADIUS_METERS
+                    } else {
+                        null
+                    },
+                isCreating = pendingType != null,
+                objectSource = uiState.selectedDrawing?.source ?: SceneObjectSource.MANUAL,
+                isEditedAutomaticObject = selectionId?.let(uiState::isLoadedBuildingEdited) == true,
+                loadedHeightMeters = selectedOriginalLoadedBuilding?.heightMeters,
+                onBack = {
+                    if (pendingType != null) onReturnPendingToDrawing() else onSelectDrawing(null)
+                },
+                onApply = { height, radius ->
+                    if (pendingType != null) {
+                        onCommitPendingDrawing(height, radius)
+                    } else {
+                        onUpdateSelectedDrawing(height, radius)
+                    }
+                },
+                onDelete = {
+                    if (onDeleteSelectedDrawing()) {
+                        coroutineScope.launch {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            val result = snackbarHostState.showSnackbar(
+                                message = "Object deleted",
+                                actionLabel = "Undo",
+                                duration = SnackbarDuration.Long
+                            )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                onRestoreDeletedObject()
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
