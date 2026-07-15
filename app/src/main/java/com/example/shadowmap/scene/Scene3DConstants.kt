@@ -1,8 +1,6 @@
 package com.example.shadowmap.scene
 
 import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.tan
 
 data class SceneRgb(val red: Float, val green: Float, val blue: Float)
 
@@ -77,16 +75,16 @@ object Scene3DCamera {
     /** Minimum radius used to frame small or empty building meshes. */
     const val MIN_SCENE_RADIUS_METERS = 20f
 
-    /** Default perspective-camera rotation around the vertical axis. */
+    /** Default orthographic-camera rotation around the vertical axis. */
     const val DEFAULT_YAW_DEGREES = 0f
 
-    /** Default perspective-camera elevation angle above the ground plane. */
+    /** Default orthographic-camera elevation angle above the ground plane. */
     const val DEFAULT_PITCH_DEGREES = 42f
 
-    /** Initial perspective-camera distance in meters before geometry is loaded. */
+    /** Initial orbit-camera distance in meters before geometry is loaded. */
     const val DEFAULT_DISTANCE_METERS = 72f
 
-    /** Scene-radius multiplier used to calculate camera distance after a reset. */
+    /** Radius multiplier used to position the orbiting orthographic camera after a reset. */
     const val RESET_DISTANCE_MULTIPLIER = 1.8f
 
     /** Default scale of the map-aligned orthographic projection. */
@@ -98,9 +96,6 @@ object Scene3DCamera {
     /** Minimum top-down camera height in meters, ensuring it clears tall buildings. */
     const val MIN_TOP_DOWN_HEIGHT_METERS = 500f
 
-    /** Vertical field of view of the perspective camera in degrees. */
-    const val PERSPECTIVE_VERTICAL_FOV_DEGREES = 45.0
-
     /** Distance in meters to the nearest rendered camera plane. */
     const val NEAR_CLIP_METERS = 0.1
 
@@ -110,14 +105,11 @@ object Scene3DCamera {
     /** One-finger orbit sensitivity in degrees of rotation per dragged screen pixel. */
     const val ORBIT_DEGREES_PER_PIXEL = 0.25f
 
-    /** Lowest allowed perspective-camera pitch in degrees. */
+    /** Lowest allowed orthographic orbit pitch in degrees. */
     const val MIN_PITCH_DEGREES = 8f
 
-    /** Highest allowed perspective-camera pitch in degrees. */
+    /** Highest allowed orthographic orbit pitch in degrees. */
     const val MAX_PITCH_DEGREES = 85f
-
-    /** Perspective pan sensitivity as camera-distance units per screen pixel. */
-    const val PAN_SCALE = 0.0015f
 
     /** Closest allowed orthographic zoom scale. */
     const val MIN_ORTHOGRAPHIC_ZOOM = 0.25f
@@ -125,34 +117,18 @@ object Scene3DCamera {
     /** Farthest allowed orthographic zoom scale. */
     const val MAX_ORTHOGRAPHIC_ZOOM = 8f
 
-    /** Minimum perspective distance expressed as a multiplier of scene radius. */
-    const val MIN_DISTANCE_MULTIPLIER = 0.25f
-
-    /** Maximum perspective distance expressed as a multiplier of scene radius. */
-    const val MAX_DISTANCE_MULTIPLIER = 8f
-
     /** Maximum pan offset from the origin expressed as a multiplier of scene radius. */
     const val TARGET_LIMIT_MULTIPLIER = 2f
 
-    fun perspectiveDistanceForOrthographicHeight(
-        viewportHeightMeters: Float,
-        orthographicZoom: Float
-    ): Float {
-        val halfVerticalFieldOfViewRadians =
-            Math.toRadians(PERSPECTIVE_VERTICAL_FOV_DEGREES / 2.0)
-        return (
-            viewportHeightMeters * orthographicZoom /
-                (2.0 * tan(halfVerticalFieldOfViewRadians))
-            ).toFloat()
-    }
-
-    fun minimumPerspectiveDistance(sceneRadius: Float, viewportRadius: Float): Float =
-        min(sceneRadius, viewportRadius).coerceAtLeast(MIN_SCENE_RADIUS_METERS) *
-            MIN_DISTANCE_MULTIPLIER
-
-    fun maximumPerspectiveDistance(sceneRadius: Float, viewportRadius: Float): Float =
+    fun orbitDistance(sceneRadius: Float, viewportRadius: Float): Float =
         max(sceneRadius, viewportRadius).coerceAtLeast(MIN_SCENE_RADIUS_METERS) *
-            MAX_DISTANCE_MULTIPLIER
+            RESET_DISTANCE_MULTIPLIER
+
+    fun orthographicMetersPerPixel(
+        viewportSpanMeters: Float,
+        orthographicZoom: Float,
+        viewportPixels: Int
+    ): Float = viewportSpanMeters * orthographicZoom / max(viewportPixels, 1)
 }
 
 object Scene3DGeometry {

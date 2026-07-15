@@ -173,20 +173,12 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
             context,
             object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
                 override fun onScale(detector: ScaleGestureDetector): Boolean {
-                    if (alignedTopDown) {
-                        orthographicZoom = (orthographicZoom / detector.scaleFactor)
-                            .coerceIn(
-                                Scene3DCamera.MIN_ORTHOGRAPHIC_ZOOM,
-                                Scene3DCamera.MAX_ORTHOGRAPHIC_ZOOM
-                            )
-                        updateProjection()
-                    } else {
-                        cameraDistance = (cameraDistance / detector.scaleFactor)
-                            .coerceIn(
-                                minimumPerspectiveDistance(),
-                                maximumPerspectiveDistance()
-                            )
-                    }
+                    orthographicZoom = (orthographicZoom / detector.scaleFactor)
+                        .coerceIn(
+                            Scene3DCamera.MIN_ORTHOGRAPHIC_ZOOM,
+                            Scene3DCamera.MAX_ORTHOGRAPHIC_ZOOM
+                        )
+                    updateProjection()
                     updateCamera()
                     return true
                 }
@@ -209,7 +201,7 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
                         panCamera(distanceX, distanceY)
                     } else {
                         if (alignedTopDown) {
-                            enterPerspectiveMode()
+                            alignedTopDown = false
                         }
                         cameraYaw =
                             (cameraYaw - distanceX * Scene3DCamera.ORBIT_DEGREES_PER_PIXEL) % 360f
@@ -407,30 +399,12 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
         orthographicZoom = Scene3DCamera.DEFAULT_ORTHOGRAPHIC_ZOOM
         cameraYaw = Scene3DCamera.DEFAULT_YAW_DEGREES
         cameraPitch = Scene3DCamera.DEFAULT_PITCH_DEGREES
-        cameraDistance = sceneRadius * Scene3DCamera.RESET_DISTANCE_MULTIPLIER
+        cameraDistance = Scene3DCamera.orbitDistance(sceneRadius, viewportRadius())
         cameraTargetX = 0f
         cameraTargetZ = 0f
         updateProjection()
         updateCamera()
     }
-
-    private fun enterPerspectiveMode() {
-        val viewport = sceneViewport
-        if (viewport != null) {
-            cameraDistance = Scene3DCamera.perspectiveDistanceForOrthographicHeight(
-                viewportHeightMeters = viewport.heightMeters,
-                orthographicZoom = orthographicZoom
-            ).coerceIn(minimumPerspectiveDistance(), maximumPerspectiveDistance())
-        }
-        alignedTopDown = false
-        updateProjection()
-    }
-
-    private fun minimumPerspectiveDistance(): Float =
-        Scene3DCamera.minimumPerspectiveDistance(sceneRadius, viewportRadius())
-
-    private fun maximumPerspectiveDistance(): Float =
-        Scene3DCamera.maximumPerspectiveDistance(sceneRadius, viewportRadius())
 
     private fun viewportRadius(): Float {
         val viewport = sceneViewport ?: return sceneRadius
@@ -440,26 +414,37 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
     }
 
     private fun panCamera(distanceX: Float, distanceY: Float) {
+        val viewport = sceneViewport ?: return
         if (alignedTopDown) {
-            val viewport = sceneViewport ?: return
             val screenX = distanceX * viewport.widthMeters * orthographicZoom / viewportWidth
             val screenY = distanceY * viewport.heightMeters * orthographicZoom / viewportHeight
             cameraTargetX += viewport.screenRightX * screenX + viewport.screenDownX * screenY
             cameraTargetZ += viewport.screenRightZ * screenX + viewport.screenDownZ * screenY
-            updateCamera()
-            return
+        } else {
+            val yawRadians = Math.toRadians(cameraYaw.toDouble())
+            val horizontalMetersPerPixel = Scene3DCamera.orthographicMetersPerPixel(
+                viewport.widthMeters,
+                orthographicZoom,
+                viewportWidth
+            )
+            val verticalMetersPerPixel = Scene3DCamera.orthographicMetersPerPixel(
+                viewport.heightMeters,
+                orthographicZoom,
+                viewportHeight
+            )
+            val rightX = cos(yawRadians).toFloat()
+            val rightZ = -sin(yawRadians).toFloat()
+            val forwardX = sin(yawRadians).toFloat()
+            val forwardZ = cos(yawRadians).toFloat()
+            cameraTargetX += rightX * distanceX * horizontalMetersPerPixel +
+                forwardX * distanceY * verticalMetersPerPixel
+            cameraTargetZ += rightZ * distanceX * horizontalMetersPerPixel +
+                forwardZ * distanceY * verticalMetersPerPixel
+            val targetLimit =
+                max(sceneRadius, viewportRadius()) * Scene3DCamera.TARGET_LIMIT_MULTIPLIER
+            cameraTargetX = cameraTargetX.coerceIn(-targetLimit, targetLimit)
+            cameraTargetZ = cameraTargetZ.coerceIn(-targetLimit, targetLimit)
         }
-        val yawRadians = Math.toRadians(cameraYaw.toDouble())
-        val metersPerPixel = cameraDistance * Scene3DCamera.PAN_SCALE
-        val rightX = cos(yawRadians).toFloat()
-        val rightZ = -sin(yawRadians).toFloat()
-        val forwardX = sin(yawRadians).toFloat()
-        val forwardZ = cos(yawRadians).toFloat()
-        cameraTargetX += (rightX * distanceX + forwardX * distanceY) * metersPerPixel
-        cameraTargetZ += (rightZ * distanceX + forwardZ * distanceY) * metersPerPixel
-        val targetLimit = sceneRadius * Scene3DCamera.TARGET_LIMIT_MULTIPLIER
-        cameraTargetX = cameraTargetX.coerceIn(-targetLimit, targetLimit)
-        cameraTargetZ = cameraTargetZ.coerceIn(-targetLimit, targetLimit)
         updateCamera()
     }
 
@@ -502,28 +487,18 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
     }
 
     private fun updateProjection() {
-        if (alignedTopDown) {
-            val viewport = sceneViewport ?: return
-            val halfWidth = viewport.widthMeters * orthographicZoom / 2.0
-            val halfHeight = viewport.heightMeters * orthographicZoom / 2.0
-            camera.setProjection(
-                com.google.android.filament.Camera.Projection.ORTHO,
-                -halfWidth,
-                halfWidth,
-                -halfHeight,
-                halfHeight,
-                Scene3DCamera.NEAR_CLIP_METERS,
-                Scene3DCamera.FAR_CLIP_METERS
-            )
-        } else {
-            camera.setProjection(
-                Scene3DCamera.PERSPECTIVE_VERTICAL_FOV_DEGREES,
-                viewportWidth.toDouble() / max(viewportHeight, 1),
-                Scene3DCamera.NEAR_CLIP_METERS,
-                Scene3DCamera.FAR_CLIP_METERS,
-                com.google.android.filament.Camera.Fov.VERTICAL
-            )
-        }
+        val viewport = sceneViewport ?: return
+        val halfWidth = viewport.widthMeters * orthographicZoom / 2.0
+        val halfHeight = viewport.heightMeters * orthographicZoom / 2.0
+        camera.setProjection(
+            com.google.android.filament.Camera.Projection.ORTHO,
+            -halfWidth,
+            halfWidth,
+            -halfHeight,
+            halfHeight,
+            Scene3DCamera.NEAR_CLIP_METERS,
+            Scene3DCamera.FAR_CLIP_METERS
+        )
     }
 
     /** Quaternion rotating Filament's canonical +Z normal onto the supplied surface normal. */
