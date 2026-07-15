@@ -70,8 +70,10 @@ import com.example.shadowmap.presentation.components.AutoToolState
 import com.example.shadowmap.presentation.components.DrawingCrosshair
 import com.example.shadowmap.presentation.components.DrawingPropertiesSheet
 import com.example.shadowmap.presentation.components.MapToolBar
+import com.example.shadowmap.presentation.components.Scene3DControls
 import com.example.shadowmap.scene.FilamentBuildingView
 import com.example.shadowmap.scene.Scene3DAppearance
+import com.example.shadowmap.scene.SceneCameraView
 import com.example.shadowmap.scene.SceneViewport
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 import com.example.shadowmap.ui.theme.ShadowMapDesign
@@ -222,6 +224,7 @@ private fun ShadowMapScreen(
     var buildingQueryLocation by remember { mutableStateOf<GeoPoint?>(null) }
     var show3d by remember { mutableStateOf(false) }
     var showSatelliteIn3d by remember { mutableStateOf(true) }
+    var sceneCameraView by remember { mutableStateOf(SceneCameraView.ORBIT) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
     var buildingLoadArea by remember { mutableStateOf<BuildingLoadArea?>(null) }
     var crosshairPoint by remember { mutableStateOf<GeoPoint?>(null) }
@@ -405,6 +408,7 @@ private fun ShadowMapScreen(
 
     fun enter3d() {
         sceneViewport = mapView?.toSceneViewport()
+        sceneCameraView = SceneCameraView.ORBIT
         show3d = true
     }
 
@@ -508,6 +512,8 @@ private fun ShadowMapScreen(
                 zenith = uiState.solarPosition?.zenithDegrees?.toFloat()
                     ?: Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES,
                 sunVisible = uiState.solarPosition?.isAboveHorizon == true,
+                cameraView = sceneCameraView,
+                onCameraViewChanged = { sceneCameraView = it },
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -527,14 +533,24 @@ private fun ShadowMapScreen(
                 .safeDrawingPadding()
         ) {
             if (show3d) {
-                Button(
-                    onClick = { showSatelliteIn3d = !showSatelliteIn3d },
+                Scene3DControls(
+                    cameraView = sceneCameraView,
+                    showSatellite = showSatelliteIn3d,
+                    onToggleCameraView = {
+                        sceneCameraView = if (sceneCameraView == SceneCameraView.TOP_DOWN) {
+                            SceneCameraView.ORBIT
+                        } else {
+                            SceneCameraView.TOP_DOWN
+                        }
+                    },
+                    onToggleSatellite = { showSatelliteIn3d = !showSatelliteIn3d },
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = dimensions.screenPadding, end = dimensions.screenPadding)
-                ) {
-                    Text(if (showSatelliteIn3d) "Hide satellite" else "Show satellite")
-                }
+                        .align(Alignment.BottomEnd)
+                        .padding(
+                            end = dimensions.screenPadding,
+                            bottom = THREE_D_BOTTOM_CONTROL_CLEARANCE
+                        )
+                )
             }
             if (uiState.buildings.isNotEmpty() || uiState.drawnWalls.isNotEmpty() || uiState.drawnTrees.isNotEmpty()) {
                 Button(
@@ -620,7 +636,13 @@ private fun ShadowMapScreen(
                 hostState = snackbarHostState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = if (show3d || showDateTime) 156.dp else 64.dp)
+                    .padding(
+                        bottom = if (show3d || showDateTime) {
+                            THREE_D_BOTTOM_CONTROL_CLEARANCE
+                        } else {
+                            64.dp
+                        }
+                    )
             )
         }
 
@@ -774,6 +796,8 @@ private fun ShadowMapScreen(
     }
 
 }
+
+private val THREE_D_BOTTOM_CONTROL_CLEARANCE = 156.dp
 
 private fun MapView.toSceneViewport(): SceneViewport? {
     if (width <= 0 || height <= 0) return null

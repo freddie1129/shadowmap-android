@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.shadowmap.domain.BuildingFootprint
@@ -48,15 +49,23 @@ fun FilamentBuildingView(
     viewport: SceneViewport?,
     azimuth: Float,
     zenith: Float,
-    sunVisible: Boolean
+    sunVisible: Boolean,
+    cameraView: SceneCameraView,
+    onCameraViewChanged: (SceneCameraView) -> Unit
 ) {
-    val renderer = remember { FilamentBuildingRenderer() }
+    val currentOnCameraViewChanged = rememberUpdatedState(onCameraViewChanged)
+    val renderer = remember {
+        FilamentBuildingRenderer { view -> currentOnCameraViewChanged.value(view) }
+    }
     AndroidView(
         factory = { context -> renderer.createSurface(context) },
         modifier = modifier
     )
     LaunchedEffect(buildings, walls, trees, viewport) {
-        renderer.setBuildings(buildings, walls, trees, viewport)
+        renderer.setBuildings(buildings, walls, trees, viewport, cameraView)
+    }
+    LaunchedEffect(cameraView) {
+        renderer.setCameraView(cameraView)
     }
     LaunchedEffect(azimuth, zenith, sunVisible) {
         renderer.setSun(azimuth, zenith, sunVisible)
@@ -65,7 +74,9 @@ fun FilamentBuildingView(
 }
 
 @Suppress("TooManyFunctions")
-private class FilamentBuildingRenderer : Choreographer.FrameCallback {
+private class FilamentBuildingRenderer(
+    private val onCameraViewChanged: (SceneCameraView) -> Unit
+) : Choreographer.FrameCallback {
     private val engine = Engine.create()
     private val filamentRenderer: Renderer = engine.createRenderer()
     private val scene: Scene = engine.createScene()
@@ -202,6 +213,7 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
                     } else {
                         if (alignedTopDown) {
                             alignedTopDown = false
+                            onCameraViewChanged(SceneCameraView.ORBIT)
                         }
                         cameraYaw =
                             (cameraYaw - distanceX * Scene3DCamera.ORBIT_DEGREES_PER_PIXEL) % 360f
@@ -217,7 +229,8 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
                 }
 
                 override fun onDoubleTap(event: MotionEvent): Boolean {
-                    resetCamera()
+                    resetToInitialOrbit()
+                    onCameraViewChanged(SceneCameraView.ORBIT)
                     return true
                 }
             }
@@ -237,7 +250,8 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
         buildings: List<BuildingFootprint>,
         walls: List<DrawnWall>,
         trees: List<DrawnTree>,
-        viewport: SceneViewport?
+        viewport: SceneViewport?,
+        cameraView: SceneCameraView
     ) {
         if (destroyed) return
         clearMesh()
@@ -322,7 +336,10 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
             .build(engine, renderableEntity)
         scene.addEntity(renderableEntity)
         sceneRadius = max(mesh.radiusMeters, Scene3DCamera.MIN_SCENE_RADIUS_METERS)
-        resetCamera()
+        when (cameraView) {
+            SceneCameraView.ORBIT -> resetToInitialOrbit()
+            SceneCameraView.TOP_DOWN -> resetToTopDown()
+        }
     }
 
     fun setSun(azimuth: Float, zenith: Float, visible: Boolean) {
@@ -394,7 +411,26 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
         return Material.Builder().payload(packageBuffer, packageBuffer.remaining()).build(engine)
     }
 
-    private fun resetCamera() {
+    fun setCameraView(cameraView: SceneCameraView) {
+        when (cameraView) {
+            SceneCameraView.ORBIT -> if (alignedTopDown) resetToInitialOrbit()
+            SceneCameraView.TOP_DOWN -> if (!alignedTopDown) resetToTopDown()
+        }
+    }
+
+    private fun resetToInitialOrbit() {
+        alignedTopDown = false
+        orthographicZoom = Scene3DCamera.DEFAULT_ORTHOGRAPHIC_ZOOM
+        cameraYaw = Scene3DCamera.DEFAULT_YAW_DEGREES
+        cameraPitch = Scene3DCamera.DEFAULT_PITCH_DEGREES
+        cameraDistance = Scene3DCamera.orbitDistance(sceneRadius, viewportRadius())
+        cameraTargetX = 0f
+        cameraTargetZ = 0f
+        updateProjection()
+        updateCamera()
+    }
+
+    private fun resetToTopDown() {
         alignedTopDown = true
         orthographicZoom = Scene3DCamera.DEFAULT_ORTHOGRAPHIC_ZOOM
         cameraYaw = Scene3DCamera.DEFAULT_YAW_DEGREES
