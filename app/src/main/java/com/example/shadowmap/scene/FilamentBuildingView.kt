@@ -64,6 +64,7 @@ fun FilamentBuildingView(
     DisposableEffect(renderer) { onDispose(renderer::destroy) }
 }
 
+@Suppress("TooManyFunctions")
 private class FilamentBuildingRenderer : Choreographer.FrameCallback {
     private val engine = Engine.create()
     private val filamentRenderer: Renderer = engine.createRenderer()
@@ -182,8 +183,8 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
                     } else {
                         cameraDistance = (cameraDistance / detector.scaleFactor)
                             .coerceIn(
-                                sceneRadius * Scene3DCamera.MIN_DISTANCE_MULTIPLIER,
-                                sceneRadius * Scene3DCamera.MAX_DISTANCE_MULTIPLIER
+                                minimumPerspectiveDistance(),
+                                maximumPerspectiveDistance()
                             )
                     }
                     updateCamera()
@@ -208,8 +209,7 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
                         panCamera(distanceX, distanceY)
                     } else {
                         if (alignedTopDown) {
-                            alignedTopDown = false
-                            updateProjection()
+                            enterPerspectiveMode()
                         }
                         cameraYaw =
                             (cameraYaw - distanceX * Scene3DCamera.ORBIT_DEGREES_PER_PIXEL) % 360f
@@ -412,6 +412,31 @@ private class FilamentBuildingRenderer : Choreographer.FrameCallback {
         cameraTargetZ = 0f
         updateProjection()
         updateCamera()
+    }
+
+    private fun enterPerspectiveMode() {
+        val viewport = sceneViewport
+        if (viewport != null) {
+            cameraDistance = Scene3DCamera.perspectiveDistanceForOrthographicHeight(
+                viewportHeightMeters = viewport.heightMeters,
+                orthographicZoom = orthographicZoom
+            ).coerceIn(minimumPerspectiveDistance(), maximumPerspectiveDistance())
+        }
+        alignedTopDown = false
+        updateProjection()
+    }
+
+    private fun minimumPerspectiveDistance(): Float =
+        Scene3DCamera.minimumPerspectiveDistance(sceneRadius, viewportRadius())
+
+    private fun maximumPerspectiveDistance(): Float =
+        Scene3DCamera.maximumPerspectiveDistance(sceneRadius, viewportRadius())
+
+    private fun viewportRadius(): Float {
+        val viewport = sceneViewport ?: return sceneRadius
+        val halfWidth = viewport.widthMeters / 2f
+        val halfHeight = viewport.heightMeters / 2f
+        return sqrt(halfWidth * halfWidth + halfHeight * halfHeight)
     }
 
     private fun panCamera(distanceX: Float, distanceY: Float) {

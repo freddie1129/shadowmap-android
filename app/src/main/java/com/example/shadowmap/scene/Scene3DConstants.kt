@@ -1,5 +1,9 @@
 package com.example.shadowmap.scene
 
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.tan
+
 data class SceneRgb(val red: Float, val green: Float, val blue: Float)
 
 data class SceneRgba(val red: Float, val green: Float, val blue: Float, val alpha: Float)
@@ -129,6 +133,26 @@ object Scene3DCamera {
 
     /** Maximum pan offset from the origin expressed as a multiplier of scene radius. */
     const val TARGET_LIMIT_MULTIPLIER = 2f
+
+    fun perspectiveDistanceForOrthographicHeight(
+        viewportHeightMeters: Float,
+        orthographicZoom: Float
+    ): Float {
+        val halfVerticalFieldOfViewRadians =
+            Math.toRadians(PERSPECTIVE_VERTICAL_FOV_DEGREES / 2.0)
+        return (
+            viewportHeightMeters * orthographicZoom /
+                (2.0 * tan(halfVerticalFieldOfViewRadians))
+            ).toFloat()
+    }
+
+    fun minimumPerspectiveDistance(sceneRadius: Float, viewportRadius: Float): Float =
+        min(sceneRadius, viewportRadius).coerceAtLeast(MIN_SCENE_RADIUS_METERS) *
+            MIN_DISTANCE_MULTIPLIER
+
+    fun maximumPerspectiveDistance(sceneRadius: Float, viewportRadius: Float): Float =
+        max(sceneRadius, viewportRadius).coerceAtLeast(MIN_SCENE_RADIUS_METERS) *
+            MAX_DISTANCE_MULTIPLIER
 }
 
 object Scene3DGeometry {
