@@ -3,12 +3,16 @@ package com.example.shadowmap.presentation
 import androidx.lifecycle.SavedStateHandle
 import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.domain.BuildingShadowCalculator
+import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DrawMode
+import com.example.shadowmap.domain.DrawnObjectSelection
+import com.example.shadowmap.domain.DrawnObjectType
 import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.SolarPositionCalculator
 import com.example.shadowmap.domain.UserObjectShadowCalculator
+import com.example.shadowmap.domain.SceneObjectSource
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -196,7 +200,7 @@ class ShadowMapViewModelTest {
     }
 
     @Test
-    fun clearScene_removesAutomaticAndManualObjects() {
+    fun clearScene_suppressesAutomaticAndRemovesManualObjects() {
         val viewModel = createViewModel()
         viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
         viewModel.selectDrawMode(DrawMode.TREE)
@@ -207,7 +211,114 @@ class ShadowMapViewModelTest {
 
         assertTrue(viewModel.uiState.value.buildings.isEmpty())
         assertTrue(viewModel.uiState.value.drawnTrees.isEmpty())
-        assertEquals(BuildingLoadState.Idle, viewModel.uiState.value.buildingLoadState)
+        assertEquals(BuildingLoadState.Loaded, viewModel.uiState.value.buildingLoadState)
+        assertEquals(1, viewModel.uiState.value.suppressedLoadedBuildings.size)
+    }
+
+    @Test
+    fun editedLoadedBuilding_keepsHeightAfterReload() {
+        val viewModel = createViewModel()
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        val building = viewModel.uiState.value.visibleLoadedBuildings.single()
+        viewModel.selectDrawing(
+            DrawnObjectSelection(
+                id = AutomaticBuildingMatcher.identity(building).selectionId,
+                type = DrawnObjectType.BUILDING,
+                source = SceneObjectSource.AUTOMATIC
+            )
+        )
+
+        viewModel.updateSelectedDrawing(heightMeters = 12.5)
+        viewModel.onBuildingsLoaded(
+            listOf(testBuilding().copy(heightMeters = 31.0)),
+            TEST_LOCATION
+        )
+
+        assertEquals(12.5, viewModel.uiState.value.visibleLoadedBuildings.single().heightMeters, 0.0)
+        assertEquals(1, viewModel.uiState.value.loadedBuildingOverrides.size)
+    }
+
+    @Test
+    fun resettingLoadedBuildingHeight_removesOverride() {
+        val viewModel = createViewModel()
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        val building = viewModel.uiState.value.visibleLoadedBuildings.single()
+        val selection = DrawnObjectSelection(
+            id = AutomaticBuildingMatcher.identity(building).selectionId,
+            type = DrawnObjectType.BUILDING,
+            source = SceneObjectSource.AUTOMATIC
+        )
+        viewModel.selectDrawing(selection)
+        viewModel.updateSelectedDrawing(heightMeters = 12.5)
+        viewModel.selectDrawing(selection)
+
+        viewModel.updateSelectedDrawing(heightMeters = building.heightMeters)
+
+        assertTrue(viewModel.uiState.value.loadedBuildingOverrides.isEmpty())
+        assertEquals(
+            building.heightMeters,
+            viewModel.uiState.value.visibleLoadedBuildings.single().heightMeters,
+            0.0
+        )
+    }
+
+    @Test
+    fun editedLoadedBuilding_migratesOverrideWhenSourceIdChanges() {
+        val viewModel = createViewModel()
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        val building = viewModel.uiState.value.visibleLoadedBuildings.single()
+        viewModel.selectDrawing(
+            DrawnObjectSelection(
+                AutomaticBuildingMatcher.identity(building).selectionId,
+                DrawnObjectType.BUILDING,
+                SceneObjectSource.AUTOMATIC
+            )
+        )
+        viewModel.updateSelectedDrawing(heightMeters = 9.5)
+
+        viewModel.onBuildingsLoaded(
+            listOf(testBuilding().copy(id = "replacement-id", heightMeters = 40.0)),
+            TEST_LOCATION
+        )
+
+        assertEquals(1, viewModel.uiState.value.loadedBuildings.size)
+        assertEquals(9.5, viewModel.uiState.value.visibleLoadedBuildings.single().heightMeters, 0.0)
+    }
+
+    @Test
+    fun deletedLoadedBuilding_staysHiddenAfterReloadAndCanBeRestored() {
+        val viewModel = createViewModel()
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        val building = viewModel.uiState.value.visibleLoadedBuildings.single()
+        viewModel.selectDrawing(
+            DrawnObjectSelection(
+                AutomaticBuildingMatcher.identity(building).selectionId,
+                DrawnObjectType.BUILDING,
+                SceneObjectSource.AUTOMATIC
+            )
+        )
+
+        assertTrue(viewModel.deleteSelectedDrawing())
+        viewModel.onBuildingsLoaded(listOf(testBuilding().copy(heightMeters = 50.0)), TEST_LOCATION)
+        assertTrue(viewModel.uiState.value.visibleLoadedBuildings.isEmpty())
+
+        viewModel.restoreLastDeletedObject()
+        assertEquals(1, viewModel.uiState.value.visibleLoadedBuildings.size)
+    }
+
+    @Test
+    fun clearSceneUndo_restoresFullSceneSnapshot() {
+        val viewModel = createViewModel()
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        viewModel.selectDrawMode(DrawMode.TREE)
+        viewModel.startTree(TEST_LOCATION)
+        viewModel.commitPendingDrawing(heightMeters = 8.0, radiusMeters = 2.5)
+
+        viewModel.clearScene()
+        viewModel.restoreClearedScene()
+
+        assertEquals(1, viewModel.uiState.value.visibleLoadedBuildings.size)
+        assertEquals(1, viewModel.uiState.value.drawnTrees.size)
     }
 
     private fun testBuilding(): BuildingFootprint {

@@ -6,8 +6,10 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 
 object SceneBuildingMerger {
-    fun automaticKey(building: BuildingFootprint): String =
-        "${building.id.orEmpty()}:${building.polygon.rings.hashCode()}"
+    fun automaticKey(building: BuildingFootprint): String {
+        val identity = AutomaticBuildingMatcher.identity(building)
+        return identity.selectionId
+    }
 
     fun automaticKeysCoveredByManualBuildings(
         automaticBuildings: List<BuildingFootprint>,

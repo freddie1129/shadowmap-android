@@ -1,6 +1,7 @@
 package com.example.shadowmap.map
 
 import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DEFAULT_BUILDING_HEIGHT_METERS
 import com.example.shadowmap.domain.DrawMode
 import com.example.shadowmap.domain.DrawnBuilding
@@ -11,6 +12,7 @@ import com.example.shadowmap.domain.DrawnWall
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.PendingDrawing
+import com.example.shadowmap.domain.SceneObjectSource
 import com.mapbox.common.Cancelable
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
@@ -63,6 +65,8 @@ constructor(
                 listOf(
                     SELECTED_LINE_LAYER_ID,
                     SELECTED_FILL_LAYER_ID,
+                    LOADED_BUILDINGS_LINE_LAYER_ID,
+                    LOADED_BUILDINGS_FILL_LAYER_ID,
                     DRAWN_TREES_CENTER_LAYER_ID,
                     DRAWN_TREES_LINE_LAYER_ID,
                     DRAWN_TREES_FILL_LAYER_ID,
@@ -76,12 +80,17 @@ constructor(
             val feature = result.value?.firstOrNull()?.queriedFeature?.feature
             val id = feature?.getStringProperty(PROPERTY_ID)
             val type = when (feature?.getStringProperty(PROPERTY_TYPE)) {
-                TYPE_DRAWN_BUILDING -> DrawnObjectType.BUILDING
+                TYPE_LOADED_BUILDING, TYPE_DRAWN_BUILDING -> DrawnObjectType.BUILDING
                 TYPE_WALL -> DrawnObjectType.WALL
                 TYPE_TREE, TYPE_TREE_CENTER -> DrawnObjectType.TREE
                 else -> null
             }
-            callback(if (id != null && type != null) DrawnObjectSelection(id, type) else null)
+            val source = if (feature?.getStringProperty(PROPERTY_TYPE) == TYPE_LOADED_BUILDING) {
+                SceneObjectSource.AUTOMATIC
+            } else {
+                SceneObjectSource.MANUAL
+            }
+            callback(if (id != null && type != null) DrawnObjectSelection(id, type, source) else null)
         }
     }
 
@@ -287,25 +296,34 @@ constructor(
     ): FeatureCollection {
         val features = mutableListOf<Feature>()
         loadedBuildings.forEach { building ->
-            features += building.polygon.toFeature(building.id, TYPE_LOADED_BUILDING, false)
+            val selectionId = AutomaticBuildingMatcher.identity(building).selectionId
+            features += building.polygon.toFeature(
+                selectionId,
+                TYPE_LOADED_BUILDING,
+                selection?.source == SceneObjectSource.AUTOMATIC && selection.id == selectionId
+            )
         }
         drawnBuildings.forEach { building ->
             features += building.polygon.toFeature(
                 building.id,
                 TYPE_DRAWN_BUILDING,
-                selection?.id == building.id
+                selection?.source == SceneObjectSource.MANUAL && selection.id == building.id
             )
         }
         drawnWalls.forEach { wall ->
             features += Feature.fromGeometry(
                 LineString.fromLngLats(wall.points.map { it.toMapboxPoint() })
-            ).withProperties(wall.id, TYPE_WALL, selection?.id == wall.id)
+            ).withProperties(
+                wall.id,
+                TYPE_WALL,
+                selection?.source == SceneObjectSource.MANUAL && selection.id == wall.id
+            )
         }
         drawnTrees.forEach { tree ->
             features += tree.toCanopyPolygon().toFeature(
                 tree.id,
                 TYPE_TREE,
-                selection?.id == tree.id
+                selection?.source == SceneObjectSource.MANUAL && selection.id == tree.id
             )
             features += Feature.fromGeometry(tree.center.toMapboxPoint())
                 .withProperties(tree.id, TYPE_TREE_CENTER, false)
@@ -430,12 +448,19 @@ constructor(
 
     private fun StandardBuildingsFeature.toDomainFootprints(): List<BuildingFootprint> {
         val featureHeight = height?.takeIf { it > 0.0 } ?: DEFAULT_BUILDING_HEIGHT_METERS
+        val featureId = this.id?.featureId ?: originalFeature.id()
+        val featureNamespace = this.id?.featureNamespace
         return geometry.toGeoPolygons().map { polygon ->
             BuildingFootprint(
-                id = originalFeature.id(),
+                id = featureId,
                 polygon = polygon,
                 heightMeters = featureHeight,
-                minHeightMeters = minHeight ?: 0.0
+                minHeightMeters = minHeight ?: 0.0,
+                automaticIdentity = AutomaticBuildingMatcher.identity(
+                    featureId = featureId,
+                    featureNamespace = featureNamespace,
+                    polygon = polygon
+                )
             )
         }
     }

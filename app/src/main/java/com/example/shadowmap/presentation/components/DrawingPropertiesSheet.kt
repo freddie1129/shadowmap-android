@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,10 +30,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.domain.DrawnObjectType
+import com.example.shadowmap.domain.SceneObjectSource
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 import java.util.Locale
+import kotlin.math.abs
 
 @Composable
+@Suppress("CyclomaticComplexMethod")
 fun DrawingPropertiesSheet(
     type: DrawnObjectType,
     initialHeightMeters: Double,
@@ -41,7 +45,10 @@ fun DrawingPropertiesSheet(
     onBack: () -> Unit,
     onApply: (heightMeters: Double, radiusMeters: Double?) -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    objectSource: SceneObjectSource? = null,
+    isEditedAutomaticObject: Boolean = false,
+    loadedHeightMeters: Double? = null
 ) {
     val config = type.propertyPanelConfig()
     var heightText by remember(type, initialHeightMeters) {
@@ -68,7 +75,11 @@ fun DrawingPropertiesSheet(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            PropertyPanelHeader(config.title, onBack)
+            PropertyPanelHeader(
+                title = config.title,
+                sourceLabel = propertySourceLabel(isCreating, objectSource, isEditedAutomaticObject),
+                onBack = onBack
+            )
             MeasurementEditor(
                 label = "Height",
                 value = heightText,
@@ -88,7 +99,12 @@ fun DrawingPropertiesSheet(
             )
 
             if (type == DrawnObjectType.BUILDING) {
-                BuildingHeightPresets { heightText = it.toEditableText() }
+                BuildingHeightControls(
+                    objectSource = objectSource,
+                    loadedHeightMeters = loadedHeightMeters,
+                    currentHeightMeters = height,
+                    onSelected = { heightText = it.toEditableText() }
+                )
             }
 
             if (type == DrawnObjectType.TREE) {
@@ -113,23 +129,58 @@ fun DrawingPropertiesSheet(
     }
 }
 
+private fun propertySourceLabel(
+    isCreating: Boolean,
+    objectSource: SceneObjectSource?,
+    isEditedAutomaticObject: Boolean
+): String = when {
+    isCreating -> "New manual object"
+    objectSource == SceneObjectSource.AUTOMATIC && isEditedAutomaticObject ->
+        "Automatically loaded · Edited"
+    objectSource == SceneObjectSource.AUTOMATIC -> "Automatically loaded"
+    else -> "Manually drawn"
+}
+
 @Composable
-private fun PropertyPanelHeader(title: String, onBack: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+private fun BuildingHeightControls(
+    objectSource: SceneObjectSource?,
+    loadedHeightMeters: Double?,
+    currentHeightMeters: Double?,
+    onSelected: (Double) -> Unit
+) {
+    Column {
+        if (objectSource == SceneObjectSource.AUTOMATIC && loadedHeightMeters != null) {
+            TextButton(
+                onClick = { onSelected(loadedHeightMeters) },
+                enabled = currentHeightMeters == null ||
+                    abs(currentHeightMeters - loadedHeightMeters) >= HEIGHT_EQUALITY_TOLERANCE_METERS
+            ) {
+                Text("Reset to loaded height · ${loadedHeightMeters.toEditableText()} m")
+            }
         }
-        Text(text = title, style = MaterialTheme.typography.titleLarge)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(3.0, 6.0, 10.0).forEach { preset ->
+                OutlinedButton(onClick = { onSelected(preset) }) {
+                    Text("${preset.toInt()} m")
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun BuildingHeightPresets(onSelected: (Double) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf(3.0, 6.0, 10.0).forEach { preset ->
-            OutlinedButton(onClick = { onSelected(preset) }) {
-                Text("${preset.toInt()} m")
-            }
+private fun PropertyPanelHeader(title: String, sourceLabel: String, onBack: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+        }
+        Column {
+            Text(text = title, style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = sourceLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -168,7 +219,7 @@ private fun PropertyPanelActions(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (!isCreating) {
             OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) {
-                Text("Remove")
+                Text("Delete", color = MaterialTheme.colorScheme.error)
             }
         }
         Button(
@@ -276,6 +327,25 @@ private fun TreePropertiesSheetPreview() {
     DrawingPropertiesPreview(type = DrawnObjectType.TREE)
 }
 
+@Preview(name = "Edited loaded building · tablet", widthDp = 800, showBackground = true)
+@Composable
+private fun EditedLoadedBuildingPropertiesSheetPreview() {
+    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
+        DrawingPropertiesSheet(
+            type = DrawnObjectType.BUILDING,
+            initialHeightMeters = 12.5,
+            initialRadiusMeters = null,
+            isCreating = false,
+            objectSource = SceneObjectSource.AUTOMATIC,
+            isEditedAutomaticObject = true,
+            loadedHeightMeters = 18.0,
+            onBack = {},
+            onApply = { _, _ -> },
+            onDelete = {}
+        )
+    }
+}
+
 @Composable
 private fun DrawingPropertiesPreview(type: DrawnObjectType) {
     ShadowMapTheme(darkTheme = false, dynamicColor = false) {
@@ -288,6 +358,7 @@ private fun DrawingPropertiesPreview(type: DrawnObjectType) {
             },
             initialRadiusMeters = if (type == DrawnObjectType.TREE) 2.5 else null,
             isCreating = true,
+            objectSource = SceneObjectSource.MANUAL,
             onBack = {},
             onApply = { _, _ -> },
             onDelete = {}
@@ -298,3 +369,4 @@ private fun DrawingPropertiesPreview(type: DrawnObjectType) {
 private const val MEASUREMENT_STEP_METERS = 0.5
 private const val MIN_CROWN_WIDTH_METERS = 1.0
 private const val MAX_CROWN_WIDTH_METERS = 40.0
+private const val HEIGHT_EQUALITY_TOLERANCE_METERS = 0.051

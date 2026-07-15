@@ -1,6 +1,8 @@
 package com.example.shadowmap.presentation
 
 import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.AutomaticBuildingIdentity
+import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DrawMode
 import com.example.shadowmap.domain.DrawnBuilding
 import com.example.shadowmap.domain.DrawnObjectSelection
@@ -9,6 +11,7 @@ import com.example.shadowmap.domain.DrawnWall
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.PendingDrawing
+import com.example.shadowmap.domain.LoadedBuildingOverride
 import com.example.shadowmap.domain.SolarPosition
 import com.example.shadowmap.domain.SceneBuildingMerger
 
@@ -18,6 +21,8 @@ data class ShadowMapUiState(
     val calculationLocation: GeoPoint? = null,
     val solarPosition: SolarPosition? = null,
     val loadedBuildings: List<BuildingFootprint> = emptyList(),
+    val loadedBuildingOverrides: Map<AutomaticBuildingIdentity, LoadedBuildingOverride> = emptyMap(),
+    val suppressedLoadedBuildings: Map<AutomaticBuildingIdentity, GeoPolygon> = emptyMap(),
     val automaticBuildingKeysCoveredByManual: Set<String> = emptySet(),
     val drawnBuildings: List<DrawnBuilding> = emptyList(),
     val drawnWalls: List<DrawnWall> = emptyList(),
@@ -31,8 +36,18 @@ data class ShadowMapUiState(
     val buildingLoadState: BuildingLoadState = BuildingLoadState.Idle
 ) {
     val visibleLoadedBuildings: List<BuildingFootprint>
-        get() = loadedBuildings.filterNot { building ->
-            SceneBuildingMerger.automaticKey(building) in automaticBuildingKeysCoveredByManual
+        get() = loadedBuildings.mapNotNull { building ->
+            val identity = AutomaticBuildingMatcher.identity(building)
+            if (
+                identity in suppressedLoadedBuildings ||
+                SceneBuildingMerger.automaticKey(building) in automaticBuildingKeysCoveredByManual
+            ) {
+                null
+            } else {
+                loadedBuildingOverrides[identity]?.let { override ->
+                    building.copy(heightMeters = override.heightMeters, automaticIdentity = identity)
+                } ?: building.copy(automaticIdentity = identity)
+            }
         }
 
     val buildings: List<BuildingFootprint>
@@ -49,10 +64,13 @@ data class ShadowMapUiState(
         get() = drawnBuildings.isNotEmpty() || drawnWalls.isNotEmpty() || drawnTrees.isNotEmpty()
 
     val hasSceneObjects: Boolean
-        get() = loadedBuildings.isNotEmpty() || hasDrawings
+        get() = visibleLoadedBuildings.isNotEmpty() || hasDrawings
 
     val hasDraft: Boolean
         get() = inProgressVertices.isNotEmpty() || pendingDrawing != null
+
+    fun isLoadedBuildingEdited(selectionId: String): Boolean =
+        loadedBuildingOverrides.keys.any { it.selectionId == selectionId }
 }
 
 sealed interface BuildingLoadState {

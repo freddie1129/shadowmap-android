@@ -49,6 +49,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
 import com.example.shadowmap.domain.DEFAULT_DRAWN_TREE_HEIGHT_METERS
 import com.example.shadowmap.domain.DEFAULT_DRAWN_TREE_RADIUS_METERS
@@ -57,6 +58,7 @@ import com.example.shadowmap.domain.DrawMode
 import com.example.shadowmap.domain.DrawnObjectType
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.PendingDrawing
+import com.example.shadowmap.domain.SceneObjectSource
 import com.example.shadowmap.map.BuildingLoadArea
 import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.presentation.BuildingLoadState
@@ -88,6 +90,7 @@ import kotlin.math.ln
 import kotlin.math.max
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -138,8 +141,10 @@ private fun ShadowMapRoute(
         onCommitPendingDrawing = viewModel::commitPendingDrawing,
         onUpdateSelectedDrawing = viewModel::updateSelectedDrawing,
         onDeleteSelectedDrawing = viewModel::deleteSelectedDrawing,
+        onRestoreDeletedObject = viewModel::restoreLastDeletedObject,
         onSelectDrawing = viewModel::selectDrawing,
         onClearScene = viewModel::clearScene,
+        onRestoreClearedScene = viewModel::restoreClearedScene,
         mapControllerFactory = mapControllerFactory,
         modifier = modifier
     )
@@ -166,9 +171,11 @@ private fun ShadowMapScreen(
     onReturnPendingToDrawing: () -> Unit,
     onCommitPendingDrawing: (Double, Double?) -> Unit,
     onUpdateSelectedDrawing: (Double, Double?) -> Unit,
-    onDeleteSelectedDrawing: () -> Unit,
+    onDeleteSelectedDrawing: () -> Boolean,
+    onRestoreDeletedObject: () -> Unit,
     onSelectDrawing: (com.example.shadowmap.domain.DrawnObjectSelection?) -> Unit,
     onClearScene: () -> Unit,
+    onRestoreClearedScene: () -> Unit,
     mapControllerFactory: MapboxShadowMapController.Factory,
     modifier: Modifier = Modifier
 ) {
@@ -411,10 +418,17 @@ private fun ShadowMapScreen(
     val propertyType = pendingType ?: selectedType
     val selectionId = uiState.selectedDrawing?.id
     val selectedBuilding = uiState.drawnBuildings.find { it.id == selectionId }
+    val selectedLoadedBuilding = uiState.visibleLoadedBuildings.find { building ->
+        AutomaticBuildingMatcher.identity(building).selectionId == selectionId
+    }
+    val selectedOriginalLoadedBuilding = uiState.loadedBuildings.find { building ->
+        AutomaticBuildingMatcher.identity(building).selectionId == selectionId
+    }
     val selectedWall = uiState.drawnWalls.find { it.id == selectionId }
     val selectedTree = uiState.drawnTrees.find { it.id == selectionId }
     val propertyInitialHeight = propertyType?.let { type ->
-        selectedBuilding?.heightMeters
+        selectedLoadedBuilding?.heightMeters
+            ?: selectedBuilding?.heightMeters
             ?: selectedWall?.heightMeters
             ?: selectedTree?.heightMeters
             ?: when (type) {
@@ -631,6 +645,9 @@ private fun ShadowMapScreen(
                             null
                         },
                     isCreating = pendingType != null,
+                    objectSource = uiState.selectedDrawing?.source ?: SceneObjectSource.MANUAL,
+                    isEditedAutomaticObject = selectionId?.let(uiState::isLoadedBuildingEdited) == true,
+                    loadedHeightMeters = selectedOriginalLoadedBuilding?.heightMeters,
                     onBack = {
                         if (pendingType != null) onReturnPendingToDrawing() else onSelectDrawing(null)
                     },
@@ -641,7 +658,21 @@ private fun ShadowMapScreen(
                             onUpdateSelectedDrawing(height, radius)
                         }
                     },
-                    onDelete = onDeleteSelectedDrawing,
+                    onDelete = {
+                        if (onDeleteSelectedDrawing()) {
+                            coroutineScope.launch {
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                                val result = snackbarHostState.showSnackbar(
+                                    message = "Object deleted",
+                                    actionLabel = "Undo",
+                                    duration = SnackbarDuration.Long
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    onRestoreDeletedObject()
+                                }
+                            }
+                        }
+                    },
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
@@ -661,15 +692,31 @@ private fun ShadowMapScreen(
             title = { Text("Clear scene?") },
             text = {
                 Text(
-                    "Remove ${uiState.loadedBuildings.size} automatic buildings, " +
+                    "Remove ${uiState.visibleLoadedBuildings.size} automatic buildings, " +
                         "${uiState.drawnBuildings.size} manual buildings, " +
-                        "${uiState.drawnWalls.size} walls, and ${uiState.drawnTrees.size} trees?"
+                        "${uiState.drawnWalls.size} walls, and ${uiState.drawnTrees.size} trees? " +
+                        "Loaded buildings will stay hidden after Auto is used again."
                 )
             },
             confirmButton = {
                 Button(onClick = {
                     onClearScene()
                     showClearConfirmation = false
+                    coroutineScope.launch {
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        val result = withTimeoutOrNull(CLEAR_UNDO_MILLIS) {
+                            snackbarHostState.showSnackbar(
+                                message = "Scene cleared",
+                                actionLabel = "Undo",
+                                duration = SnackbarDuration.Indefinite
+                            )
+                        }
+                        if (result == SnackbarResult.ActionPerformed) {
+                            onRestoreClearedScene()
+                        } else {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                        }
+                    }
                 }) { Text("Clear all") }
             },
             dismissButton = {
@@ -755,3 +802,4 @@ private fun MapView.toBuildingLoadArea(): BuildingLoadArea? =
 private const val MIN_POINT_SPACING_DP = 12f
 private const val MAX_AUTO_LOAD_METERS = 500.0
 private const val AUTO_LOAD_ZOOM_PADDING = 0.1
+private const val CLEAR_UNDO_MILLIS = 8_000L

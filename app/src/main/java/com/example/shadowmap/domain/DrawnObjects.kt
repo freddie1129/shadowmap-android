@@ -41,7 +41,16 @@ enum class DrawnObjectType {
     TREE
 }
 
-data class DrawnObjectSelection(val id: String, val type: DrawnObjectType)
+enum class SceneObjectSource {
+    MANUAL,
+    AUTOMATIC
+}
+
+data class DrawnObjectSelection(
+    val id: String,
+    val type: DrawnObjectType,
+    val source: SceneObjectSource = SceneObjectSource.MANUAL
+)
 
 const val DEFAULT_DRAWN_BUILDING_HEIGHT_METERS = 6.0
 const val DEFAULT_DRAWN_WALL_HEIGHT_METERS = 2.5
