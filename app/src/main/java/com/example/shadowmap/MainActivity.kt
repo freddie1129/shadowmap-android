@@ -481,7 +481,7 @@ private fun ShadowMapScreen(
                 false
             },
             compass = { Compass(modifier = Modifier.safeDrawingPadding()) },
-            scaleBar = { ScaleBar(modifier = Modifier.safeDrawingPadding()) },
+            scaleBar = { },
             logo = { Logo(modifier = Modifier.safeDrawingPadding()) },
             attribution = { Attribution(modifier = Modifier.safeDrawingPadding()) },
             style = { MapboxStandardSatelliteStyle() }
