@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -69,9 +70,14 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private val LINE_COLOR = Color.White
-private val CENTRE_ARROW_COLOR = Color(0xFFCC0000)
 private const val DATE_RANGE_YEARS = 20L
+
+private data class SpinnerColors(
+    val surface: Color,
+    val content: Color,
+    val tick: Color,
+    val arrow: Color,
+)
 
 private object DateTimeSpinnerDefaults {
     val dayWidth = 2.dp
@@ -104,6 +110,27 @@ fun DateTimeSpinner(
     modifier: Modifier = Modifier,
 ) {
     val dimensions = ShadowMapDesign.dimensions
+    val themeSurface = MaterialTheme.colorScheme.surface
+    val themeOnSurface = MaterialTheme.colorScheme.onSurface
+    val themePrimary = MaterialTheme.colorScheme.primary
+    val spinnerColors = remember(themeSurface, themeOnSurface, themePrimary) {
+        val isDark = themeSurface.luminance() < 0.5f
+        if (isDark) {
+            SpinnerColors(
+                surface = Color.Black.copy(alpha = 0.92f),
+                content = Color.White,
+                tick = Color.White,
+                arrow = Color(0xFFCC0000),
+            )
+        } else {
+            SpinnerColors(
+                surface = themeSurface.copy(alpha = 0.94f),
+                content = themeOnSurface,
+                tick = themeOnSurface.copy(alpha = 0.72f),
+                arrow = themePrimary,
+            )
+        }
+    }
     val zoneId = remember(timeZoneId) {
         runCatching { ZoneId.of(timeZoneId) }.getOrElse { ZoneId.systemDefault() }
     }
@@ -111,7 +138,9 @@ fun DateTimeSpinner(
         Instant.ofEpochMilli(selectedEpochMillis).atZone(zoneId)
     }
     val dateRange = remember(initialDateTime.year) { buildDateRange(initialDateTime.toLocalDate()) }
-    val timeRange = remember(initialDateTime.toLocalDate()) { buildTimeRange(initialDateTime.toLocalDate()) }
+    // The time ruler is intentionally independent from the selected date. Rebuilding this
+    // range while the date ruler is dragged would reset the time ruler's scroll position.
+    val timeRange = remember { buildTimeRange() }
     val dateListState = rememberLazyListState()
     val timeListState = rememberLazyListState()
     val density = LocalDensity.current
@@ -207,7 +236,7 @@ fun DateTimeSpinner(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.extraLarge,
-            color = Color.Black.copy(alpha = 0.92f),
+            color = spinnerColors.surface,
             shadowElevation = DateTimeSpinnerDefaults.shadowElevation,
             tonalElevation = DateTimeSpinnerDefaults.tonalElevation,
         ) {
@@ -228,9 +257,10 @@ fun DateTimeSpinner(
                         onNowSelected()
                     },
                     onCalendar = { showDatePicker = true },
+                    colors = spinnerColors,
                 )
-                DateRuler(dateListState, dateRange, DateTimeSpinnerDefaults.dayWidth)
-                TimeRuler(timeListState, timeRange, DateTimeSpinnerDefaults.minuteWidth)
+                DateRuler(dateListState, dateRange, DateTimeSpinnerDefaults.dayWidth, spinnerColors)
+                TimeRuler(timeListState, timeRange, DateTimeSpinnerDefaults.minuteWidth, spinnerColors)
             }
         }
     }
@@ -241,8 +271,10 @@ private fun buildDateRange(referenceDate: LocalDate): List<LocalDate> {
     return (0..(DATE_RANGE_YEARS * 24).toInt()).map { start.plusMonths(it.toLong()) }
 }
 
-private fun buildTimeRange(referenceDate: LocalDate): List<LocalDateTime> =
-    (0..72).map { referenceDate.minusDays(1).atStartOfDay().plusHours(it.toLong()) }
+private fun buildTimeRange(): List<LocalDateTime> {
+    val anchor = LocalDateTime.of(2000, 1, 1, 0, 0)
+    return (0..72).map { anchor.plusHours(it.toLong()) }
+}
 
 @Composable
 private fun SpinnerHeader(
@@ -250,19 +282,20 @@ private fun SpinnerHeader(
     selectedTime: LocalTime,
     onReset: () -> Unit,
     onCalendar: () -> Unit,
+    colors: SpinnerColors,
 ) {
     val dimensions = ShadowMapDesign.dimensions
     Box(modifier = Modifier.fillMaxWidth().height(dimensions.minimumTouchTarget)) {
         Text(
             text = selectedDate.format(DateTimeFormatter.ISO_DATE),
-            color = LINE_COLOR,
+            color = colors.content,
             fontSize = 12.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.Center),
         )
         Text(
             text = selectedTime.format(DateTimeFormatter.ofPattern("hh:mm a")),
-            color = LINE_COLOR,
+            color = colors.content,
             fontSize = 13.sp,
             modifier = Modifier.align(Alignment.CenterStart).padding(start = dimensions.spacingXs),
         )
@@ -271,7 +304,7 @@ private fun SpinnerHeader(
                 Icon(
                     painter = painterResource(R.drawable.baseline_settings_backup_restore_24),
                     contentDescription = "Reset to now",
-                    tint = LINE_COLOR,
+                    tint = colors.content,
                     modifier = Modifier.size(dimensions.iconSize),
                 )
             }
@@ -279,7 +312,7 @@ private fun SpinnerHeader(
                 Icon(
                     painter = painterResource(R.drawable.baseline_calendar_month_24),
                     contentDescription = "Choose date",
-                    tint = LINE_COLOR,
+                    tint = colors.content,
                     modifier = Modifier.size(dimensions.iconSize),
                 )
             }
@@ -288,55 +321,65 @@ private fun SpinnerHeader(
 }
 
 @Composable
-private fun DateRuler(state: LazyListState, dates: List<LocalDate>, dayWidth: Dp) {
+private fun DateRuler(
+    state: LazyListState,
+    dates: List<LocalDate>,
+    dayWidth: Dp,
+    colors: SpinnerColors,
+) {
     Box(modifier = Modifier.fillMaxWidth().height(DateTimeSpinnerDefaults.rulerHeight)) {
         LazyRow(state = state, modifier = Modifier.fillMaxWidth()) {
             items(count = dates.size, key = { dates[it].toString() }) { index ->
-                MonthRulerItem(dates[index], dayWidth)
+                MonthRulerItem(dates[index], dayWidth, colors)
             }
         }
-        RulerEdgeFades()
-        CentreArrow()
+        RulerEdgeFades(colors.surface)
+        CentreArrow(colors.arrow)
     }
 }
 
 @Composable
-private fun TimeRuler(state: LazyListState, times: List<LocalDateTime>, minuteWidth: Dp) {
+private fun TimeRuler(
+    state: LazyListState,
+    times: List<LocalDateTime>,
+    minuteWidth: Dp,
+    colors: SpinnerColors,
+) {
     Box(modifier = Modifier.fillMaxWidth().height(DateTimeSpinnerDefaults.rulerHeight)) {
         LazyRow(state = state, modifier = Modifier.fillMaxWidth()) {
             items(count = times.size, key = { times[it].toString() }) { index ->
-                HourRulerItem(times[index], minuteWidth)
+                HourRulerItem(times[index], minuteWidth, colors)
             }
         }
-        RulerEdgeFades()
-        CentreArrow()
+        RulerEdgeFades(colors.surface)
+        CentreArrow(colors.arrow)
     }
 }
 
 @Composable
-private fun BoxScope.RulerEdgeFades() {
+private fun BoxScope.RulerEdgeFades(surfaceColor: Color) {
     Box(
         modifier = Modifier
             .align(Alignment.CenterStart)
             .width(DateTimeSpinnerDefaults.edgeFadeWidth)
             .fillMaxHeight()
-            .background(Brush.horizontalGradient(listOf(Color.Black, Color.Transparent))),
+            .background(Brush.horizontalGradient(listOf(surfaceColor, Color.Transparent))),
     )
     Box(
         modifier = Modifier
             .align(Alignment.CenterEnd)
             .width(DateTimeSpinnerDefaults.edgeFadeWidth)
             .fillMaxHeight()
-            .background(Brush.horizontalGradient(listOf(Color.Transparent, Color.Black))),
+            .background(Brush.horizontalGradient(listOf(Color.Transparent, surfaceColor))),
     )
 }
 
 @Composable
-private fun BoxScope.CentreArrow() {
+private fun BoxScope.CentreArrow(arrowColor: Color) {
     Icon(
         painter = painterResource(R.drawable.sharp_arrow_drop_down_24),
         contentDescription = null,
-        tint = CENTRE_ARROW_COLOR,
+        tint = arrowColor,
         modifier = Modifier
             .size(
                 width = DateTimeSpinnerDefaults.arrowWidth,
@@ -347,48 +390,48 @@ private fun BoxScope.CentreArrow() {
 }
 
 @Composable
-private fun MonthRulerItem(month: LocalDate, dayWidth: Dp) {
+private fun MonthRulerItem(month: LocalDate, dayWidth: Dp, colors: SpinnerColors) {
     Column(
         modifier = Modifier
             .width(dayWidth * month.lengthOfMonth())
             .padding(top = DateTimeSpinnerDefaults.rulerTopPadding),
     ) {
-        RulerTicks(count = 5)
+        RulerTicks(count = 5, color = colors.tick)
         Text(
             text = month.format(DateTimeFormatter.ofPattern("MMM")),
             fontSize = 10.sp,
-            color = LINE_COLOR,
+            color = colors.content,
             modifier = Modifier.centerLabelOnStart(),
         )
     }
 }
 
 @Composable
-private fun HourRulerItem(hour: LocalDateTime, minuteWidth: Dp) {
+private fun HourRulerItem(hour: LocalDateTime, minuteWidth: Dp, colors: SpinnerColors) {
     Column(
         modifier = Modifier
             .width(minuteWidth * 60)
             .padding(top = DateTimeSpinnerDefaults.rulerTopPadding),
     ) {
-        RulerTicks(count = 12)
+        RulerTicks(count = 12, color = colors.tick)
         Text(
             text = hour.format(DateTimeFormatter.ofPattern("hh:mm a")),
             fontSize = 8.sp,
-            color = LINE_COLOR,
+            color = colors.content,
             modifier = Modifier.centerLabelOnStart(),
         )
     }
 }
 
 @Composable
-private fun RulerTicks(count: Int) {
+private fun RulerTicks(count: Int, color: Color) {
     Canvas(modifier = Modifier.fillMaxWidth().height(DateTimeSpinnerDefaults.tickHeight)) {
         val strokeWidth = DateTimeSpinnerDefaults.tickStrokeWidth.toPx()
         val spacing = size.width / count
         repeat(count) { index ->
             val x = spacing * index + strokeWidth / 2f
             val lineHeight = if (index == 0) size.height else size.height / 2f
-            drawLine(LINE_COLOR, Offset(x, 0f), Offset(x, lineHeight), strokeWidth)
+            drawLine(color, Offset(x, 0f), Offset(x, lineHeight), strokeWidth)
         }
     }
 }
@@ -453,7 +496,7 @@ private suspend fun LazyListState.centerOnTime(
 ) {
     val viewportWidth = layoutInfo.viewportSize.width
     if (viewportWidth == 0) return
-    val hourIndex = times.indexOfFirst { it.toLocalDate() == dateTime.toLocalDate() && it.hour == dateTime.hour }
+    val hourIndex = times.indexOfFirst { it.hour == dateTime.hour }
     if (hourIndex < 0) return
     val hourWidth = minuteWidthPx * 60f
     val target = (hourIndex * hourWidth + (dateTime.minute + 0.5f) * minuteWidthPx - viewportWidth / 2f)
@@ -465,17 +508,33 @@ private suspend fun LazyListState.centerOnTime(
 private fun LocalDateTime.toEpochMillis(zoneId: ZoneId): Long = atZone(zoneId).toInstant().toEpochMilli()
 
 @Preview(
-    name = "Date and time spinner",
+    name = "Date and time spinner · Light",
+    widthDp = 360,
+    showBackground = true,
+    backgroundColor = 0xFFFFFFFF,
+)
+@Composable
+private fun DateTimeSpinnerLightPreview() {
+    DateTimeSpinnerPreviewContent(darkTheme = false)
+}
+
+@Preview(
+    name = "Date and time spinner · Dark",
     widthDp = 360,
     showBackground = true,
     backgroundColor = 0xFF000000,
 )
 @Composable
-private fun DateTimeSpinnerPreview() {
+private fun DateTimeSpinnerDarkPreview() {
+    DateTimeSpinnerPreviewContent(darkTheme = true)
+}
+
+@Composable
+private fun DateTimeSpinnerPreviewContent(darkTheme: Boolean) {
     val zoneId = ZoneId.of("Australia/Brisbane")
     val dateTime = LocalDateTime.of(2026, 7, 13, 14, 30)
 
-    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
+    ShadowMapTheme(darkTheme = darkTheme, dynamicColor = false) {
         DateTimeSpinner(
             selectedEpochMillis = dateTime.atZone(zoneId).toInstant().toEpochMilli(),
             timeZoneId = zoneId.id,
