@@ -74,6 +74,7 @@ import com.example.shadowmap.presentation.components.DrawingPropertiesSheet
 import com.example.shadowmap.presentation.components.MapToolBar
 import com.example.shadowmap.presentation.components.LocationSearchEntry
 import com.example.shadowmap.presentation.components.LocationSearchScreen
+import com.example.shadowmap.presentation.components.SelectedLocationSheet
 import com.example.shadowmap.presentation.components.Scene3DControls
 import com.example.shadowmap.scene.FilamentBuildingView
 import com.example.shadowmap.scene.Scene3DAppearance
@@ -279,6 +280,7 @@ private fun ShadowMapScreen(
     var showClearConfirmation by remember { mutableStateOf(false) }
     var showDiscardDraftConfirmation by remember { mutableStateOf(false) }
     var showDraft3dConfirmation by remember { mutableStateOf(false) }
+    var showSelectedLocationSheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -589,6 +591,7 @@ private fun ShadowMapScreen(
                 LocationSearchEntry(
                     label = uiState.selectedLocationLabel,
                     onClick = onOpenLocationSearch,
+                    onInfoClick = { showSelectedLocationSheet = true },
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = 8.dp)
@@ -864,6 +867,13 @@ private fun ShadowMapScreen(
                     Text("Continue drawing")
                 }
             }
+        )
+    }
+
+    if (showSelectedLocationSheet && uiState.selectedLocationLabel != null) {
+        SelectedLocationSheet(
+            address = uiState.selectedLocationLabel,
+            onDismiss = { showSelectedLocationSheet = false }
         )
     }
 

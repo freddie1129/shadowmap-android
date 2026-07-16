@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,6 +24,7 @@ import com.example.shadowmap.ui.theme.ShadowMapTheme
 fun LocationSearchEntry(
     label: String?,
     onClick: () -> Unit,
+    onInfoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -29,21 +32,41 @@ fun LocationSearchEntry(
             .fillMaxWidth()
             .statusBarsPadding()
             .padding(horizontal = 16.dp)
-            .clickable(onClick = onClick)
             .semantics { contentDescription = label ?: "Search for a location" },
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 6.dp
     ) {
         androidx.compose.foundation.layout.Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
-            Icon(Icons.Outlined.Search, contentDescription = null)
-            Text(
-                text = label ?: "Search for a location",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 12.dp)
-            )
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onClick)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Icon(Icons.Outlined.Search, contentDescription = null)
+                Text(
+                    text = label ?: "Search for a location",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
+            }
+            if (label != null) {
+                IconButton(
+                    onClick = onInfoClick,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Show selected location address"
+                    }
+                ) {
+                    Icon(Icons.Outlined.Info, contentDescription = null)
+                }
+            }
         }
     }
 }
@@ -52,6 +75,6 @@ fun LocationSearchEntry(
 @Composable
 private fun LocationSearchEntryPreview() {
     ShadowMapTheme(dynamicColor = false) {
-        LocationSearchEntry(label = null, onClick = {})
+        LocationSearchEntry(label = null, onClick = {}, onInfoClick = {})
     }
 }
