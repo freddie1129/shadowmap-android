@@ -62,8 +62,8 @@ import com.example.shadowmap.domain.SceneObjectSource
 import com.example.shadowmap.location.LocationSearchResult
 import com.example.shadowmap.map.BuildingLoadArea
 import com.example.shadowmap.map.MapboxShadowMapController
+import com.example.shadowmap.navigation.AppNavigation
 import com.example.shadowmap.presentation.BuildingLoadState
-import com.example.shadowmap.presentation.LocationSearchViewModel
 import com.example.shadowmap.presentation.ShadowMapUiState
 import com.example.shadowmap.presentation.ShadowMapViewModel
 import com.example.shadowmap.presentation.components.DateTimeSpinner
@@ -73,8 +73,8 @@ import com.example.shadowmap.presentation.components.DrawingCrosshair
 import com.example.shadowmap.presentation.components.DrawingPropertiesSheet
 import com.example.shadowmap.presentation.components.MapToolBar
 import com.example.shadowmap.presentation.components.LocationSearchEntry
-import com.example.shadowmap.presentation.components.LocationSearchScreen
 import com.example.shadowmap.presentation.components.SelectedLocationSheet
+import com.example.shadowmap.presentation.components.SettingsIconButton
 import com.example.shadowmap.presentation.components.Scene3DControls
 import com.example.shadowmap.scene.FilamentBuildingView
 import com.example.shadowmap.scene.Scene3DAppearance
@@ -112,7 +112,7 @@ class MainActivity : ComponentActivity() {
         )
         setContent {
             ShadowMapTheme {
-                ShadowMapRoute(
+                AppNavigation(
                     mapControllerFactory = mapControllerFactory,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -122,15 +122,26 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun ShadowMapRoute(
+internal fun ShadowMapRoute(
     mapControllerFactory: MapboxShadowMapController.Factory,
+    pendingLocation: LocationSearchResult? = null,
+    onLocationApplied: () -> Unit = {},
+    onOpenLocationSearch: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ShadowMapViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val locationSearchViewModel: LocationSearchViewModel = hiltViewModel()
-    val locationSearchUiState by locationSearchViewModel.uiState.collectAsStateWithLifecycle()
-    var showLocationSearch by remember { mutableStateOf(false) }
+    LaunchedEffect(pendingLocation) {
+        val latitude = pendingLocation?.latitude
+        val longitude = pendingLocation?.longitude
+        if (latitude != null && longitude != null) {
+            viewModel.onLocationSelected(
+                location = GeoPoint(latitude = latitude, longitude = longitude),
+                label = pendingLocation.address.ifBlank { pendingLocation.name }
+            )
+        }
+    }
     ShadowMapScreen(
         uiState = uiState,
         onDateTimeChanged = viewModel::onDateTimeChanged,
@@ -156,27 +167,10 @@ private fun ShadowMapRoute(
         onClearScene = viewModel::clearScene,
         onRestoreClearedScene = viewModel::restoreClearedScene,
         mapControllerFactory = mapControllerFactory,
-        showLocationSearch = showLocationSearch,
-        locationSearchUiState = locationSearchUiState,
-        onOpenLocationSearch = { showLocationSearch = true },
-        onCloseLocationSearch = {
-            showLocationSearch = false
-            locationSearchViewModel.clear()
-        },
-        onLocationSearchQueryChanged = locationSearchViewModel::onQueryChanged,
-        onLocationSearchResultSelected = locationSearchViewModel::select,
-        onLocationSelected = { result: LocationSearchResult ->
-            val latitude = result.latitude
-            val longitude = result.longitude
-            if (latitude != null && longitude != null) {
-                showLocationSearch = false
-                locationSearchViewModel.clear()
-                viewModel.onLocationSelected(
-                    location = GeoPoint(latitude = latitude, longitude = longitude),
-                    label = result.address.ifBlank { result.name }
-                )
-            }
-        },
+        pendingLocation = pendingLocation,
+        onLocationApplied = onLocationApplied,
+        onOpenLocationSearch = onOpenLocationSearch,
+        onOpenSettings = onOpenSettings,
         modifier = modifier
     )
 }
@@ -208,13 +202,10 @@ private fun ShadowMapScreen(
     onClearScene: () -> Unit,
     onRestoreClearedScene: () -> Unit,
     mapControllerFactory: MapboxShadowMapController.Factory,
-    showLocationSearch: Boolean,
-    locationSearchUiState: com.example.shadowmap.presentation.LocationSearchUiState,
+    pendingLocation: LocationSearchResult?,
+    onLocationApplied: () -> Unit,
     onOpenLocationSearch: () -> Unit,
-    onCloseLocationSearch: () -> Unit,
-    onLocationSearchQueryChanged: (String) -> Unit,
-    onLocationSearchResultSelected: (LocationSearchResult) -> Unit,
-    onLocationSelected: (LocationSearchResult) -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -251,17 +242,16 @@ private fun ShadowMapScreen(
             zoom(17.0)
         }
     }
-
-    LaunchedEffect(locationSearchUiState.selectedLocation) {
-        val result = locationSearchUiState.selectedLocation ?: return@LaunchedEffect
-        val latitude = result.latitude ?: return@LaunchedEffect
-        val longitude = result.longitude ?: return@LaunchedEffect
+    LaunchedEffect(pendingLocation) {
+        val latitude = pendingLocation?.latitude ?: return@LaunchedEffect
+        val longitude = pendingLocation.longitude ?: return@LaunchedEffect
         mapViewportState.setCameraOptions {
             center(Point.fromLngLat(longitude, latitude))
             zoom(15.0)
         }
-        onLocationSelected(result)
+        onLocationApplied()
     }
+
     var mapView by remember { mutableStateOf<MapView?>(null) }
     val controller = remember(mapView, mapControllerFactory) {
         mapView?.let(mapControllerFactory::create)
@@ -508,14 +498,7 @@ private fun ShadowMapScreen(
     }
 
     BackHandler(
-        enabled = showLocationSearch
-    ) {
-        onCloseLocationSearch()
-    }
-
-    BackHandler(
         enabled = !show3d &&
-            !showLocationSearch &&
             (uiState.activeDrawMode != null || uiState.pendingDrawing != null || selectedType != null)
     ) {
         when {
@@ -587,15 +570,23 @@ private fun ShadowMapScreen(
                 .fillMaxSize()
                 .safeDrawingPadding()
         ) {
-            if (!show3d && !showLocationSearch && mode == null && propertyType == null) {
-                LocationSearchEntry(
-                    label = uiState.selectedLocationLabel,
-                    onClick = onOpenLocationSearch,
-                    onInfoClick = { showSelectedLocationSheet = true },
+            if (!show3d && mode == null && propertyType == null) {
+                androidx.compose.foundation.layout.Row(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 8.dp)
-                )
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, start = 16.dp, end = 16.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SettingsIconButton(onClick = onOpenSettings)
+                    LocationSearchEntry(
+                        label = uiState.selectedLocationLabel,
+                        onClick = onOpenLocationSearch,
+                        onInfoClick = { showSelectedLocationSheet = true },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
 
             if (show3d) {
@@ -783,14 +774,6 @@ private fun ShadowMapScreen(
             )
         }
 
-        if (showLocationSearch) {
-            LocationSearchScreen(
-                uiState = locationSearchUiState,
-                onQueryChanged = onLocationSearchQueryChanged,
-                onResultSelected = onLocationSearchResultSelected,
-                onBack = onCloseLocationSearch
-            )
-        }
     }
 
     if (showClearConfirmation) {

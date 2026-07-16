@@ -11,6 +11,7 @@ kotlin = "2.2.10"
 composeBom = "2026.02.01"
 mapboxMaps = "11.25.1"
 mapboxSearch = "2.25.1"
+navigation3 = "1.1.4"
 jts = "1.20.0"
 coroutines = "1.10.2"
 hilt = "2.59.2"
@@ -46,6 +47,8 @@ mapbox-maps-compose = { group = "com.mapbox.extension", name = "maps-compose-ndk
 mapbox-search-android = { group = "com.mapbox.search", name = "mapbox-search-android-ndk27", version.ref = "mapboxSearch" }
 mapbox-search-native = { group = "com.mapbox.search", name = "mapbox-search-android-native-ndk27", version.ref = "mapboxSearch" }
 mapbox-search-place-autocomplete = { group = "com.mapbox.search", name = "place-autocomplete-ndk27", version.ref = "mapboxSearch" }
+androidx-navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }
 jts-core = { group = "org.locationtech.jts", name = "jts-core", version.ref = "jts" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }

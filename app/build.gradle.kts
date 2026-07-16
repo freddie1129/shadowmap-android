@@ -80,6 +80,8 @@ dependencies {
     implementation(libs.mapbox.search.android)
     implementation(libs.mapbox.search.native)
     implementation(libs.mapbox.search.place.autocomplete)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
     implementation(libs.jts.core)
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)

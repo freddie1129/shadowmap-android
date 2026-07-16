@@ -1,0 +1,75 @@
+package com.example.shadowmap.navigation
+
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.ui.NavDisplay
+import com.example.shadowmap.ShadowMapRoute
+import com.example.shadowmap.location.LocationSearchResult
+import com.example.shadowmap.map.MapboxShadowMapController
+import com.example.shadowmap.presentation.LocationSearchViewModel
+import com.example.shadowmap.presentation.components.LocationSearchScreen
+import com.example.shadowmap.presentation.components.SettingsScreen
+
+private data object MapDestination
+private data object SettingsDestination
+private data object LocationSearchDestination
+
+@Composable
+fun AppNavigation(
+    mapControllerFactory: MapboxShadowMapController.Factory,
+    modifier: Modifier = Modifier
+) {
+    val backStack = remember { mutableStateListOf<Any>(MapDestination) }
+    var pendingLocation by remember { androidx.compose.runtime.mutableStateOf<LocationSearchResult?>(null) }
+
+    NavDisplay(
+        modifier = modifier.fillMaxSize(),
+        backStack = backStack,
+        onBack = { backStack.removeLastOrNull() },
+        entryProvider = { key ->
+            when (key) {
+                MapDestination -> NavEntry(key) {
+                    ShadowMapRoute(
+                        mapControllerFactory = mapControllerFactory,
+                        pendingLocation = pendingLocation,
+                        onLocationApplied = { pendingLocation = null },
+                        onOpenLocationSearch = { backStack.add(LocationSearchDestination) },
+                        onOpenSettings = { backStack.add(SettingsDestination) }
+                    )
+                }
+
+                SettingsDestination -> NavEntry(key) {
+                    SettingsScreen(onBack = { backStack.removeLastOrNull() })
+                }
+
+                LocationSearchDestination -> NavEntry(key) {
+                    val viewModel: LocationSearchViewModel = hiltViewModel()
+                    val uiState by viewModel.uiState.collectAsState()
+                    LaunchedEffect(uiState.selectedLocation) {
+                        uiState.selectedLocation?.let { selected ->
+                            pendingLocation = selected
+                            backStack.removeLastOrNull()
+                        }
+                    }
+                    LocationSearchScreen(
+                        uiState = uiState,
+                        onQueryChanged = viewModel::onQueryChanged,
+                        onResultSelected = viewModel::select,
+                        onBack = { backStack.removeLastOrNull() }
+                    )
+                }
+
+                else -> error("Unknown navigation destination: $key")
+            }
+        }
+    )
+}
