@@ -60,7 +60,8 @@ constructor(
                 selectedEpochMillis =
                     savedStateHandle[SELECTED_TIME_KEY] ?: clock.millis().roundToTimeStep(),
                 displayTimeZoneId = savedStateHandle[TIME_ZONE_KEY] ?: systemZoneId.id,
-                calculationLocation = restoredCalculationLocation()
+                calculationLocation = restoredCalculationLocation(),
+                selectedLocationLabel = savedStateHandle[LOCATION_LABEL_KEY]
             )
         )
     val uiState: StateFlow<ShadowMapUiState> = _uiState.asStateFlow()
@@ -90,6 +91,17 @@ constructor(
         savedStateHandle[LOCATION_LATITUDE_KEY] = location.latitude
         savedStateHandle[LOCATION_LONGITUDE_KEY] = location.longitude
         _uiState.value = _uiState.value.copy(calculationLocation = location)
+        recalculateSunAndShadows()
+    }
+
+    fun onLocationSelected(location: GeoPoint, label: String) {
+        savedStateHandle[LOCATION_LATITUDE_KEY] = location.latitude
+        savedStateHandle[LOCATION_LONGITUDE_KEY] = location.longitude
+        savedStateHandle[LOCATION_LABEL_KEY] = label
+        _uiState.value = _uiState.value.copy(
+            calculationLocation = location,
+            selectedLocationLabel = label
+        )
         recalculateSunAndShadows()
     }
 
@@ -576,6 +588,7 @@ constructor(
         private const val TIME_ZONE_KEY = "time_zone"
         private const val LOCATION_LATITUDE_KEY = "location_latitude"
         private const val LOCATION_LONGITUDE_KEY = "location_longitude"
+        private const val LOCATION_LABEL_KEY = "location_label"
         private const val TIME_STEP_MILLIS = 5 * 60 * 1000L
         private const val SHADOW_DEBOUNCE_MILLIS = 50L
         // Property fields display one decimal place, so half a tenth represents the loaded value.

@@ -19,6 +19,7 @@ data class ShadowMapUiState(
     val selectedEpochMillis: Long,
     val displayTimeZoneId: String,
     val calculationLocation: GeoPoint? = null,
+    val selectedLocationLabel: String? = null,
     val solarPosition: SolarPosition? = null,
     val loadedBuildings: List<BuildingFootprint> = emptyList(),
     val loadedBuildingOverrides: Map<AutomaticBuildingIdentity, LoadedBuildingOverride> = emptyMap(),
