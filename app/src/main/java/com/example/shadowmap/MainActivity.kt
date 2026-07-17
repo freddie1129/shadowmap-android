@@ -656,7 +656,7 @@ private fun ShadowMapScreen(
                                 },
                                 onOpenProjects = onOpenProjects,
                                 onSaveProject = {
-                                    projectNameDraft = uiState.activeProjectName.orEmpty()
+                                    projectNameDraft = currentUiState.activeProjectName.orEmpty()
                                     showSaveProjectDialog = true
                                 },
                                 onOpenLocationSearch = onOpenLocationSearch,
@@ -665,23 +665,24 @@ private fun ShadowMapScreen(
                         }
                     }
                     Scene3DSceneDestination -> NavEntry(key) {
+                        val currentUiState by latestUiState
                         Scene3DView(
-                            buildings = uiState.buildings,
-                            walls = uiState.drawnWalls,
-                            trees = uiState.drawnTrees,
+                            buildings = currentUiState.buildings,
+                            walls = currentUiState.drawnWalls,
+                            trees = currentUiState.drawnTrees,
                             viewport = sceneViewport,
-                            azimuth = uiState.solarPosition?.azimuthDegrees?.toFloat()
+                            azimuth = currentUiState.solarPosition?.azimuthDegrees?.toFloat()
                                 ?: Scene3DAppearance.DEFAULT_SUN_AZIMUTH_DEGREES,
-                            zenith = uiState.solarPosition?.zenithDegrees?.toFloat()
+                            zenith = currentUiState.solarPosition?.zenithDegrees?.toFloat()
                                 ?: Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES,
-                            sunVisible = uiState.solarPosition?.isAboveHorizon == true,
+                            sunVisible = currentUiState.solarPosition?.isAboveHorizon == true,
                             cameraView = sceneCameraView,
                             showSatellite = showSatelliteIn3d,
                             onCameraViewChanged = { sceneCameraView = it },
                             onToggleSatellite = { showSatelliteIn3d = !showSatelliteIn3d },
                             onBackToMap = ::exit3d,
-                            selectedEpochMillis = uiState.selectedEpochMillis,
-                            timeZoneId = uiState.displayTimeZoneId,
+                            selectedEpochMillis = currentUiState.selectedEpochMillis,
+                            timeZoneId = currentUiState.displayTimeZoneId,
                             onDateTimeChanged = onDateTimeChanged,
                             onNowSelected = onNowSelected
                         )
