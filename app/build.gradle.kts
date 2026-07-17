@@ -63,6 +63,7 @@ detekt {
 
 dependencies {
     coreLibraryDesugaring(libs.android.desugar.jdk.libs)
+    implementation(libs.gson)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)

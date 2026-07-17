@@ -28,15 +28,18 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Save
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,6 +79,8 @@ import com.example.shadowmap.presentation.components.LocationSearchEntry
 import com.example.shadowmap.presentation.components.SelectedLocationSheet
 import com.example.shadowmap.presentation.components.SettingsIconButton
 import com.example.shadowmap.presentation.components.Scene3DControls
+import com.example.shadowmap.presentation.components.MapRoundIconButton
+import com.example.shadowmap.project.ProjectViewport
 import com.example.shadowmap.scene.FilamentBuildingView
 import com.example.shadowmap.scene.Scene3DAppearance
 import com.example.shadowmap.scene.SceneCameraView
@@ -127,8 +132,11 @@ class MainActivity : ComponentActivity() {
 internal fun ShadowMapRoute(
     mapControllerFactory: MapboxShadowMapController.Factory,
     pendingLocation: LocationSearchResult? = null,
+    pendingProjectId: String? = null,
     onLocationApplied: () -> Unit = {},
+    onProjectApplied: () -> Unit = {},
     onOpenLocationSearch: () -> Unit = {},
+    onOpenProjects: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ShadowMapViewModel = hiltViewModel()
@@ -144,6 +152,12 @@ internal fun ShadowMapRoute(
             )
         }
     }
+    LaunchedEffect(pendingProjectId) {
+        pendingProjectId?.let {
+            viewModel.loadProject(it)
+            onProjectApplied()
+        }
+    }
     ShadowMapScreen(
         uiState = uiState,
         onDateTimeChanged = viewModel::onDateTimeChanged,
@@ -151,7 +165,7 @@ internal fun ShadowMapRoute(
         onLoadStarted = viewModel::onBuildingLoadStarted,
         onBuildingsLoaded = viewModel::onBuildingsLoaded,
         onLoadFailed = viewModel::onBuildingLoadFailed,
-        onMapCenterChanged = viewModel::onMapCenterChanged,
+        onViewportChanged = viewModel::onViewportChanged,
         onSelectDrawMode = viewModel::selectDrawMode,
         onStopDrawing = viewModel::stopDrawing,
         onAddVertex = viewModel::addVertex,
@@ -170,6 +184,8 @@ internal fun ShadowMapRoute(
         onRestoreClearedScene = viewModel::restoreClearedScene,
         mapControllerFactory = mapControllerFactory,
         pendingLocation = pendingLocation,
+        onOpenProjects = onOpenProjects,
+        onSaveProject = viewModel::saveProject,
         onLocationApplied = onLocationApplied,
         onOpenLocationSearch = onOpenLocationSearch,
         onOpenSettings = onOpenSettings,
@@ -186,7 +202,7 @@ private fun ShadowMapScreen(
     onLoadStarted: () -> Unit,
     onBuildingsLoaded: (List<BuildingFootprint>, GeoPoint) -> Unit,
     onLoadFailed: (Throwable) -> Unit,
-    onMapCenterChanged: (GeoPoint) -> Unit,
+    onViewportChanged: (ProjectViewport) -> Unit,
     onSelectDrawMode: (DrawMode) -> Boolean,
     onStopDrawing: () -> Unit,
     onAddVertex: (GeoPoint) -> Unit,
@@ -205,6 +221,8 @@ private fun ShadowMapScreen(
     onRestoreClearedScene: () -> Unit,
     mapControllerFactory: MapboxShadowMapController.Factory,
     pendingLocation: LocationSearchResult?,
+    onOpenProjects: () -> Unit,
+    onSaveProject: (String?) -> Unit,
     onLocationApplied: () -> Unit,
     onOpenLocationSearch: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -273,6 +291,10 @@ private fun ShadowMapScreen(
     var showDiscardDraftConfirmation by remember { mutableStateOf(false) }
     var showDraft3dConfirmation by remember { mutableStateOf(false) }
     var showSelectedLocationSheet by remember { mutableStateOf(false) }
+    var showSaveProjectDialog by remember { mutableStateOf(false) }
+    var projectNameDraft by remember(uiState.activeProjectName) {
+        mutableStateOf(uiState.activeProjectName.orEmpty())
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -286,7 +308,7 @@ private fun ShadowMapScreen(
                 currentMapView.post {
                     buildingLoadArea = currentMapView.toBuildingLoadArea()
                     val center = currentMapView.mapboxMap.cameraState.center
-                    onMapCenterChanged(GeoPoint(center.longitude(), center.latitude()))
+                    currentMapView.toProjectViewport()?.let(onViewportChanged)
                 }
             }
 
@@ -573,25 +595,62 @@ private fun ShadowMapScreen(
                 .safeDrawingPadding()
         ) {
             if (!show3d && mode == null && propertyType == null) {
-                androidx.compose.foundation.layout.Row(
+                Column(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
-                        .padding(
-                            top = dimensions.spacingSmall,
-                            start = dimensions.spacingLarge,
-                            end = dimensions.spacingLarge
-                        ),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(dimensions.spacingSmall),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(top = dimensions.spacingSmall),
                 ) {
-                    SettingsIconButton(onClick = onOpenSettings)
-                    LocationSearchEntry(
-                        label = uiState.selectedLocationLabel,
-                        onClick = onOpenLocationSearch,
-                        onInfoClick = { showSelectedLocationSheet = true },
-                        modifier = Modifier.weight(1f)
-                    )
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = dimensions.spacingLarge),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
+                            dimensions.spacingSmall
+                        ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SettingsIconButton(onClick = onOpenSettings)
+                        LocationSearchEntry(
+                            label = uiState.selectedLocationLabel,
+                            onClick = onOpenLocationSearch,
+                            onInfoClick = { showSelectedLocationSheet = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                top = dimensions.spacingSmall,
+                                start = dimensions.spacingLarge,
+                                end = dimensions.spacingLarge
+                            ),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        MapRoundIconButton(
+                            onClick = onOpenProjects,
+                            contentDescription = "Open projects"
+                        ) {
+                            androidx.compose.material3.Icon(
+                                Icons.Outlined.FolderOpen,
+                                contentDescription = null
+                            )
+                        }
+                        MapRoundIconButton(
+                            onClick = {
+                                projectNameDraft = uiState.activeProjectName.orEmpty()
+                                showSaveProjectDialog = true
+                            },
+                            contentDescription = "Save project"
+                        ) {
+                            androidx.compose.material3.Icon(
+                                Icons.Outlined.Save,
+                                contentDescription = null
+                            )
+                        }
+                    }
                 }
             }
 
@@ -866,6 +925,35 @@ private fun ShadowMapScreen(
         )
     }
 
+    if (showSaveProjectDialog) {
+        AlertDialog(
+            onDismissRequest = { showSaveProjectDialog = false },
+            title = { Text("Save project") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = projectNameDraft,
+                    onValueChange = { projectNameDraft = it },
+                    label = { Text("Project name") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(
+                    enabled = projectNameDraft.isNotBlank(),
+                    onClick = {
+                        showSaveProjectDialog = false
+                        onSaveProject(projectNameDraft.trim())
+                    }
+                ) { Text("Save") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showSaveProjectDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
 }
 
 private val THREE_D_BOTTOM_CONTROL_CLEARANCE = 156.dp
@@ -885,6 +973,36 @@ private fun MapView.toSceneViewport(): SceneViewport? {
         topRight.latitude(),
         bottomLeft.longitude(),
         bottomLeft.latitude()
+    )
+}
+
+private fun MapView.toProjectViewport(): ProjectViewport? {
+    if (width <= 0 || height <= 0) return null
+    val camera = mapboxMap.cameraState
+    toSceneViewport() ?: return null
+    val center = camera.center
+    val topLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, 0.0))
+    val topRight = mapboxMap.coordinateForPixel(ScreenCoordinate(width.toDouble(), 0.0))
+    val bottomRight = mapboxMap.coordinateForPixel(
+        ScreenCoordinate(width.toDouble(), height.toDouble())
+    )
+    val bottomLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, height.toDouble()))
+    return ProjectViewport(
+        center = GeoPoint(center.longitude(), center.latitude()),
+        zoom = camera.zoom,
+        bearing = camera.bearing,
+        pitch = camera.pitch,
+        boundary = com.example.shadowmap.domain.GeoPolygon(
+            listOf(
+                listOf(
+                    GeoPoint(topLeft.longitude(), topLeft.latitude()),
+                    GeoPoint(topRight.longitude(), topRight.latitude()),
+                    GeoPoint(bottomRight.longitude(), bottomRight.latitude()),
+                    GeoPoint(bottomLeft.longitude(), bottomLeft.latitude()),
+                    GeoPoint(topLeft.longitude(), topLeft.latitude())
+                )
+            )
+        )
     )
 }
 

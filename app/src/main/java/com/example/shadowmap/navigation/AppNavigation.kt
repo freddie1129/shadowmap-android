@@ -16,12 +16,15 @@ import com.example.shadowmap.ShadowMapRoute
 import com.example.shadowmap.location.LocationSearchResult
 import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.presentation.LocationSearchViewModel
+import com.example.shadowmap.presentation.ProjectListViewModel
 import com.example.shadowmap.presentation.components.LocationSearchScreen
+import com.example.shadowmap.presentation.components.ProjectListScreen
 import com.example.shadowmap.presentation.components.SettingsScreen
 
 private data object MapDestination
 private data object SettingsDestination
 private data object LocationSearchDestination
+private data object ProjectsDestination
 
 @Composable
 fun AppNavigation(
@@ -30,6 +33,7 @@ fun AppNavigation(
 ) {
     val backStack = remember { mutableStateListOf<Any>(MapDestination) }
     var pendingLocation by remember { androidx.compose.runtime.mutableStateOf<LocationSearchResult?>(null) }
+    var pendingProjectId by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
 
     NavDisplay(
         modifier = modifier.fillMaxSize(),
@@ -41,8 +45,11 @@ fun AppNavigation(
                     ShadowMapRoute(
                         mapControllerFactory = mapControllerFactory,
                         pendingLocation = pendingLocation,
+                        pendingProjectId = pendingProjectId,
                         onLocationApplied = { pendingLocation = null },
+                        onProjectApplied = { pendingProjectId = null },
                         onOpenLocationSearch = { backStack.add(LocationSearchDestination) },
+                        onOpenProjects = { backStack.add(ProjectsDestination) },
                         onOpenSettings = { backStack.add(SettingsDestination) }
                     )
                 }
@@ -64,6 +71,19 @@ fun AppNavigation(
                         uiState = uiState,
                         onQueryChanged = viewModel::onQueryChanged,
                         onResultSelected = viewModel::select,
+                        onBack = { backStack.removeLastOrNull() }
+                    )
+                }
+
+                ProjectsDestination -> NavEntry(key) {
+                    val viewModel: ProjectListViewModel = hiltViewModel()
+                    val projects by viewModel.projects.collectAsState()
+                    ProjectListScreen(
+                        projects = projects,
+                        onProjectSelected = { id ->
+                            pendingProjectId = id
+                            backStack.removeLastOrNull()
+                        },
                         onBack = { backStack.removeLastOrNull() }
                     )
                 }

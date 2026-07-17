@@ -14,12 +14,19 @@ import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.LoadedBuildingOverride
 import com.example.shadowmap.domain.SolarPosition
 import com.example.shadowmap.domain.SceneBuildingMerger
+import com.example.shadowmap.project.ProjectViewport
 
 data class ShadowMapUiState(
     val selectedEpochMillis: Long,
     val displayTimeZoneId: String,
     val calculationLocation: GeoPoint? = null,
     val selectedLocationLabel: String? = null,
+    val viewport: ProjectViewport? = null,
+    val activeProjectId: String? = null,
+    val activeProjectName: String? = null,
+    val activeProjectCreatedAt: Long? = null,
+    val isProjectDirty: Boolean = false,
+    val projectError: String? = null,
     val solarPosition: SolarPosition? = null,
     val loadedBuildings: List<BuildingFootprint> = emptyList(),
     val loadedBuildingOverrides: Map<AutomaticBuildingIdentity, LoadedBuildingOverride> = emptyMap(),

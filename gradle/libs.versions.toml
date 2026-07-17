@@ -22,6 +22,7 @@ detekt = "2.0.0-alpha.3"
 filament = "1.71.5"
 ktlint = "1.8.0"
 desugarJdkLibs = "2.1.5"
+gson = "2.13.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -58,6 +59,7 @@ androidx-hilt-lifecycle-viewmodel-compose = { group = "androidx.hilt", name = "h
 filament-android = { group = "com.google.android.filament", name = "filament-android", version.ref = "filament" }
 filamat-android = { group = "com.google.android.filament", name = "filamat-android", version.ref = "filament" }
 android-desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

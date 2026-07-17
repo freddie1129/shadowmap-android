@@ -22,6 +22,8 @@ import com.example.shadowmap.domain.SceneObjectSource
 import com.example.shadowmap.domain.SolarPositionCalculator
 import com.example.shadowmap.domain.SceneBuildingMerger
 import com.example.shadowmap.domain.UserObjectShadowCalculator
+import com.example.shadowmap.project.ProjectRepository
+import com.example.shadowmap.project.ProjectSnapshot
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
 import java.time.ZoneId
@@ -47,6 +49,7 @@ constructor(
     private val solarPositionCalculator: SolarPositionCalculator,
     private val clock: Clock,
     systemZoneId: ZoneId,
+    private val projectRepository: ProjectRepository,
     @param:DefaultDispatcher
     private val computationDispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -73,9 +76,114 @@ constructor(
 
     fun onDateTimeChanged(epochMillis: Long) {
         savedStateHandle[SELECTED_TIME_KEY] = epochMillis
-        _uiState.value = _uiState.value.copy(selectedEpochMillis = epochMillis)
+        _uiState.value = _uiState.value.copy(selectedEpochMillis = epochMillis, isProjectDirty = true)
         recalculateSunAndShadows()
     }
+
+    fun onViewportChanged(viewport: com.example.shadowmap.project.ProjectViewport) {
+        savedStateHandle[LOCATION_LATITUDE_KEY] = viewport.center.latitude
+        savedStateHandle[LOCATION_LONGITUDE_KEY] = viewport.center.longitude
+        _uiState.value = _uiState.value.copy(
+            viewport = viewport,
+            calculationLocation = viewport.center,
+            isProjectDirty = true
+        )
+        recalculateSunAndShadows()
+    }
+
+    fun saveProject(name: String? = null) {
+        val state = _uiState.value
+        val projectId = state.activeProjectId ?: java.util.UUID.randomUUID().toString()
+        val now = clock.millis()
+        val snapshot = state.toProjectSnapshot(
+            id = projectId,
+            name = name ?: state.activeProjectName ?: "Untitled project",
+            createdAt = state.activeProjectCreatedAt ?: now
+        )
+        viewModelScope.launch(computationDispatcher) {
+            runCatching { projectRepository.saveProject(snapshot) }
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(
+                        activeProjectId = snapshot.id,
+                        activeProjectName = snapshot.name,
+                        activeProjectCreatedAt = snapshot.createdAt,
+                        isProjectDirty = false,
+                        projectError = null
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(projectError = error.message)
+                }
+        }
+    }
+
+    fun loadProject(id: String) {
+        viewModelScope.launch(computationDispatcher) {
+            runCatching { projectRepository.loadProject(id) }
+                .onSuccess { project ->
+                    val restored = project.toUiState(_uiState.value)
+                    _uiState.value = restored
+                    savedStateHandle[SELECTED_TIME_KEY] = project.selectedEpochMillis
+                    savedStateHandle[TIME_ZONE_KEY] = project.displayTimeZoneId
+                    project.calculationLocation?.let { location ->
+                        savedStateHandle[LOCATION_LATITUDE_KEY] = location.latitude
+                        savedStateHandle[LOCATION_LONGITUDE_KEY] = location.longitude
+                    }
+                    recalculateSunAndShadows()
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(projectError = error.message)
+                }
+        }
+    }
+
+    private fun ShadowMapUiState.toProjectSnapshot(
+        id: String,
+        name: String,
+        createdAt: Long
+    ) = ProjectSnapshot(
+        id = id,
+        name = name,
+        createdAt = createdAt,
+        updatedAt = clock.millis(),
+        selectedEpochMillis = selectedEpochMillis,
+        displayTimeZoneId = displayTimeZoneId,
+        calculationLocation = calculationLocation,
+        selectedLocationLabel = selectedLocationLabel,
+        viewport = viewport,
+        drawnBuildings = drawnBuildings,
+        drawnWalls = drawnWalls,
+        drawnTrees = drawnTrees,
+        loadedBuildings = loadedBuildings,
+        loadedBuildingOverrides = loadedBuildingOverrides,
+        suppressedLoadedBuildings = suppressedLoadedBuildings
+    )
+
+    private fun ProjectSnapshot.toUiState(previous: ShadowMapUiState) = previous.copy(
+        selectedEpochMillis = selectedEpochMillis,
+        displayTimeZoneId = displayTimeZoneId,
+        calculationLocation = calculationLocation,
+        selectedLocationLabel = selectedLocationLabel,
+        viewport = viewport,
+        activeProjectId = id,
+        activeProjectName = name,
+        activeProjectCreatedAt = createdAt,
+        isProjectDirty = false,
+        projectError = null,
+        loadedBuildings = loadedBuildings,
+        loadedBuildingOverrides = loadedBuildingOverrides,
+        suppressedLoadedBuildings = suppressedLoadedBuildings,
+        automaticBuildingKeysCoveredByManual = emptySet(),
+        drawnBuildings = drawnBuildings,
+        drawnWalls = drawnWalls,
+        drawnTrees = drawnTrees,
+        activeDrawMode = null,
+        inProgressVertices = emptyList(),
+        pendingDrawing = null,
+        selectedDrawing = null,
+        shadows = emptyList(),
+        buildingLoadState = if (loadedBuildings.isEmpty()) BuildingLoadState.Idle else BuildingLoadState.Loaded
+    ).withRefreshedAutomaticOverlapSuppression()
 
     fun onNowSelected() {
         onDateTimeChanged(clock.millis().roundToTimeStep())

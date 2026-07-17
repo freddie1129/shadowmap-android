@@ -12,6 +12,7 @@ import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.SolarPositionCalculator
 import com.example.shadowmap.domain.UserObjectShadowCalculator
+import com.example.shadowmap.project.ProjectRepository
 import com.example.shadowmap.domain.SceneObjectSource
 import java.time.Clock
 import java.time.Instant
@@ -353,6 +354,12 @@ class ShadowMapViewModelTest {
             solarPositionCalculator = SolarPositionCalculator(),
             clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
             systemZoneId = ZoneId.of("Australia/Brisbane"),
+            projectRepository = object : ProjectRepository {
+                override fun listProjects() = emptyList<com.example.shadowmap.project.ProjectSummary>()
+                override fun loadProject(id: String) = error("Not used in this test")
+                override fun saveProject(project: com.example.shadowmap.project.ProjectSnapshot) = Unit
+                override fun deleteProject(id: String) = Unit
+            },
             computationDispatcher = dispatcher
         )
 
