@@ -11,7 +11,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -28,9 +27,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Save
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +47,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.ui.NavDisplay
 import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
@@ -74,14 +72,10 @@ import com.example.shadowmap.presentation.components.ActiveDrawingControls
 import com.example.shadowmap.presentation.components.AutoToolState
 import com.example.shadowmap.presentation.components.DrawingCrosshair
 import com.example.shadowmap.presentation.components.DrawingPropertiesSheet
-import com.example.shadowmap.presentation.components.MapToolBar
-import com.example.shadowmap.presentation.components.LocationSearchEntry
 import com.example.shadowmap.presentation.components.SelectedLocationSheet
-import com.example.shadowmap.presentation.components.SettingsIconButton
-import com.example.shadowmap.presentation.components.Scene3DControls
-import com.example.shadowmap.presentation.components.MapRoundIconButton
+import com.example.shadowmap.presentation.components.Scene3DView
+import com.example.shadowmap.presentation.components.Map2DView
 import com.example.shadowmap.project.ProjectViewport
-import com.example.shadowmap.scene.FilamentBuildingView
 import com.example.shadowmap.scene.Scene3DAppearance
 import com.example.shadowmap.scene.SceneCameraView
 import com.example.shadowmap.scene.SceneViewport
@@ -103,6 +97,9 @@ import kotlin.math.max
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+
+private data object Map2DSceneDestination
+private data object Scene3DSceneDestination
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -279,7 +276,10 @@ private fun ShadowMapScreen(
     var satelliteSnapshot by remember { mutableStateOf<Bitmap?>(null) }
     var loadRequest by remember { mutableIntStateOf(0) }
     var buildingQueryLocation by remember { mutableStateOf<GeoPoint?>(null) }
-    var show3d by remember { mutableStateOf(false) }
+    val sceneBackStack = remember {
+        androidx.compose.runtime.mutableStateListOf<Any>(Map2DSceneDestination)
+    }
+    val show3d = sceneBackStack.lastOrNull() == Scene3DSceneDestination
     var showSatelliteIn3d by remember { mutableStateOf(true) }
     var sceneCameraView by remember { mutableStateOf(SceneCameraView.ORBIT) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
@@ -461,6 +461,27 @@ private fun ShadowMapScreen(
         autoLoadAfterZoom = true
     }
 
+    fun requestAutoLoad() {
+        if (buildingLoadArea?.isWithinLimit == true) {
+            startBuildingLoad()
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                val area = buildingLoadArea
+                val result = snackbarHostState.showSnackbar(
+                    message = if (area == null) {
+                        "Checking the visible map area"
+                    } else {
+                        "Zoom in to load buildings · ${area.formattedDimensions}"
+                    },
+                    actionLabel = if (area == null) null else "Zoom & load",
+                    duration = if (area == null) SnackbarDuration.Short else SnackbarDuration.Long
+                )
+                if (result == SnackbarResult.ActionPerformed) zoomToValidAreaAndLoad()
+            }
+        }
+    }
+
     LaunchedEffect(autoLoadAfterZoom, buildingLoadArea) {
         if (autoLoadAfterZoom && buildingLoadArea?.isWithinLimit == true) {
             autoLoadAfterZoom = false
@@ -471,7 +492,11 @@ private fun ShadowMapScreen(
     fun enter3d() {
         sceneViewport = mapView?.toSceneViewport()
         sceneCameraView = SceneCameraView.ORBIT
-        show3d = true
+        if (!show3d) sceneBackStack.add(Scene3DSceneDestination)
+    }
+
+    fun exit3d() {
+        if (show3d) sceneBackStack.removeLastOrNull()
     }
 
     val pendingType = when (uiState.pendingDrawing) {
@@ -563,23 +588,6 @@ private fun ShadowMapScreen(
             )
         }
 
-        if (show3d) {
-            FilamentBuildingView(
-                buildings = uiState.buildings,
-                walls = uiState.drawnWalls,
-                trees = uiState.drawnTrees,
-                viewport = sceneViewport,
-                azimuth = uiState.solarPosition?.azimuthDegrees?.toFloat()
-                    ?: Scene3DAppearance.DEFAULT_SUN_AZIMUTH_DEGREES,
-                zenith = uiState.solarPosition?.zenithDegrees?.toFloat()
-                    ?: Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES,
-                sunVisible = uiState.solarPosition?.isAboveHorizon == true,
-                cameraView = sceneCameraView,
-                onCameraViewChanged = { sceneCameraView = it },
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-
         satelliteSnapshot?.let { snapshot ->
             Image(
                 bitmap = snapshot.asImageBitmap(),
@@ -589,171 +597,74 @@ private fun ShadowMapScreen(
             )
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeDrawingPadding()
-        ) {
-            if (!show3d && mode == null && propertyType == null) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .padding(top = dimensions.spacingSmall),
-                ) {
-                    androidx.compose.foundation.layout.Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = dimensions.spacingLarge),
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
-                            dimensions.spacingSmall
-                        ),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        SettingsIconButton(onClick = onOpenSettings)
-                        LocationSearchEntry(
-                            label = uiState.selectedLocationLabel,
-                            onClick = onOpenLocationSearch,
-                            onInfoClick = { showSelectedLocationSheet = true },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    androidx.compose.foundation.layout.Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                top = dimensions.spacingSmall,
-                                start = dimensions.spacingLarge,
-                                end = dimensions.spacingLarge
-                            ),
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        MapRoundIconButton(
-                            onClick = onOpenProjects,
-                            contentDescription = "Open projects"
-                        ) {
-                            androidx.compose.material3.Icon(
-                                Icons.Outlined.FolderOpen,
-                                contentDescription = null
-                            )
-                        }
-                        MapRoundIconButton(
-                            onClick = {
-                                projectNameDraft = uiState.activeProjectName.orEmpty()
-                                showSaveProjectDialog = true
-                            },
-                            contentDescription = "Save project"
-                        ) {
-                            androidx.compose.material3.Icon(
-                                Icons.Outlined.Save,
-                                contentDescription = null
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (show3d) {
-                Scene3DControls(
-                    cameraView = sceneCameraView,
-                    showSatellite = showSatelliteIn3d,
-                    onToggleCameraView = {
-                        sceneCameraView = if (sceneCameraView == SceneCameraView.TOP_DOWN) {
-                            SceneCameraView.ORBIT
-                        } else {
-                            SceneCameraView.TOP_DOWN
-                        }
-                    },
-                    onToggleSatellite = { showSatelliteIn3d = !showSatelliteIn3d },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(
-                            end = dimensions.screenPadding,
-                            bottom = THREE_D_BOTTOM_CONTROL_CLEARANCE
-                        )
-                )
-            }
-            if (uiState.buildings.isNotEmpty() || uiState.drawnWalls.isNotEmpty() || uiState.drawnTrees.isNotEmpty()) {
-                Button(
-                    onClick = {
-                        if (show3d) {
-                            show3d = false
-                        } else if (uiState.hasDraft) {
-                            showDraft3dConfirmation = true
-                        } else {
-                            enter3d()
-                        }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(top = dimensions.screenPadding, start = dimensions.screenPadding)
-                ) { Text(if (show3d) "Map View" else "3D View") }
-            }
-
-            if (!show3d && mode == null && propertyType == null) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth(),
-                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                ) {
-                    MapToolBar(
-                        autoState = autoToolState,
-                        hasSceneObjects = uiState.hasSceneObjects,
-                        isTimeVisible = showDateTime,
-                        onDrawMode = { selectedMode -> onSelectDrawMode(selectedMode) },
-                        onAutoLoad = {
-                            if (buildingLoadArea?.isWithinLimit == true) {
-                                startBuildingLoad()
-                            } else {
-                                coroutineScope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    val area = buildingLoadArea
-                                    val result = snackbarHostState.showSnackbar(
-                                        message = if (area == null) {
-                                            "Checking the visible map area"
-                                        } else {
-                                            "Zoom in to load buildings · ${area.formattedDimensions}"
-                                        },
-                                        actionLabel = if (area == null) null else "Zoom & load",
-                                        duration = if (area == null) {
-                                            SnackbarDuration.Short
-                                        } else {
-                                            SnackbarDuration.Long
-                                        }
-                                    )
-                                    if (result == SnackbarResult.ActionPerformed) {
-                                        zoomToValidAreaAndLoad()
+        NavDisplay(
+            modifier = Modifier.fillMaxSize(),
+            backStack = sceneBackStack,
+            onBack = ::exit3d,
+            entryProvider = { key ->
+                when (key) {
+                    Map2DSceneDestination -> NavEntry(key) {
+                        if (mode == null && propertyType == null) {
+                            Map2DView(
+                                uiState = uiState,
+                                autoToolState = autoToolState,
+                                isTimeVisible = showDateTime,
+                                onDateTimeChanged = onDateTimeChanged,
+                                onNowSelected = onNowSelected,
+                                onToggleTime = { showDateTime = !showDateTime },
+                                onDrawMode = { selectedMode -> onSelectDrawMode(selectedMode) },
+                                onAutoLoad = ::requestAutoLoad,
+                                onClear = { showClearConfirmation = true },
+                                onOpenSettings = onOpenSettings,
+                                onOpen3D = {
+                                    if (uiState.hasDraft) {
+                                        showDraft3dConfirmation = true
+                                    } else {
+                                        enter3d()
                                     }
-                                }
-                            }
-                        },
-                        onClear = { showClearConfirmation = true },
-                        onToggleTime = { showDateTime = !showDateTime },
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                    AnimatedVisibility(visible = showDateTime) {
-                        DateTimeSpinner(
+                                },
+                                onOpenProjects = onOpenProjects,
+                                onSaveProject = {
+                                    projectNameDraft = uiState.activeProjectName.orEmpty()
+                                    showSaveProjectDialog = true
+                                },
+                                onOpenLocationSearch = onOpenLocationSearch,
+                                onShowLocationInfo = { showSelectedLocationSheet = true }
+                            )
+                        }
+                    }
+                    Scene3DSceneDestination -> NavEntry(key) {
+                        Scene3DView(
+                            buildings = uiState.buildings,
+                            walls = uiState.drawnWalls,
+                            trees = uiState.drawnTrees,
+                            viewport = sceneViewport,
+                            azimuth = uiState.solarPosition?.azimuthDegrees?.toFloat()
+                                ?: Scene3DAppearance.DEFAULT_SUN_AZIMUTH_DEGREES,
+                            zenith = uiState.solarPosition?.zenithDegrees?.toFloat()
+                                ?: Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES,
+                            sunVisible = uiState.solarPosition?.isAboveHorizon == true,
+                            cameraView = sceneCameraView,
+                            showSatellite = showSatelliteIn3d,
+                            onCameraViewChanged = { sceneCameraView = it },
+                            onToggleSatellite = { showSatelliteIn3d = !showSatelliteIn3d },
+                            onBackToMap = ::exit3d,
                             selectedEpochMillis = uiState.selectedEpochMillis,
                             timeZoneId = uiState.displayTimeZoneId,
                             onDateTimeChanged = onDateTimeChanged,
                             onNowSelected = onNowSelected
                         )
                     }
+                    else -> error("Unknown scene destination: $key")
                 }
             }
+        )
 
-            if (show3d) {
-                DateTimeSpinner(
-                    selectedEpochMillis = uiState.selectedEpochMillis,
-                    timeZoneId = uiState.displayTimeZoneId,
-                    onDateTimeChanged = onDateTimeChanged,
-                    onNowSelected = onNowSelected,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
-
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+        ) {
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier
