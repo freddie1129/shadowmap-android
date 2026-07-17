@@ -17,7 +17,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.example.shadowmap.ui.theme.ShadowMapDesign
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
@@ -27,7 +26,7 @@ fun MapRoundIconButton(
     contentDescription: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    size: Dp = 56.dp,
+    size: Dp? = null,
     containerColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     disabledContentColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f),
@@ -35,8 +34,9 @@ fun MapRoundIconButton(
     icon: @Composable () -> Unit
 ) {
     val dimensions = ShadowMapDesign.dimensions
+    val resolvedSize = size ?: dimensions.minimumTouchTarget
     Surface(
-        modifier = modifier.size(size),
+        modifier = modifier.size(resolvedSize),
         shape = CircleShape,
         color = containerColor,
         shadowElevation = shadowElevation ?: dimensions.floatingControlElevation
