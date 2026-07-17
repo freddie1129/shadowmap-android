@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +66,13 @@ import com.example.shadowmap.map.BuildingLoadArea
 import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.navigation.AppNavigation
 import com.example.shadowmap.presentation.BuildingLoadState
+import com.example.shadowmap.presentation.DrawingActions
+import com.example.shadowmap.presentation.MapActions
+import com.example.shadowmap.presentation.MapScreenDependencies
+import com.example.shadowmap.presentation.ProjectActions
+import com.example.shadowmap.presentation.SceneActions
+import com.example.shadowmap.presentation.ShadowMapActions
+import com.example.shadowmap.presentation.ShadowMapNavigation
 import com.example.shadowmap.presentation.ShadowMapUiState
 import com.example.shadowmap.presentation.ShadowMapViewModel
 import com.example.shadowmap.presentation.components.DateTimeSpinner
@@ -157,35 +165,45 @@ internal fun ShadowMapRoute(
     }
     ShadowMapScreen(
         uiState = uiState,
-        onDateTimeChanged = viewModel::onDateTimeChanged,
-        onNowSelected = viewModel::onNowSelected,
-        onLoadStarted = viewModel::onBuildingLoadStarted,
-        onBuildingsLoaded = viewModel::onBuildingsLoaded,
-        onLoadFailed = viewModel::onBuildingLoadFailed,
-        onViewportChanged = viewModel::onViewportChanged,
-        onSelectDrawMode = viewModel::selectDrawMode,
-        onStopDrawing = viewModel::stopDrawing,
-        onAddVertex = viewModel::addVertex,
-        onUndo = viewModel::undoLastVertex,
-        onDrawingError = viewModel::setDrawingError,
-        onFinishBuilding = viewModel::finishBuilding,
-        onFinishWall = viewModel::finishWall,
-        onStartTree = viewModel::startTree,
-        onReturnPendingToDrawing = viewModel::returnPendingToDrawing,
-        onCommitPendingDrawing = viewModel::commitPendingDrawing,
-        onUpdateSelectedDrawing = viewModel::updateSelectedDrawing,
-        onDeleteSelectedDrawing = viewModel::deleteSelectedDrawing,
-        onRestoreDeletedObject = viewModel::restoreLastDeletedObject,
-        onSelectDrawing = viewModel::selectDrawing,
-        onClearScene = viewModel::clearScene,
-        onRestoreClearedScene = viewModel::restoreClearedScene,
-        mapControllerFactory = mapControllerFactory,
-        pendingLocation = pendingLocation,
-        onOpenProjects = onOpenProjects,
-        onSaveProject = viewModel::saveProject,
-        onLocationApplied = onLocationApplied,
-        onOpenLocationSearch = onOpenLocationSearch,
-        onOpenSettings = onOpenSettings,
+        dependencies = MapScreenDependencies(mapControllerFactory),
+        actions = ShadowMapActions(
+            map = MapActions(
+                onDateTimeChanged = viewModel::onDateTimeChanged,
+                onNowSelected = viewModel::onNowSelected,
+                onLoadStarted = viewModel::onBuildingLoadStarted,
+                onBuildingsLoaded = viewModel::onBuildingsLoaded,
+                onLoadFailed = viewModel::onBuildingLoadFailed,
+                onViewportChanged = viewModel::onViewportChanged
+            ),
+            drawing = DrawingActions(
+                onSelectDrawMode = viewModel::selectDrawMode,
+                onStopDrawing = viewModel::stopDrawing,
+                onAddVertex = viewModel::addVertex,
+                onUndo = viewModel::undoLastVertex,
+                onDrawingError = viewModel::setDrawingError,
+                onFinishBuilding = viewModel::finishBuilding,
+                onFinishWall = viewModel::finishWall,
+                onStartTree = viewModel::startTree,
+                onReturnPendingToDrawing = viewModel::returnPendingToDrawing,
+                onCommitPendingDrawing = viewModel::commitPendingDrawing,
+                onUpdateSelectedDrawing = viewModel::updateSelectedDrawing,
+                onDeleteSelectedDrawing = viewModel::deleteSelectedDrawing,
+                onRestoreDeletedObject = viewModel::restoreLastDeletedObject,
+                onSelectDrawing = viewModel::selectDrawing
+            ),
+            scene = SceneActions(
+                onClearScene = viewModel::clearScene,
+                onRestoreClearedScene = viewModel::restoreClearedScene
+            ),
+            project = ProjectActions(onSaveProject = viewModel::saveProject)
+        ),
+        navigation = ShadowMapNavigation(
+            pendingLocation = pendingLocation,
+            onLocationApplied = onLocationApplied,
+            onOpenProjects = onOpenProjects,
+            onOpenLocationSearch = onOpenLocationSearch,
+            onOpenSettings = onOpenSettings
+        ),
         modifier = modifier
     )
 }
@@ -194,37 +212,40 @@ internal fun ShadowMapRoute(
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 private fun ShadowMapScreen(
     uiState: ShadowMapUiState,
-    onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit,
-    onLoadStarted: () -> Unit,
-    onBuildingsLoaded: (List<BuildingFootprint>, GeoPoint) -> Unit,
-    onLoadFailed: (Throwable) -> Unit,
-    onViewportChanged: (ProjectViewport) -> Unit,
-    onSelectDrawMode: (DrawMode) -> Boolean,
-    onStopDrawing: () -> Unit,
-    onAddVertex: (GeoPoint) -> Unit,
-    onUndo: () -> Unit,
-    onDrawingError: (String) -> Unit,
-    onFinishBuilding: () -> Boolean,
-    onFinishWall: () -> Boolean,
-    onStartTree: (GeoPoint) -> Unit,
-    onReturnPendingToDrawing: () -> Unit,
-    onCommitPendingDrawing: (Double, Double?) -> Unit,
-    onUpdateSelectedDrawing: (Double, Double?) -> Unit,
-    onDeleteSelectedDrawing: () -> Boolean,
-    onRestoreDeletedObject: () -> Unit,
-    onSelectDrawing: (com.example.shadowmap.domain.DrawnObjectSelection?) -> Unit,
-    onClearScene: () -> Unit,
-    onRestoreClearedScene: () -> Unit,
-    mapControllerFactory: MapboxShadowMapController.Factory,
-    pendingLocation: LocationSearchResult?,
-    onOpenProjects: () -> Unit,
-    onSaveProject: (String?) -> Unit,
-    onLocationApplied: () -> Unit,
-    onOpenLocationSearch: () -> Unit,
-    onOpenSettings: () -> Unit,
+    dependencies: MapScreenDependencies,
+    actions: ShadowMapActions,
+    navigation: ShadowMapNavigation,
     modifier: Modifier = Modifier
 ) {
+    val onDateTimeChanged = actions.map.onDateTimeChanged
+    val onNowSelected = actions.map.onNowSelected
+    val onLoadStarted = actions.map.onLoadStarted
+    val onBuildingsLoaded = actions.map.onBuildingsLoaded
+    val onLoadFailed = actions.map.onLoadFailed
+    val onViewportChanged = actions.map.onViewportChanged
+    val onSelectDrawMode = actions.drawing.onSelectDrawMode
+    val onStopDrawing = actions.drawing.onStopDrawing
+    val onAddVertex = actions.drawing.onAddVertex
+    val onUndo = actions.drawing.onUndo
+    val onDrawingError = actions.drawing.onDrawingError
+    val onFinishBuilding = actions.drawing.onFinishBuilding
+    val onFinishWall = actions.drawing.onFinishWall
+    val onStartTree = actions.drawing.onStartTree
+    val onReturnPendingToDrawing = actions.drawing.onReturnPendingToDrawing
+    val onCommitPendingDrawing = actions.drawing.onCommitPendingDrawing
+    val onUpdateSelectedDrawing = actions.drawing.onUpdateSelectedDrawing
+    val onDeleteSelectedDrawing = actions.drawing.onDeleteSelectedDrawing
+    val onRestoreDeletedObject = actions.drawing.onRestoreDeletedObject
+    val onSelectDrawing = actions.drawing.onSelectDrawing
+    val onClearScene = actions.scene.onClearScene
+    val onRestoreClearedScene = actions.scene.onRestoreClearedScene
+    val onSaveProject = actions.project.onSaveProject
+    val mapControllerFactory = dependencies.mapControllerFactory
+    val pendingLocation = navigation.pendingLocation
+    val onLocationApplied = navigation.onLocationApplied
+    val onOpenProjects = navigation.onOpenProjects
+    val onOpenLocationSearch = navigation.onOpenLocationSearch
+    val onOpenSettings = navigation.onOpenSettings
     val context = androidx.compose.ui.platform.LocalContext.current
     val density = LocalDensity.current
     val dimensions = ShadowMapDesign.dimensions
@@ -537,6 +558,11 @@ private fun ShadowMapScreen(
         else -> AutoToolState.READY
     }
     val mode = uiState.activeDrawMode
+    val latestUiState = rememberUpdatedState(uiState)
+    val latestAutoToolState = rememberUpdatedState(autoToolState)
+    val latestShowDateTime = rememberUpdatedState(showDateTime)
+    val latestMode = rememberUpdatedState(mode)
+    val latestPropertyType = rememberUpdatedState(propertyType)
 
     fun requestDrawingExit() {
         if (uiState.hasDraft) {
@@ -604,11 +630,16 @@ private fun ShadowMapScreen(
             entryProvider = { key ->
                 when (key) {
                     Map2DSceneDestination -> NavEntry(key) {
-                        if (mode == null && propertyType == null) {
+                        val currentUiState by latestUiState
+                        val currentAutoToolState by latestAutoToolState
+                        val currentShowDateTime by latestShowDateTime
+                        val currentMode by latestMode
+                        val currentPropertyType by latestPropertyType
+                        if (currentMode == null && currentPropertyType == null) {
                             Map2DView(
-                                uiState = uiState,
-                                autoToolState = autoToolState,
-                                isTimeVisible = showDateTime,
+                                uiState = currentUiState,
+                                autoToolState = currentAutoToolState,
+                                isTimeVisible = currentShowDateTime,
                                 onDateTimeChanged = onDateTimeChanged,
                                 onNowSelected = onNowSelected,
                                 onToggleTime = { showDateTime = !showDateTime },
@@ -617,7 +648,7 @@ private fun ShadowMapScreen(
                                 onClear = { showClearConfirmation = true },
                                 onOpenSettings = onOpenSettings,
                                 onOpen3D = {
-                                    if (uiState.hasDraft) {
+                                    if (currentUiState.hasDraft) {
                                         showDraft3dConfirmation = true
                                     } else {
                                         enter3d()
