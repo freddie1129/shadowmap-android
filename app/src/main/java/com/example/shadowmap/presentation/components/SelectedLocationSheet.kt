@@ -15,7 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import com.example.shadowmap.ui.theme.ShadowMapDesign
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,13 +25,18 @@ fun SelectedLocationSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimensions = ShadowMapDesign.dimensions
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+                .padding(
+                    start = dimensions.screenPadding,
+                    end = dimensions.screenPadding,
+                    bottom = dimensions.spacingHuge
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(dimensions.spacingMedium)
         ) {
             Icon(
                 Icons.Outlined.LocationOn,

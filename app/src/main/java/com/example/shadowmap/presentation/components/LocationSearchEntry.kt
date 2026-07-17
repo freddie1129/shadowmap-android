@@ -3,7 +3,6 @@ package com.example.shadowmap.presentation.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Search
@@ -17,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import com.example.shadowmap.ui.theme.ShadowMapDesign
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
 @Composable
@@ -27,25 +26,31 @@ fun LocationSearchEntry(
     onInfoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimensions = ShadowMapDesign.dimensions
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = dimensions.spacingLarge)
             .semantics { contentDescription = label ?: "Search for a location" },
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 6.dp
+        shadowElevation = dimensions.floatingControlElevation
     ) {
         androidx.compose.foundation.layout.Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            modifier = Modifier.padding(
+                horizontal = dimensions.spacingSmall,
+                vertical = dimensions.spacingXs
+            ),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
             androidx.compose.foundation.layout.Row(
                 modifier = Modifier
                     .weight(1f)
                     .clickable(onClick = onClick)
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                    .padding(
+                        horizontal = dimensions.spacingSmall,
+                        vertical = dimensions.spacingSmall
+                    ),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
                 Icon(Icons.Outlined.Search, contentDescription = null)
@@ -54,7 +59,7 @@ fun LocationSearchEntry(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 12.dp)
+                    modifier = Modifier.padding(start = dimensions.spacingMedium)
                 )
             }
             if (label != null) {

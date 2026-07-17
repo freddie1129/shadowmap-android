@@ -20,6 +20,7 @@ data class AppDimensions(
     val screenPadding: Dp = spacingExtraLarge,
     val floatingControlMargin: Dp = spacingMedium,
     val floatingControlMaxWidth: Dp = 400.dp,
+    val floatingControlElevation: Dp = 6.dp,
     val minimumTouchTarget: Dp = 48.dp,
     val iconSize: Dp = spacingExtraLarge,
 )

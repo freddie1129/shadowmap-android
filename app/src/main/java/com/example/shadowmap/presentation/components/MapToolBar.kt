@@ -3,7 +3,6 @@ package com.example.shadowmap.presentation.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
@@ -111,26 +110,22 @@ private fun AutoToolButton(autoState: AutoToolState, onClick: () -> Unit) {
 
 @Composable
 private fun TimeToolButton(isTimeVisible: Boolean, onClick: () -> Unit) {
-    Surface(
-        shape = CircleShape,
-        color = if (isTimeVisible) {
+    MapRoundIconButton(
+        onClick = onClick,
+        contentDescription = if (isTimeVisible) "Hide date and time" else "Show date and time",
+        size = 48.dp,
+        containerColor = if (isTimeVisible) {
             MaterialTheme.colorScheme.primary
         } else {
             MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
         },
-        shadowElevation = 6.dp
-    ) {
-        ToolIconButton(
-            onClick = onClick,
-            contentDescription = if (isTimeVisible) "Hide date and time" else "Show date and time",
-            tint = if (isTimeVisible) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            }
-        ) {
-            Icon(Icons.Outlined.Schedule, contentDescription = null)
+        contentColor = if (isTimeVisible) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurface
         }
+    ) {
+        Icon(Icons.Outlined.Schedule, contentDescription = null)
     }
 }
 

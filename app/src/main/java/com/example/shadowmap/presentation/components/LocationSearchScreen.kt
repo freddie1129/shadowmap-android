@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Close
@@ -36,9 +35,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.example.shadowmap.location.LocationSearchResult
 import com.example.shadowmap.presentation.LocationSearchUiState
+import com.example.shadowmap.ui.theme.ShadowMapDesign
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
 @Composable
@@ -49,6 +48,7 @@ fun LocationSearchScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimensions = ShadowMapDesign.dimensions
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -61,7 +61,10 @@ fun LocationSearchScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                    .padding(
+                        horizontal = dimensions.spacingSmall,
+                        vertical = dimensions.spacingSmall
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = {
@@ -85,7 +88,7 @@ fun LocationSearchScreen(
                             }
                         }
                     },
-                    shape = RoundedCornerShape(28.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
                         unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent
@@ -98,7 +101,7 @@ fun LocationSearchScreen(
                     CircularProgressIndicator(
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
-                            .padding(top = 32.dp)
+                            .padding(top = dimensions.spacingHuge)
                     )
                 }
                 uiState.errorMessage != null -> SearchMessage(
@@ -127,12 +130,16 @@ private fun LocationSearchResultItem(
     result: LocationSearchResult,
     onClick: () -> Unit
 ) {
+    val dimensions = ShadowMapDesign.dimensions
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(
+                horizontal = dimensions.spacingExtraLarge,
+                vertical = dimensions.spacingMedium
+            ),
+        horizontalArrangement = Arrangement.spacedBy(dimensions.spacingLarge),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -173,12 +180,13 @@ private fun SearchMessage(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     message: String
 ) {
+    val dimensions = ShadowMapDesign.dimensions
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 48.dp),
+            .padding(top = dimensions.spacingHuge),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(dimensions.spacingMedium)
     ) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)

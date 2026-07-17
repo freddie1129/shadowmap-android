@@ -108,7 +108,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+            navigationBarStyle = SystemBarStyle.dark(
+                android.graphics.Color.TRANSPARENT
+            )
         )
         setContent {
             ShadowMapTheme {
@@ -575,8 +577,12 @@ private fun ShadowMapScreen(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
-                        .padding(top = 8.dp, start = 16.dp, end = 16.dp),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                        .padding(
+                            top = dimensions.spacingSmall,
+                            start = dimensions.spacingLarge,
+                            end = dimensions.spacingLarge
+                        ),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(dimensions.spacingSmall),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     SettingsIconButton(onClick = onOpenSettings)
