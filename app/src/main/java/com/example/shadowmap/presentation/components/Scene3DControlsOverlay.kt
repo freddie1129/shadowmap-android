@@ -22,8 +22,10 @@ import com.example.shadowmap.ui.theme.ShadowMapTheme
 fun Scene3DControlsOverlay(
     cameraView: SceneCameraView,
     showSatellite: Boolean,
+    showSky: Boolean,
     onCameraViewChanged: (SceneCameraView) -> Unit,
     onToggleSatellite: () -> Unit,
+    onToggleSky: () -> Unit,
     onBackToMap: () -> Unit,
     selectedEpochMillis: Long,
     timeZoneId: String,
@@ -45,6 +47,7 @@ fun Scene3DControlsOverlay(
         Scene3DControls(
             cameraView = cameraView,
             showSatellite = showSatellite,
+            showSky = showSky,
             onToggleCameraView = {
                 onCameraViewChanged(
                     if (cameraView == SceneCameraView.TOP_DOWN) {
@@ -55,6 +58,7 @@ fun Scene3DControlsOverlay(
                 )
             },
             onToggleSatellite = onToggleSatellite,
+            onToggleSky = onToggleSky,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
@@ -84,8 +88,10 @@ private fun Scene3DControlsOverlayPreview() {
             Scene3DControlsOverlay(
                 cameraView = SceneCameraView.ORBIT,
                 showSatellite = true,
+                showSky = true,
                 onCameraViewChanged = {},
                 onToggleSatellite = {},
+                onToggleSky = {},
                 onBackToMap = {},
                 selectedEpochMillis = 1_752_640_000_000L,
                 timeZoneId = "Australia/Brisbane",

@@ -1,0 +1,127 @@
+package com.example.shadowmap.scene
+
+import com.example.shadowmap.domain.SolarPosition
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import kotlin.math.sqrt
+
+class SceneSkyGeometryTest {
+    private val viewport = SceneViewport(
+        centerLongitude = 153.0,
+        centerLatitude = -27.0,
+        widthMeters = 100f,
+        heightMeters = 160f,
+        screenRightX = 1f,
+        screenRightZ = 0f,
+        screenDownX = 0f,
+        screenDownZ = 1f
+    )
+
+    @Test
+    fun frameUsesShorterPaddedEdge() {
+        val frame = SceneSkyGeometry.calculateFrame(
+            viewport = viewport,
+            surfaceWidthPx = 1000,
+            surfaceHeightPx = 2000,
+            padding = SceneSkyPadding(leftPx = 100, topPx = 100, rightPx = 100, bottomPx = 200),
+            visualMarginMeters = 0f
+        )
+
+        assertEquals(80f, frame.usableWidthMeters, 0.001f)
+        assertEquals(136f, frame.usableHeightMeters, 0.001f)
+        assertEquals(40f, frame.radiusMeters, 0.001f)
+    }
+
+    @Test
+    fun northAndEastUseMapAlignedAxes() {
+        val north = SceneSkyGeometry.pointOnDome(0f, 0f, 10f, viewport)
+        val east = SceneSkyGeometry.pointOnDome(90f, 0f, 10f, viewport)
+
+        assertEquals(0f, north.x, 0.001f)
+        assertEquals(-10f, north.z, 0.001f)
+        assertEquals(10f, east.x, 0.001f)
+        assertEquals(0f, east.z, 0.001f)
+    }
+
+    @Test
+    fun sunPathExcludesBelowHorizonPositions() {
+        val mesh = SceneSkyGeometry.sunPathMesh(
+            positions = listOf(
+                SolarPosition(90.0, 100.0),
+                SolarPosition(90.0, 45.0),
+                SolarPosition(180.0, 80.0)
+            ),
+            radiusMeters = 10f,
+            viewport = viewport
+        )
+
+        assertEquals(2, mesh.vertices.size)
+        assertEquals(2, mesh.indices.size)
+        assertTrue(mesh.vertices.all { it.y >= 0f })
+    }
+
+    @Test
+    fun domeMeridiansRemainOnSphereSurface() {
+        val radius = 10f
+        val mesh = SceneSkyGeometry.domeMesh(radius, viewport)
+
+        assertTrue(
+            mesh.vertices.all { vertex ->
+                val distance = sqrt(
+                    vertex.x * vertex.x + vertex.y * vertex.y + vertex.z * vertex.z
+                )
+                kotlin.math.abs(distance - radius) < 0.001f
+            }
+        )
+    }
+
+    @Test
+    fun sunBodyVerticesRemainOnMarkerSphere() {
+        val center = ScenePoint3(4f, 7f, -3f)
+        val radius = 2f
+        val mesh = SceneSkyGeometry.sunSphereMesh(center, radius)
+
+        assertTrue(mesh.indices.isNotEmpty())
+        assertTrue(
+            mesh.vertices.all { vertex ->
+                val dx = vertex.x - center.x
+                val dy = vertex.y - center.y
+                val dz = vertex.z - center.z
+                kotlin.math.abs(sqrt(dx * dx + dy * dy + dz * dz) - radius) < 0.001f
+            }
+        )
+    }
+
+    @Test
+    fun sunPathRibbonHasRequestedWidthAndSitsAboveDome() {
+        val radius = 10f
+        val width = 0.8f
+        val offset = 0.1f
+        val mesh = SceneSkyGeometry.sunPathRibbonMesh(
+            positions = listOf(
+                SolarPosition(90.0, 70.0),
+                SolarPosition(120.0, 60.0),
+                SolarPosition(150.0, 70.0)
+            ),
+            radiusMeters = radius,
+            viewport = viewport,
+            widthMeters = width,
+            surfaceOffsetMeters = offset
+        )
+
+        assertEquals(6, mesh.vertices.size)
+        assertEquals(12, mesh.indices.size)
+        val firstWidth = mesh.vertices[0].distanceTo(mesh.vertices[1])
+        assertEquals(width, firstWidth, 0.001f)
+        assertTrue(mesh.vertices.all { it.length() > radius })
+    }
+
+    private fun ScenePoint3.distanceTo(other: ScenePoint3): Float = sqrt(
+        (x - other.x) * (x - other.x) +
+            (y - other.y) * (y - other.y) +
+            (z - other.z) * (z - other.z)
+    )
+
+    private fun ScenePoint3.length(): Float = sqrt(x * x + y * y + z * z)
+}

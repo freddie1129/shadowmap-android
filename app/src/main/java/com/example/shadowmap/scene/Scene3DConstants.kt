@@ -24,6 +24,17 @@ object Scene3DAppearance {
     /** Unpremultiplied ground RGB color; opacity is applied when creating the shader color. */
     val GROUND_COLOR = SceneRgb(0.82f, 0.84f, 0.85f)
 
+    /** Translucent linear-space amber used for the dome meridians, altitude rings, and compass. */
+    val SKY_GUIDE_COLOR = SceneRgba(0.96f, 0.70f, 0.18f, 0.28f)
+
+    /** High-contrast linear-space orange used for the selected day's sun-path ribbon. */
+    val SUN_PATH_COLOR = SceneRgba(1f, 0.42f, 0.08f, 0.9f)
+    /** Saturated linear-space orange used by the current-sun centre guide. */
+    val CURRENT_SUN_COLOR = SceneRgba(1f, 0.30f, 0.002f, 0.82f)
+
+    /** Saturated linear-space yellow used by the current-sun body. */
+    val SUN_BODY_COLOR = SceneRgba(1f, 0.50f, 0.002f, 1f)
+
     /** Ground alpha, where 0 is transparent and 1 is opaque. */
     const val GROUND_OPACITY = 0.30f
 

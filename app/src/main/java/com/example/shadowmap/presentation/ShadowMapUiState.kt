@@ -28,6 +28,7 @@ data class ShadowMapUiState(
     val isProjectDirty: Boolean = false,
     val projectError: String? = null,
     val solarPosition: SolarPosition? = null,
+    val sunPath: List<SolarPosition> = emptyList(),
     val loadedBuildings: List<Building> = emptyList(),
     val loadedBuildingOverrides: Map<AutomaticBuildingIdentity, LoadedBuildingOverride> = emptyMap(),
     val suppressedLoadedBuildings: Map<AutomaticBuildingIdentity, GeoPolygon> = emptyMap(),

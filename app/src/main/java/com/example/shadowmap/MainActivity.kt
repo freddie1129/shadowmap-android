@@ -304,6 +304,7 @@ private fun ShadowMapScreen(
     }
     val show3d = sceneBackStack.lastOrNull() == Scene3DSceneDestination
     var showSatelliteIn3d by remember { mutableStateOf(true) }
+    var showSkyIn3d by remember { mutableStateOf(true) }
     var sceneCameraView by remember { mutableStateOf(SceneCameraView.ORBIT) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
     var buildingLoadArea by remember { mutableStateOf<BuildingLoadArea?>(null) }
@@ -681,10 +682,13 @@ private fun ShadowMapScreen(
                             zenith = currentUiState.solarPosition?.zenithDegrees?.toFloat()
                                 ?: Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES,
                             sunVisible = currentUiState.solarPosition?.isAboveHorizon == true,
+                            sunPath = currentUiState.sunPath,
                             cameraView = sceneCameraView,
                             showSatellite = showSatelliteIn3d,
+                            showSky = showSkyIn3d,
                             onCameraViewChanged = { sceneCameraView = it },
                             onToggleSatellite = { showSatelliteIn3d = !showSatelliteIn3d },
+                            onToggleSky = { showSkyIn3d = !showSkyIn3d },
                             onBackToMap = ::exit3d,
                             selectedEpochMillis = currentUiState.selectedEpochMillis,
                             timeZoneId = currentUiState.displayTimeZoneId,

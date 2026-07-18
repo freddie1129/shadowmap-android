@@ -20,6 +20,7 @@ import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.LoadedBuildingOverride
 import com.example.shadowmap.domain.SceneObjectSource
 import com.example.shadowmap.domain.SolarPositionCalculator
+import com.example.shadowmap.domain.SolarPosition
 import com.example.shadowmap.domain.SceneBuildingMerger
 import com.example.shadowmap.domain.ShadowAppearance
 import com.example.shadowmap.domain.UserObjectShadowCalculator
@@ -27,7 +28,9 @@ import com.example.shadowmap.project.ProjectRepository
 import com.example.shadowmap.project.ProjectSnapshot
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
+import java.time.Instant
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.abs
@@ -573,7 +576,7 @@ constructor(
         val state = _uiState.value
         val location = state.calculationLocation
         if (location == null) {
-            _uiState.value = state.copy(solarPosition = null, shadows = emptyList())
+            _uiState.value = state.copy(solarPosition = null, sunPath = emptyList(), shadows = emptyList())
             return
         }
         val solarPosition = solarPositionCalculator.calculate(
@@ -581,7 +584,10 @@ constructor(
             latitudeDegrees = location.latitude,
             longitudeDegrees = location.longitude
         )
-        _uiState.value = state.copy(solarPosition = solarPosition)
+        _uiState.value = state.copy(
+            solarPosition = solarPosition,
+            sunPath = calculateSunPath(state.selectedEpochMillis, location)
+        )
         val hasShadowCasters = state.buildings.isNotEmpty() ||
             state.drawnWalls.isNotEmpty() || state.drawnTrees.isNotEmpty()
         if (!hasShadowCasters || !solarPosition.isAboveHorizon) {
@@ -606,6 +612,22 @@ constructor(
                 ensureActive()
                 _uiState.value = _uiState.value.copy(shadows = shadows)
             }
+    }
+
+    private fun calculateSunPath(epochMillis: Long, location: GeoPoint): List<SolarPosition> {
+        val zone = ZoneId.of(_uiState.value.displayTimeZoneId)
+        val dayStart = Instant.ofEpochMilli(epochMillis)
+            .atZone(zone)
+            .toLocalDate()
+            .atStartOfDay(zone)
+            .toInstant()
+        return (0..96).map { step ->
+            solarPositionCalculator.calculate(
+                epochMillis = dayStart.plus(step * 15L, ChronoUnit.MINUTES).toEpochMilli(),
+                latitudeDegrees = location.latitude,
+                longitudeDegrees = location.longitude
+            )
+        }
     }
 
     private fun restoredCalculationLocation(): GeoPoint? {

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.ViewInAr
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -29,8 +30,10 @@ import com.example.shadowmap.ui.theme.ShadowMapTheme
 fun Scene3DControls(
     cameraView: SceneCameraView,
     showSatellite: Boolean,
+    showSky: Boolean,
     onToggleCameraView: () -> Unit,
     onToggleSatellite: () -> Unit,
+    onToggleSky: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dimensions = ShadowMapDesign.dimensions
@@ -46,6 +49,16 @@ fun Scene3DControls(
             Icon(
                 imageVector = if (showSatellite) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
                 contentDescription = null
+            )
+        }
+        SceneControlButton(
+            onClick = onToggleSky,
+            contentDescription = if (showSky) "Hide sun path" else "Show sun path"
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.WbSunny,
+                contentDescription = null,
+                tint = if (showSky) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
         }
         SceneControlButton(
@@ -106,8 +119,10 @@ private fun Scene3DControlsPreview() {
         Scene3DControls(
             cameraView = SceneCameraView.ORBIT,
             showSatellite = true,
+            showSky = true,
             onToggleCameraView = {},
-            onToggleSatellite = {}
+            onToggleSatellite = {},
+            onToggleSky = {}
         )
     }
 }
@@ -119,8 +134,10 @@ private fun Scene3DControlsDarkPreview() {
         Scene3DControls(
             cameraView = SceneCameraView.ORBIT,
             showSatellite = true,
+            showSky = true,
             onToggleCameraView = {},
-            onToggleSatellite = {}
+            onToggleSatellite = {},
+            onToggleSky = {}
         )
     }
 }

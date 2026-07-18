@@ -17,6 +17,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.DrawnTree
 import com.example.shadowmap.domain.DrawnWall
+import com.example.shadowmap.domain.SolarPosition
 import com.google.android.filament.Box
 import com.google.android.filament.Engine
 import com.google.android.filament.EntityManager
@@ -50,6 +51,10 @@ fun FilamentBuildingView(
     azimuth: Float,
     zenith: Float,
     sunVisible: Boolean,
+    sunPath: List<SolarPosition> = emptyList(),
+    skyVisible: Boolean = true,
+    skyPadding: SceneSkyPadding = SceneSkyPadding(),
+    sunPathWidthPx: Float = 4f,
     cameraView: SceneCameraView,
     onCameraViewChanged: (SceneCameraView) -> Unit
 ) {
@@ -69,6 +74,15 @@ fun FilamentBuildingView(
     }
     LaunchedEffect(azimuth, zenith, sunVisible) {
         renderer.setSun(azimuth, zenith, sunVisible)
+    }
+    LaunchedEffect(sunPath, skyVisible) {
+        renderer.setSky(sunPath, skyVisible)
+    }
+    LaunchedEffect(skyPadding) {
+        renderer.setSkyPadding(skyPadding)
+    }
+    LaunchedEffect(sunPathWidthPx) {
+        renderer.setSunPathWidth(sunPathWidthPx)
     }
     DisposableEffect(renderer) { onDispose(renderer::destroy) }
 }
@@ -94,6 +108,22 @@ private class FilamentBuildingRenderer(
     private var roofMaterial: Material? = null
     private var wallMaterial: Material? = null
     private var groundMaterial: Material? = null
+    private var skyMaterial: Material? = null
+    private var pathMaterial: Material? = null
+    private var markerMaterial: Material? = null
+    private var sunBodyMaterial: Material? = null
+    private var skyRenderableEntity = 0
+    private var pathRenderableEntity = 0
+    private var markerRenderableEntity = 0
+    private var sunBodyRenderableEntity = 0
+    private var skyVertexBuffer: VertexBuffer? = null
+    private var skyIndexBuffer: IndexBuffer? = null
+    private var pathVertexBuffer: VertexBuffer? = null
+    private var pathIndexBuffer: IndexBuffer? = null
+    private var markerVertexBuffer: VertexBuffer? = null
+    private var markerIndexBuffer: IndexBuffer? = null
+    private var sunBodyVertexBuffer: VertexBuffer? = null
+    private var sunBodyIndexBuffer: IndexBuffer? = null
     private var destroyed = false
     private var sceneRadius = Scene3DCamera.DEFAULT_SCENE_RADIUS_METERS
     private var cameraYaw = Scene3DCamera.DEFAULT_YAW_DEGREES
@@ -106,6 +136,13 @@ private class FilamentBuildingRenderer(
     private var viewportWidth = 1
     private var viewportHeight = 1
     private var sceneViewport: SceneViewport? = null
+    private var currentAzimuth = Scene3DAppearance.DEFAULT_SUN_AZIMUTH_DEGREES
+    private var currentZenith = Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES
+    private var currentSunVisible = true
+    private var currentSunPath = emptyList<SolarPosition>()
+    private var skyVisible = true
+    private var skyPadding = SceneSkyPadding()
+    private var sunPathWidthPx = 4f
 
     private val uiHelper = UiHelper(UiHelper.ContextErrorPolicy.DONT_CHECK).apply {
         isOpaque = false
@@ -127,6 +164,7 @@ private class FilamentBuildingRenderer(
                 viewportHeight = height
                 view.viewport = Viewport(0, 0, width, height)
                 updateProjection()
+                rebuildSky()
             }
         }
     }
@@ -190,6 +228,7 @@ private class FilamentBuildingRenderer(
                             Scene3DCamera.MAX_ORTHOGRAPHIC_ZOOM
                         )
                     updateProjection()
+                    rebuildSunPath()
                     updateCamera()
                     return true
                 }
@@ -336,6 +375,7 @@ private class FilamentBuildingRenderer(
             .build(engine, renderableEntity)
         scene.addEntity(renderableEntity)
         sceneRadius = max(mesh.radiusMeters, Scene3DCamera.MIN_SCENE_RADIUS_METERS)
+        rebuildSky()
         when (cameraView) {
             SceneCameraView.ORBIT -> resetToInitialOrbit()
             SceneCameraView.TOP_DOWN -> resetToTopDown()
@@ -344,6 +384,9 @@ private class FilamentBuildingRenderer(
 
     fun setSun(azimuth: Float, zenith: Float, visible: Boolean) {
         if (destroyed) return
+        currentAzimuth = azimuth
+        currentZenith = zenith
+        currentSunVisible = visible
         val direction = sunLightDirection(azimuth, zenith)
         val instance = engine.lightManager.getInstance(sunEntity)
         engine.lightManager.setDirection(instance, direction.x, direction.y, direction.z)
@@ -351,6 +394,306 @@ private class FilamentBuildingRenderer(
             instance,
             if (visible) Scene3DAppearance.SUN_INTENSITY else 0f
         )
+        rebuildSunMarker()
+    }
+
+    fun setSky(sunPath: List<SolarPosition>, visible: Boolean) {
+        currentSunPath = sunPath
+        skyVisible = visible
+        rebuildSky()
+    }
+
+    fun setSkyPadding(padding: SceneSkyPadding) {
+        skyPadding = padding
+        rebuildSky()
+    }
+
+    fun setSunPathWidth(widthPx: Float) {
+        sunPathWidthPx = widthPx.coerceAtLeast(1f)
+        rebuildSunPath()
+    }
+
+    private fun rebuildSky() {
+        val viewport = sceneViewport ?: return
+        if (!skyVisible || viewportWidth <= 1 || viewportHeight <= 1) {
+            clearSky()
+            return
+        }
+        val frame = SceneSkyGeometry.calculateFrame(
+            viewport,
+            viewportWidth,
+            viewportHeight,
+            skyPadding
+        )
+        val dome = SceneSkyGeometry.domeMesh(frame.radiusMeters, viewport)
+        val compass = SceneSkyGeometry.compassMesh(frame.radiusMeters, viewport)
+        clearSky()
+        skyMaterial = createLineMaterial("sky_guides", Scene3DAppearance.SKY_GUIDE_COLOR)
+        pathMaterial = createLineMaterial("sun_path", Scene3DAppearance.SUN_PATH_COLOR)
+        markerMaterial = createLineMaterial("current_sun", Scene3DAppearance.CURRENT_SUN_COLOR)
+        sunBodyMaterial = createSunBodyMaterial()
+        createLineRenderable(dome + compass, skyMaterial!!).also {
+            skyRenderableEntity = it.entity
+            skyVertexBuffer = it.vertexBuffer
+            skyIndexBuffer = it.indexBuffer
+        }
+        rebuildSunPath(frame.radiusMeters)
+        rebuildSunMarker(frame.radiusMeters)
+    }
+
+    private fun rebuildSunPath(radiusMeters: Float? = null) {
+        clearLine(pathRenderableEntity, pathVertexBuffer, pathIndexBuffer)
+        pathRenderableEntity = 0
+        pathVertexBuffer = null
+        pathIndexBuffer = null
+        if (!skyVisible || pathMaterial == null || viewportWidth <= 1 || viewportHeight <= 1) return
+        val viewport = sceneViewport ?: return
+        val radius = radiusMeters ?: SceneSkyGeometry.calculateFrame(
+            viewport,
+            viewportWidth,
+            viewportHeight,
+            skyPadding
+        ).radiusMeters
+        val horizontalMetersPerPixel =
+            viewport.widthMeters * orthographicZoom / viewportWidth.coerceAtLeast(1)
+        val verticalMetersPerPixel =
+            viewport.heightMeters * orthographicZoom / viewportHeight.coerceAtLeast(1)
+        val pathWidthMeters = max(horizontalMetersPerPixel, verticalMetersPerPixel) * sunPathWidthPx
+        val path = SceneSkyGeometry.sunPathRibbonMesh(
+            positions = currentSunPath,
+            radiusMeters = radius,
+            viewport = viewport,
+            widthMeters = pathWidthMeters,
+            surfaceOffsetMeters = max(pathWidthMeters * 0.12f, radius * 0.001f)
+        )
+        if (path.indices.isEmpty()) return
+        createTriangleRenderable(path, pathMaterial!!).also {
+            pathRenderableEntity = it.entity
+            pathVertexBuffer = it.vertexBuffer
+            pathIndexBuffer = it.indexBuffer
+        }
+    }
+
+    private fun rebuildSunMarker(radiusMeters: Float? = null) {
+        if (!skyVisible) return
+        val viewport = sceneViewport ?: return
+        val radius = radiusMeters ?: SceneSkyGeometry.calculateFrame(
+            viewport,
+            viewportWidth,
+            viewportHeight,
+            skyPadding
+        ).radiusMeters
+        clearLine(markerRenderableEntity, markerVertexBuffer, markerIndexBuffer)
+        clearLine(sunBodyRenderableEntity, sunBodyVertexBuffer, sunBodyIndexBuffer)
+        markerRenderableEntity = 0
+        sunBodyRenderableEntity = 0
+        markerVertexBuffer = null
+        markerIndexBuffer = null
+        sunBodyVertexBuffer = null
+        sunBodyIndexBuffer = null
+        if (!currentSunVisible || markerMaterial == null || sunBodyMaterial == null) return
+        val center = SceneSkyGeometry.pointOnDome(
+            currentAzimuth,
+            90f - currentZenith,
+            radius,
+            viewport
+        )
+        val bodyRadius = max(radius * 0.025f, 0.6f)
+        val marker = SceneLineMesh(
+            vertices = listOf(
+                ScenePoint3(0f, 0f, 0f),
+                center
+            ),
+            indices = listOf(0, 1)
+        )
+        createLineRenderable(marker, markerMaterial!!).also {
+            markerRenderableEntity = it.entity
+            markerVertexBuffer = it.vertexBuffer
+            markerIndexBuffer = it.indexBuffer
+        }
+        createTriangleRenderable(
+            SceneSkyGeometry.sunSphereMesh(center, bodyRadius),
+            sunBodyMaterial!!
+        ).also {
+            sunBodyRenderableEntity = it.entity
+            sunBodyVertexBuffer = it.vertexBuffer
+            sunBodyIndexBuffer = it.indexBuffer
+        }
+    }
+
+    private data class LineResources(
+        val entity: Int,
+        val vertexBuffer: VertexBuffer,
+        val indexBuffer: IndexBuffer
+    )
+
+    private fun createLineRenderable(
+        mesh: SceneLineMesh,
+        material: Material
+    ): LineResources {
+        val floatsPerVertex = 7
+        val vertexBytes = ByteBuffer.allocateDirect(
+            mesh.vertices.size * floatsPerVertex * Float.SIZE_BYTES
+        ).order(ByteOrder.nativeOrder())
+        mesh.vertices.forEach { point ->
+            vertexBytes.putFloat(point.x).putFloat(point.y).putFloat(point.z)
+            normalToQuaternion(0f, 1f, 0f).forEach(vertexBytes::putFloat)
+        }
+        vertexBytes.flip()
+        val indexBytes = ByteBuffer.allocateDirect(mesh.indices.size * Int.SIZE_BYTES)
+            .order(ByteOrder.nativeOrder())
+        mesh.indices.forEach(indexBytes::putInt)
+        indexBytes.flip()
+        val vertexBuffer = VertexBuffer.Builder()
+            .bufferCount(1)
+            .vertexCount(mesh.vertices.size)
+            .attribute(VertexBuffer.VertexAttribute.POSITION, 0, VertexBuffer.AttributeType.FLOAT3, 0, floatsPerVertex * Float.SIZE_BYTES)
+            .attribute(VertexBuffer.VertexAttribute.TANGENTS, 0, VertexBuffer.AttributeType.FLOAT4, 3 * Float.SIZE_BYTES, floatsPerVertex * Float.SIZE_BYTES)
+            .build(engine)
+            .also { it.setBufferAt(engine, 0, vertexBytes) }
+        val indexBuffer = IndexBuffer.Builder()
+            .indexCount(mesh.indices.size)
+            .bufferType(IndexBuffer.Builder.IndexType.UINT)
+            .build(engine)
+            .also { it.setBuffer(engine, indexBytes) }
+        val entity = EntityManager.get().create()
+        RenderableManager.Builder(1)
+            .boundingBox(Box(-100f, -1f, -100f, 100f, 100f, 100f))
+            .material(0, material.defaultInstance)
+            .geometry(0, RenderableManager.PrimitiveType.LINES, vertexBuffer, indexBuffer, 0, mesh.indices.size)
+            .culling(false)
+            .build(engine, entity)
+        scene.addEntity(entity)
+        return LineResources(entity, vertexBuffer, indexBuffer)
+    }
+
+    private fun createTriangleRenderable(
+        mesh: SceneTriangleMesh,
+        material: Material
+    ): LineResources {
+        val vertexBytes = ByteBuffer.allocateDirect(
+            mesh.vertices.size * 3 * Float.SIZE_BYTES
+        ).order(ByteOrder.nativeOrder())
+        mesh.vertices.forEach { point ->
+            vertexBytes.putFloat(point.x).putFloat(point.y).putFloat(point.z)
+        }
+        vertexBytes.flip()
+        val indexBytes = ByteBuffer.allocateDirect(mesh.indices.size * Int.SIZE_BYTES)
+            .order(ByteOrder.nativeOrder())
+        mesh.indices.forEach(indexBytes::putInt)
+        indexBytes.flip()
+        val vertexBuffer = VertexBuffer.Builder()
+            .bufferCount(1)
+            .vertexCount(mesh.vertices.size)
+            .attribute(
+                VertexBuffer.VertexAttribute.POSITION,
+                0,
+                VertexBuffer.AttributeType.FLOAT3,
+                0,
+                3 * Float.SIZE_BYTES
+            )
+            .build(engine)
+            .also { it.setBufferAt(engine, 0, vertexBytes) }
+        val indexBuffer = IndexBuffer.Builder()
+            .indexCount(mesh.indices.size)
+            .bufferType(IndexBuffer.Builder.IndexType.UINT)
+            .build(engine)
+            .also { it.setBuffer(engine, indexBytes) }
+        val entity = EntityManager.get().create()
+        val minX = mesh.vertices.minOf(ScenePoint3::x)
+        val minY = mesh.vertices.minOf(ScenePoint3::y)
+        val minZ = mesh.vertices.minOf(ScenePoint3::z)
+        val maxX = mesh.vertices.maxOf(ScenePoint3::x)
+        val maxY = mesh.vertices.maxOf(ScenePoint3::y)
+        val maxZ = mesh.vertices.maxOf(ScenePoint3::z)
+        RenderableManager.Builder(1)
+            .boundingBox(
+                Box(
+                    (minX + maxX) / 2f,
+                    (minY + maxY) / 2f,
+                    (minZ + maxZ) / 2f,
+                    max((maxX - minX) / 2f, 0.01f),
+                    max((maxY - minY) / 2f, 0.01f),
+                    max((maxZ - minZ) / 2f, 0.01f)
+                )
+            )
+            .material(0, material.defaultInstance)
+            .geometry(
+                0,
+                RenderableManager.PrimitiveType.TRIANGLES,
+                vertexBuffer,
+                indexBuffer,
+                0,
+                mesh.indices.size
+            )
+            .castShadows(false)
+            .receiveShadows(false)
+            .culling(false)
+            .build(engine, entity)
+        scene.addEntity(entity)
+        return LineResources(entity, vertexBuffer, indexBuffer)
+    }
+
+    private fun createLineMaterial(name: String, color: SceneRgba): Material = createMaterial(
+        name = name,
+        source =
+            """
+            void material(inout MaterialInputs material) {
+                prepareMaterial(material);
+                material.baseColor = ${color.toShaderFloat4()};
+            }
+            """.trimIndent(),
+        transparent = true,
+        unlit = true
+    )
+
+    private fun createSunBodyMaterial(): Material = createMaterial(
+        name = "sun_body",
+        source =
+            """
+            void material(inout MaterialInputs material) {
+                prepareMaterial(material);
+                material.baseColor = ${Scene3DAppearance.SUN_BODY_COLOR.toShaderFloat4()};
+            }
+            """.trimIndent(),
+        unlit = true
+    )
+
+    private fun clearSky() {
+        clearLine(skyRenderableEntity, skyVertexBuffer, skyIndexBuffer)
+        clearLine(pathRenderableEntity, pathVertexBuffer, pathIndexBuffer)
+        clearLine(markerRenderableEntity, markerVertexBuffer, markerIndexBuffer)
+        clearLine(sunBodyRenderableEntity, sunBodyVertexBuffer, sunBodyIndexBuffer)
+        skyRenderableEntity = 0
+        pathRenderableEntity = 0
+        markerRenderableEntity = 0
+        sunBodyRenderableEntity = 0
+        skyVertexBuffer = null
+        skyIndexBuffer = null
+        pathVertexBuffer = null
+        pathIndexBuffer = null
+        markerVertexBuffer = null
+        markerIndexBuffer = null
+        sunBodyVertexBuffer = null
+        sunBodyIndexBuffer = null
+        skyMaterial?.let(engine::destroyMaterial)
+        pathMaterial?.let(engine::destroyMaterial)
+        markerMaterial?.let(engine::destroyMaterial)
+        sunBodyMaterial?.let(engine::destroyMaterial)
+        skyMaterial = null
+        pathMaterial = null
+        markerMaterial = null
+        sunBodyMaterial = null
+    }
+
+    private fun clearLine(entity: Int, vertexBuffer: VertexBuffer?, indexBuffer: IndexBuffer?) {
+        if (entity != 0) {
+            scene.removeEntity(entity)
+            engine.destroyEntity(entity)
+            EntityManager.get().destroy(entity)
+        }
+        vertexBuffer?.let(engine::destroyVertexBuffer)
+        indexBuffer?.let(engine::destroyIndexBuffer)
     }
 
     private fun createRoofMaterial(): Material = createMaterial(
@@ -393,13 +736,14 @@ private class FilamentBuildingRenderer(
     private fun createMaterial(
         name: String,
         source: String,
-        transparent: Boolean = false
+        transparent: Boolean = false,
+        unlit: Boolean = false
     ): Material {
         val builder = MaterialBuilder()
             .name(name)
             .platform(MaterialBuilder.Platform.MOBILE)
             .targetApi(MaterialBuilder.TargetApi.OPENGL)
-            .shading(MaterialBuilder.Shading.LIT)
+            .shading(if (unlit) MaterialBuilder.Shading.UNLIT else MaterialBuilder.Shading.LIT)
             .doubleSided(true)
             .material(source)
         if (transparent) {
@@ -427,6 +771,7 @@ private class FilamentBuildingRenderer(
         cameraTargetX = 0f
         cameraTargetZ = 0f
         updateProjection()
+        rebuildSunPath()
         updateCamera()
     }
 
@@ -439,6 +784,7 @@ private class FilamentBuildingRenderer(
         cameraTargetX = 0f
         cameraTargetZ = 0f
         updateProjection()
+        rebuildSunPath()
         updateCamera()
     }
 
@@ -557,6 +903,7 @@ private class FilamentBuildingRenderer(
     }
 
     private fun clearMesh() {
+        clearSky()
         if (renderableEntity != 0) {
             scene.removeEntity(renderableEntity)
             engine.destroyEntity(renderableEntity)
