@@ -7,6 +7,7 @@ import com.example.shadowmap.domain.DrawnWall
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.LoadedBuildingOverride
+import com.example.shadowmap.domain.ShadowAppearance
 
 data class ProjectViewport(
     val center: GeoPoint,
@@ -32,7 +33,8 @@ data class ProjectSnapshot(
     val drawnTrees: List<DrawnTree>,
     val loadedBuildings: List<Building>,
     val loadedBuildingOverrides: Map<AutomaticBuildingIdentity, LoadedBuildingOverride>,
-    val suppressedLoadedBuildings: Map<AutomaticBuildingIdentity, GeoPolygon>
+    val suppressedLoadedBuildings: Map<AutomaticBuildingIdentity, GeoPolygon>,
+    val shadowAppearance: ShadowAppearance = ShadowAppearance.DEFAULT
 )
 
 data class ProjectSummary(

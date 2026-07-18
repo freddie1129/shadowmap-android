@@ -13,6 +13,7 @@ import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.SceneObjectSource
+import com.example.shadowmap.domain.ShadowAppearance
 import com.mapbox.common.Cancelable
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
@@ -27,6 +28,7 @@ import com.mapbox.maps.RenderedQueryGeometry
 import com.mapbox.maps.RenderedQueryOptions
 import com.mapbox.maps.Style
 import com.mapbox.maps.extension.style.layers.addLayer
+import com.mapbox.maps.extension.style.layers.getLayerAs
 import com.mapbox.maps.extension.style.expressions.generated.Expression
 import com.mapbox.maps.extension.style.layers.generated.circleLayer
 import com.mapbox.maps.extension.style.layers.generated.fillLayer
@@ -130,7 +132,8 @@ constructor(
         inProgressVertices: List<GeoPoint>,
         pendingDrawing: PendingDrawing?,
         crosshairPoint: GeoPoint?,
-        shadows: List<GeoPolygon>
+        shadows: List<GeoPolygon>,
+        shadowAppearance: ShadowAppearance
     ) {
         mapView.mapboxMap.getStyle { style ->
             val shadowData = shadows.toFeatureCollection()
@@ -155,12 +158,18 @@ constructor(
                 )
                 style.addLayer(
                     fillLayer(SHADOWS_FILL_LAYER_ID, SHADOWS_SOURCE_ID) {
-                        fillColor("#111820")
-                        fillOpacity(0.55)
+                        fillColor(shadowAppearance.mapboxColor)
+                        fillOpacity(shadowAppearance.opacity.toDouble())
                     }
                 )
             } else {
                 shadowSource.featureCollection(shadowData)
+                style.getLayerAs<com.mapbox.maps.extension.style.layers.generated.FillLayer>(
+                    SHADOWS_FILL_LAYER_ID
+                )?.apply {
+                    fillColor(shadowAppearance.mapboxColor)
+                    fillOpacity(shadowAppearance.opacity.toDouble())
+                }
             }
 
             val sceneSource = style.getSourceAs<GeoJsonSource>(SCENE_SOURCE_ID)

@@ -1,6 +1,7 @@
 package com.example.shadowmap.project
 
 import com.example.shadowmap.domain.BuildingSource
+import com.example.shadowmap.domain.ShadowAppearance
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 
@@ -22,7 +23,8 @@ object ProjectJsonCodec {
         // constructor defaults, so normalize legacy records explicitly.
         return project.copy(
             loadedBuildings = project.loadedBuildings.map { it.copy(source = BuildingSource.AUTOMATIC) },
-            drawnBuildings = project.drawnBuildings.map { it.copy(source = BuildingSource.MANUAL) }
+            drawnBuildings = project.drawnBuildings.map { it.copy(source = BuildingSource.MANUAL) },
+            shadowAppearance = project.shadowAppearance ?: ShadowAppearance.DEFAULT
         )
     }
 }

@@ -81,6 +81,7 @@ import com.example.shadowmap.presentation.components.DrawingCrosshair
 import com.example.shadowmap.presentation.components.DrawingPropertiesSheet
 import com.example.shadowmap.presentation.components.SelectedLocationSheet
 import com.example.shadowmap.presentation.components.Scene3DView
+import com.example.shadowmap.presentation.components.ShadowColorSheet
 import com.example.shadowmap.presentation.components.Map2DView
 import com.example.shadowmap.project.ProjectViewport
 import com.example.shadowmap.scene.Scene3DAppearance
@@ -172,7 +173,8 @@ internal fun ShadowMapRoute(
                 onLoadStarted = viewModel::onBuildingLoadStarted,
                 onBuildingsLoaded = viewModel::onBuildingsLoaded,
                 onLoadFailed = viewModel::onBuildingLoadFailed,
-                onViewportChanged = viewModel::onViewportChanged
+                onViewportChanged = viewModel::onViewportChanged,
+                onShadowAppearanceChanged = viewModel::onShadowAppearanceChanged
             ),
             drawing = DrawingActions(
                 onSelectDrawMode = viewModel::selectDrawMode,
@@ -222,6 +224,7 @@ private fun ShadowMapScreen(
     val onBuildingsLoaded = actions.map.onBuildingsLoaded
     val onLoadFailed = actions.map.onLoadFailed
     val onViewportChanged = actions.map.onViewportChanged
+    val onShadowAppearanceChanged = actions.map.onShadowAppearanceChanged
     val onSelectDrawMode = actions.drawing.onSelectDrawMode
     val onStopDrawing = actions.drawing.onStopDrawing
     val onAddVertex = actions.drawing.onAddVertex
@@ -311,6 +314,7 @@ private fun ShadowMapScreen(
     var showDiscardDraftConfirmation by remember { mutableStateOf(false) }
     var showDraft3dConfirmation by remember { mutableStateOf(false) }
     var showSelectedLocationSheet by remember { mutableStateOf(false) }
+    var showShadowColorSheet by remember { mutableStateOf(false) }
     var showSaveProjectDialog by remember { mutableStateOf(false) }
     var projectNameDraft by remember(uiState.activeProjectName) {
         mutableStateOf(uiState.activeProjectName.orEmpty())
@@ -430,7 +434,8 @@ private fun ShadowMapScreen(
                 inProgressVertices = uiState.inProgressVertices,
                 pendingDrawing = uiState.pendingDrawing,
                 crosshairPoint = crosshairPoint,
-                shadows = uiState.shadows
+                shadows = uiState.shadows,
+                shadowAppearance = uiState.shadowAppearance
             )
         }
     }
@@ -642,6 +647,7 @@ private fun ShadowMapScreen(
                                 onDateTimeChanged = onDateTimeChanged,
                                 onNowSelected = onNowSelected,
                                 onToggleTime = { showDateTime = !showDateTime },
+                                onOpenShadowColor = { showShadowColorSheet = true },
                                 onDrawMode = { selectedMode -> onSelectDrawMode(selectedMode) },
                                 onAutoLoad = ::requestAutoLoad,
                                 onClear = { showClearConfirmation = true },
@@ -864,6 +870,17 @@ private fun ShadowMapScreen(
         SelectedLocationSheet(
             address = uiState.selectedLocationLabel,
             onDismiss = { showSelectedLocationSheet = false }
+        )
+    }
+
+    if (showShadowColorSheet) {
+        ShadowColorSheet(
+            initialAppearance = uiState.shadowAppearance,
+            onDismissRequest = { showShadowColorSheet = false },
+            onApply = { appearance ->
+                onShadowAppearanceChanged(appearance)
+                showShadowColorSheet = false
+            }
         )
     }
 

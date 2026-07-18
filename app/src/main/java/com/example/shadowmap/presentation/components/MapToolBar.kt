@@ -1,8 +1,12 @@
 package com.example.shadowmap.presentation.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
@@ -26,6 +30,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.domain.DrawMode
+import com.example.shadowmap.domain.ShadowAppearance
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
 @Composable
@@ -33,10 +38,12 @@ fun MapToolBar(
     autoState: AutoToolState,
     hasSceneObjects: Boolean,
     isTimeVisible: Boolean,
+    shadowAppearance: ShadowAppearance,
     onDrawMode: (DrawMode) -> Unit,
     onAutoLoad: () -> Unit,
     onClear: () -> Unit,
     onToggleTime: () -> Unit,
+    onOpenShadowColor: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -44,8 +51,25 @@ fun MapToolBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        ShadowColorButton(shadowAppearance, onOpenShadowColor)
         PrimaryToolBar(autoState, hasSceneObjects, onDrawMode, onAutoLoad, onClear)
         TimeToolButton(isTimeVisible, onToggleTime)
+    }
+}
+
+@Composable
+private fun ShadowColorButton(appearance: ShadowAppearance, onClick: () -> Unit) {
+    MapRoundIconButton(onClick = onClick, contentDescription = "Change shadow colour") {
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .background(Color(appearance.colorArgb), CircleShape)
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = appearance.opacity),
+                    shape = CircleShape
+                )
+        )
     }
 }
 
@@ -161,10 +185,12 @@ private fun MapToolBarPreview() {
             autoState = AutoToolState.READY,
             hasSceneObjects = true,
             isTimeVisible = false,
+            shadowAppearance = ShadowAppearance.DEFAULT,
             onDrawMode = {},
             onAutoLoad = {},
             onClear = {},
-            onToggleTime = {}
+            onToggleTime = {},
+            onOpenShadowColor = {}
         )
     }
 }

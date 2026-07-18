@@ -13,6 +13,7 @@ import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.LoadedBuildingOverride
 import com.example.shadowmap.domain.SolarPosition
 import com.example.shadowmap.domain.SceneBuildingMerger
+import com.example.shadowmap.domain.ShadowAppearance
 import com.example.shadowmap.project.ProjectViewport
 
 data class ShadowMapUiState(
@@ -40,6 +41,7 @@ data class ShadowMapUiState(
     val selectedDrawing: DrawnObjectSelection? = null,
     val drawingError: String? = null,
     val shadows: List<GeoPolygon> = emptyList(),
+    val shadowAppearance: ShadowAppearance = ShadowAppearance.DEFAULT,
     val buildingLoadState: BuildingLoadState = BuildingLoadState.Idle
 ) {
     val visibleLoadedBuildings: List<Building>

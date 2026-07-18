@@ -35,6 +35,7 @@ fun Map2DView(
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
     onToggleTime: () -> Unit,
+    onOpenShadowColor: () -> Unit,
     onDrawMode: (com.example.shadowmap.domain.DrawMode) -> Unit,
     onAutoLoad: () -> Unit,
     onClear: () -> Unit,
@@ -109,10 +110,12 @@ fun Map2DView(
                 autoState = autoToolState,
                 hasSceneObjects = uiState.hasSceneObjects,
                 isTimeVisible = isTimeVisible,
+                shadowAppearance = uiState.shadowAppearance,
                 onDrawMode = onDrawMode,
                 onAutoLoad = onAutoLoad,
                 onClear = onClear,
                 onToggleTime = onToggleTime,
+                onOpenShadowColor = onOpenShadowColor,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
             androidx.compose.animation.AnimatedVisibility(visible = isTimeVisible) {
@@ -160,6 +163,7 @@ private fun Map2DViewPreview() {
             onDateTimeChanged = {},
             onNowSelected = {},
             onToggleTime = {},
+            onOpenShadowColor = {},
             onDrawMode = {},
             onAutoLoad = {},
             onClear = {},

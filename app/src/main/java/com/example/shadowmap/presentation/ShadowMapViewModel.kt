@@ -21,6 +21,7 @@ import com.example.shadowmap.domain.LoadedBuildingOverride
 import com.example.shadowmap.domain.SceneObjectSource
 import com.example.shadowmap.domain.SolarPositionCalculator
 import com.example.shadowmap.domain.SceneBuildingMerger
+import com.example.shadowmap.domain.ShadowAppearance
 import com.example.shadowmap.domain.UserObjectShadowCalculator
 import com.example.shadowmap.project.ProjectRepository
 import com.example.shadowmap.project.ProjectSnapshot
@@ -157,7 +158,8 @@ constructor(
         drawnTrees = drawnTrees,
         loadedBuildings = loadedBuildings,
         loadedBuildingOverrides = loadedBuildingOverrides,
-        suppressedLoadedBuildings = suppressedLoadedBuildings
+        suppressedLoadedBuildings = suppressedLoadedBuildings,
+        shadowAppearance = shadowAppearance
     )
 
     private fun ProjectSnapshot.toUiState(previous: ShadowMapUiState) = previous.copy(
@@ -174,6 +176,7 @@ constructor(
         loadedBuildings = loadedBuildings,
         loadedBuildingOverrides = loadedBuildingOverrides,
         suppressedLoadedBuildings = suppressedLoadedBuildings,
+        shadowAppearance = shadowAppearance ?: ShadowAppearance.DEFAULT,
         automaticBuildingKeysCoveredByManual = emptySet(),
         drawnBuildings = drawnBuildings,
         drawnWalls = drawnWalls,
@@ -192,6 +195,14 @@ constructor(
 
     fun onBuildingLoadStarted() {
         _uiState.value = _uiState.value.copy(buildingLoadState = BuildingLoadState.Loading)
+    }
+
+    fun onShadowAppearanceChanged(appearance: ShadowAppearance) {
+        if (_uiState.value.shadowAppearance == appearance) return
+        _uiState.value = _uiState.value.copy(
+            shadowAppearance = appearance,
+            isProjectDirty = true
+        )
     }
 
     fun onMapCenterChanged(location: GeoPoint) {

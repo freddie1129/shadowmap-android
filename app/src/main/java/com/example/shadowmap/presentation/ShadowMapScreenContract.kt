@@ -4,6 +4,7 @@ import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.DrawMode
 import com.example.shadowmap.domain.DrawnObjectSelection
 import com.example.shadowmap.domain.GeoPoint
+import com.example.shadowmap.domain.ShadowAppearance
 import com.example.shadowmap.location.LocationSearchResult
 import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.project.ProjectViewport
@@ -26,7 +27,8 @@ data class MapActions(
     val onLoadStarted: () -> Unit,
     val onBuildingsLoaded: (List<Building>, GeoPoint) -> Unit,
     val onLoadFailed: (Throwable) -> Unit,
-    val onViewportChanged: (ProjectViewport) -> Unit
+    val onViewportChanged: (ProjectViewport) -> Unit,
+    val onShadowAppearanceChanged: (ShadowAppearance) -> Unit
 )
 
 data class DrawingActions(

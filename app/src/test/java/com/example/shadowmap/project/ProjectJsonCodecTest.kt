@@ -6,6 +6,7 @@ import com.example.shadowmap.domain.BuildingSource
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.LoadedBuildingOverride
+import com.example.shadowmap.domain.ShadowAppearance
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -45,7 +46,8 @@ class ProjectJsonCodecTest {
             drawnTrees = emptyList(),
             loadedBuildings = emptyList(),
             loadedBuildingOverrides = mapOf(identity to LoadedBuildingOverride(12.0, polygon)),
-            suppressedLoadedBuildings = mapOf(identity to polygon)
+            suppressedLoadedBuildings = mapOf(identity to polygon),
+            shadowAppearance = ShadowAppearance(colorArgb = 0xFF4CAF50L, opacity = 0.4f)
         )
 
         val decoded = ProjectJsonCodec.decode(ProjectJsonCodec.encode(project))
