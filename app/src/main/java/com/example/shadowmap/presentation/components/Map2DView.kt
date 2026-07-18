@@ -19,7 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.shadowmap.domain.DrawnBuilding
+import com.example.shadowmap.domain.Building
+import com.example.shadowmap.domain.BuildingSource
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.presentation.ShadowMapUiState
@@ -137,7 +138,8 @@ private fun Map2DViewPreview() {
                 calculationLocation = GeoPoint(153.0251, -27.4698),
                 selectedLocationLabel = "Brisbane, Queensland",
                 drawnBuildings = listOf(
-                    DrawnBuilding(
+                    Building(
+                        id = "preview-building",
                         polygon = GeoPolygon(
                             listOf(
                                 listOf(
@@ -147,7 +149,9 @@ private fun Map2DViewPreview() {
                                     GeoPoint(153.025, -27.470)
                                 )
                             )
-                        )
+                        ),
+                        heightMeters = 6.0,
+                        source = BuildingSource.MANUAL
                     )
                 )
             ),

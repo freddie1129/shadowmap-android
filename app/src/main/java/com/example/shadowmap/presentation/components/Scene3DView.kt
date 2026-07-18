@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.DrawnTree
 import com.example.shadowmap.domain.DrawnWall
 import com.example.shadowmap.scene.FilamentBuildingView
@@ -13,7 +13,7 @@ import com.example.shadowmap.scene.SceneViewport
 
 @Composable
 fun Scene3DView(
-    buildings: List<BuildingFootprint>,
+    buildings: List<Building>,
     walls: List<DrawnWall>,
     trees: List<DrawnTree>,
     viewport: SceneViewport?,

@@ -18,11 +18,17 @@ data class AutomaticBuildingIdentity(
     }
 }
 
-data class BuildingFootprint(
+enum class BuildingSource {
+    AUTOMATIC,
+    MANUAL
+}
+
+data class Building(
     val id: String?,
     val polygon: GeoPolygon,
     val heightMeters: Double,
-    val minHeightMeters: Double,
+    val minHeightMeters: Double = 0.0,
+    val source: BuildingSource = BuildingSource.AUTOMATIC,
     val automaticIdentity: AutomaticBuildingIdentity? = null
 )
 

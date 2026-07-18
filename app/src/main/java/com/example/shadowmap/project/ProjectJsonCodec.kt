@@ -1,5 +1,6 @@
 package com.example.shadowmap.project
 
+import com.example.shadowmap.domain.BuildingSource
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 
@@ -17,6 +18,11 @@ object ProjectJsonCodec {
         require(project.schemaVersion == CURRENT_SCHEMA_VERSION) {
             "Unsupported project schema version: ${project.schemaVersion}"
         }
-        return project
+        // Project schema 1 predates Building.source. Gson bypasses Kotlin
+        // constructor defaults, so normalize legacy records explicitly.
+        return project.copy(
+            loadedBuildings = project.loadedBuildings.map { it.copy(source = BuildingSource.AUTOMATIC) },
+            drawnBuildings = project.drawnBuildings.map { it.copy(source = BuildingSource.MANUAL) }
+        )
     }
 }

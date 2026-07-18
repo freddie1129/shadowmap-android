@@ -8,7 +8,7 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 
 object AutomaticBuildingMatcher {
-    fun identity(building: BuildingFootprint): AutomaticBuildingIdentity =
+    fun identity(building: Building): AutomaticBuildingIdentity =
         building.automaticIdentity ?: identity(
             featureId = building.id,
             featureNamespace = null,
@@ -26,7 +26,7 @@ object AutomaticBuildingMatcher {
     )
 
     fun findMatch(
-        building: BuildingFootprint,
+        building: Building,
         candidates: Collection<Pair<AutomaticBuildingIdentity, GeoPolygon>>
     ): AutomaticBuildingIdentity? {
         val identity = identity(building)

@@ -4,12 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shadowmap.di.DefaultDispatcher
-import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.Building
+import com.example.shadowmap.domain.BuildingSource
 import com.example.shadowmap.domain.BuildingShadowCalculator
 import com.example.shadowmap.domain.AutomaticBuildingIdentity
 import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DrawMode
-import com.example.shadowmap.domain.DrawnBuilding
 import com.example.shadowmap.domain.DrawnObjectSelection
 import com.example.shadowmap.domain.DrawnObjectType
 import com.example.shadowmap.domain.DrawnTree
@@ -27,6 +27,7 @@ import com.example.shadowmap.project.ProjectSnapshot
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
 import java.time.ZoneId
+import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.abs
 import kotlinx.coroutines.CoroutineDispatcher
@@ -213,7 +214,7 @@ constructor(
         recalculateSunAndShadows()
     }
 
-    fun onBuildingsLoaded(buildings: List<BuildingFootprint>, location: GeoPoint) {
+    fun onBuildingsLoaded(buildings: List<Building>, location: GeoPoint) {
         savedStateHandle[LOCATION_LATITUDE_KEY] = location.latitude
         savedStateHandle[LOCATION_LONGITUDE_KEY] = location.longitude
         val state = _uiState.value
@@ -351,9 +352,11 @@ constructor(
         val pending = state.pendingDrawing ?: return
         _uiState.value = when (pending) {
             is PendingDrawing.Building -> state.copy(
-                drawnBuildings = state.drawnBuildings + DrawnBuilding(
+                drawnBuildings = state.drawnBuildings + Building(
+                    id = UUID.randomUUID().toString(),
                     polygon = DrawingGeometryValidator.closedPolygon(pending.vertices),
-                    heightMeters = heightMeters
+                    heightMeters = heightMeters,
+                    source = BuildingSource.MANUAL
                 ),
                 activeDrawMode = null,
                 pendingDrawing = null
@@ -616,7 +619,7 @@ constructor(
     )
 
     private fun reconcileLoadedOverrides(
-        incoming: List<BuildingFootprint>,
+        incoming: List<Building>,
         overrides: Map<AutomaticBuildingIdentity, LoadedBuildingOverride>
     ): Map<AutomaticBuildingIdentity, LoadedBuildingOverride> {
         if (overrides.isEmpty()) return emptyMap()
@@ -634,9 +637,9 @@ constructor(
     }
 
     private fun mergeLoadedBuildings(
-        existing: List<BuildingFootprint>,
-        incoming: List<BuildingFootprint>
-    ): List<BuildingFootprint> {
+        existing: List<Building>,
+        incoming: List<Building>
+    ): List<Building> {
         val remainingExisting = existing.toMutableList()
         incoming.forEach { building ->
             val candidates = remainingExisting.map { candidate ->
@@ -657,7 +660,7 @@ constructor(
     }
 
     private fun reconcileLoadedSuppressions(
-        incoming: List<BuildingFootprint>,
+        incoming: List<Building>,
         suppressions: Map<AutomaticBuildingIdentity, com.example.shadowmap.domain.GeoPolygon>
     ): Map<AutomaticBuildingIdentity, com.example.shadowmap.domain.GeoPolygon> {
         if (suppressions.isEmpty()) return emptyMap()
@@ -705,16 +708,16 @@ constructor(
 }
 
 private sealed interface DeletedSceneObject {
-    data class AutomaticBuilding(val building: BuildingFootprint) : DeletedSceneObject
-    data class ManualBuilding(val building: DrawnBuilding) : DeletedSceneObject
+    data class AutomaticBuilding(val building: Building) : DeletedSceneObject
+    data class ManualBuilding(val building: Building) : DeletedSceneObject
     data class Wall(val wall: DrawnWall) : DeletedSceneObject
     data class Tree(val tree: DrawnTree) : DeletedSceneObject
 }
 
 private data class ClearedSceneSnapshot(
-    val loadedBuildings: List<BuildingFootprint>,
+    val loadedBuildings: List<Building>,
     val loadedBuildingOverrides: Map<AutomaticBuildingIdentity, LoadedBuildingOverride>,
-    val drawnBuildings: List<DrawnBuilding>,
+    val drawnBuildings: List<Building>,
     val drawnWalls: List<DrawnWall>,
     val drawnTrees: List<DrawnTree>,
     val suppressedLoadedBuildings: Map<AutomaticBuildingIdentity, com.example.shadowmap.domain.GeoPolygon>,

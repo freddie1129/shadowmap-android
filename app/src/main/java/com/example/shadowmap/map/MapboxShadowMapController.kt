@@ -1,10 +1,10 @@
 package com.example.shadowmap.map
 
-import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.Building
+import com.example.shadowmap.domain.BuildingSource
 import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DEFAULT_BUILDING_HEIGHT_METERS
 import com.example.shadowmap.domain.DrawMode
-import com.example.shadowmap.domain.DrawnBuilding
 import com.example.shadowmap.domain.DrawnObjectSelection
 import com.example.shadowmap.domain.DrawnObjectType
 import com.example.shadowmap.domain.DrawnTree
@@ -95,7 +95,7 @@ constructor(
     }
 
     @OptIn(MapboxExperimental::class)
-    suspend fun fetchBuildings(): List<BuildingFootprint> =
+    suspend fun fetchBuildings(): List<Building> =
         withContext(Dispatchers.Main.immediate) {
             var switchedToStandard = false
             try {
@@ -121,8 +121,8 @@ constructor(
 
     @Suppress("LongMethod", "LongParameterList")
     fun render(
-        loadedBuildings: List<BuildingFootprint>,
-        drawnBuildings: List<DrawnBuilding>,
+        loadedBuildings: List<Building>,
+        drawnBuildings: List<Building>,
         drawnWalls: List<DrawnWall>,
         drawnTrees: List<DrawnTree>,
         selection: DrawnObjectSelection?,
@@ -288,8 +288,8 @@ constructor(
     }
 
     private fun sceneFeatureCollection(
-        loadedBuildings: List<BuildingFootprint>,
-        drawnBuildings: List<DrawnBuilding>,
+        loadedBuildings: List<Building>,
+        drawnBuildings: List<Building>,
         drawnWalls: List<DrawnWall>,
         drawnTrees: List<DrawnTree>,
         selection: DrawnObjectSelection?
@@ -437,7 +437,7 @@ constructor(
     }
 
     @OptIn(MapboxExperimental::class)
-    private suspend fun queryBuildings(): List<BuildingFootprint> =
+    private suspend fun queryBuildings(): List<Building> =
         suspendCancellableCoroutine { continuation ->
             mapView.mapboxMap.queryRenderedFeatures(StandardBuildings(), null) { features ->
                 if (continuation.isActive) {
@@ -446,16 +446,17 @@ constructor(
             }
         }
 
-    private fun StandardBuildingsFeature.toDomainFootprints(): List<BuildingFootprint> {
+    private fun StandardBuildingsFeature.toDomainFootprints(): List<Building> {
         val featureHeight = height?.takeIf { it > 0.0 } ?: DEFAULT_BUILDING_HEIGHT_METERS
         val featureId = this.id?.featureId ?: originalFeature.id()
         val featureNamespace = this.id?.featureNamespace
         return geometry.toGeoPolygons().map { polygon ->
-            BuildingFootprint(
+            Building(
                 id = featureId,
                 polygon = polygon,
                 heightMeters = featureHeight,
                 minHeightMeters = minHeight ?: 0.0,
+                source = BuildingSource.AUTOMATIC,
                 automaticIdentity = AutomaticBuildingMatcher.identity(
                     featureId = featureId,
                     featureNamespace = featureNamespace,

@@ -8,8 +8,8 @@ class SceneBuildingMergerTest {
     @Test
     fun automaticBuildingCoveredByManual_isSuppressed() {
         val polygon = square(153.0, -28.0)
-        val automatic = BuildingFootprint("automatic", polygon, 10.0, 0.0)
-        val manual = DrawnBuilding(polygon = polygon, heightMeters = 6.0)
+        val automatic = Building("automatic", polygon, 10.0, 0.0)
+        val manual = Building("manual", polygon, 6.0, source = BuildingSource.MANUAL)
 
         val suppressed = SceneBuildingMerger.automaticKeysCoveredByManualBuildings(
             automaticBuildings = listOf(automatic),
@@ -21,8 +21,8 @@ class SceneBuildingMergerTest {
 
     @Test
     fun separateManualBuilding_keepsAutomaticBuildingVisible() {
-        val automatic = BuildingFootprint("automatic", square(153.0, -28.0), 10.0, 0.0)
-        val manual = DrawnBuilding(polygon = square(154.0, -27.0), heightMeters = 6.0)
+        val automatic = Building("automatic", square(153.0, -28.0), 10.0, 0.0)
+        val manual = Building("manual", square(154.0, -27.0), 6.0, source = BuildingSource.MANUAL)
 
         val suppressed = SceneBuildingMerger.automaticKeysCoveredByManualBuildings(
             automaticBuildings = listOf(automatic),

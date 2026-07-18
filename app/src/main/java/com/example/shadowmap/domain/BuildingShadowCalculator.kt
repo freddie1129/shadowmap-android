@@ -18,7 +18,7 @@ class BuildingShadowCalculator
 @Inject
 constructor() {
     fun calculate(
-        buildings: List<BuildingFootprint>,
+        buildings: List<Building>,
         azimuthDegrees: Double,
         zenithDegrees: Double
     ): List<GeoPolygon> = buildings.flatMap { building ->
@@ -26,7 +26,7 @@ constructor() {
     }
 
     internal fun calculateBuilding(
-        building: BuildingFootprint,
+        building: Building,
         azimuthDegrees: Double,
         zenithDegrees: Double
     ): List<GeoPolygon> {
@@ -42,7 +42,7 @@ constructor() {
     }
 
     private fun calculateProjectedShadow(
-        building: BuildingFootprint,
+        building: Building,
         outerRing: List<GeoPoint>,
         azimuthDegrees: Double,
         zenithDegrees: Double
@@ -69,7 +69,7 @@ constructor() {
     }
 
     private fun calculateValidShadow(
-        building: BuildingFootprint,
+        building: Building,
         footprint: Polygon,
         projection: LocalMeterProjection,
         azimuthDegrees: Double,

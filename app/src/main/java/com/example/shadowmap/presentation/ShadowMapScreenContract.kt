@@ -1,6 +1,6 @@
 package com.example.shadowmap.presentation
 
-import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.DrawMode
 import com.example.shadowmap.domain.DrawnObjectSelection
 import com.example.shadowmap.domain.GeoPoint
@@ -24,7 +24,7 @@ data class MapActions(
     val onDateTimeChanged: (Long) -> Unit,
     val onNowSelected: () -> Unit,
     val onLoadStarted: () -> Unit,
-    val onBuildingsLoaded: (List<BuildingFootprint>, GeoPoint) -> Unit,
+    val onBuildingsLoaded: (List<Building>, GeoPoint) -> Unit,
     val onLoadFailed: (Throwable) -> Unit,
     val onViewportChanged: (ProjectViewport) -> Unit
 )

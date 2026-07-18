@@ -1,6 +1,6 @@
 package com.example.shadowmap.scene
 
-import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.DrawnTree
 import com.example.shadowmap.domain.DrawnWall
 import kotlin.math.PI
@@ -29,7 +29,7 @@ data class BuildingMesh(
 object BuildingMeshGenerator {
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     fun generate(
-        buildings: List<BuildingFootprint>,
+        buildings: List<Building>,
         walls: List<DrawnWall> = emptyList(),
         trees: List<DrawnTree> = emptyList(),
         viewport: SceneViewport? = null

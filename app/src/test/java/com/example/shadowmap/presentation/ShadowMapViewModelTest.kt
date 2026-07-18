@@ -1,7 +1,7 @@
 package com.example.shadowmap.presentation
 
 import androidx.lifecycle.SavedStateHandle
-import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.BuildingShadowCalculator
 import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DrawMode
@@ -322,7 +322,7 @@ class ShadowMapViewModelTest {
         assertEquals(1, viewModel.uiState.value.drawnTrees.size)
     }
 
-    private fun testBuilding(): BuildingFootprint {
+    private fun testBuilding(): Building {
         val ring =
             listOf(
                 GeoPoint(153.0, -27.0),
@@ -331,7 +331,7 @@ class ShadowMapViewModelTest {
                 GeoPoint(153.0, -27.0001),
                 GeoPoint(153.0, -27.0)
             )
-        return BuildingFootprint(
+        return Building(
             id = "building",
             polygon = GeoPolygon(listOf(ring)),
             heightMeters = 20.0,

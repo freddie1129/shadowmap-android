@@ -1,7 +1,8 @@
 package com.example.shadowmap.project
 
 import com.example.shadowmap.domain.AutomaticBuildingIdentity
-import com.example.shadowmap.domain.DrawnBuilding
+import com.example.shadowmap.domain.Building
+import com.example.shadowmap.domain.BuildingSource
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.LoadedBuildingOverride
@@ -37,7 +38,9 @@ class ProjectJsonCodecTest {
                 pitch = 3.0,
                 boundary = polygon
             ),
-            drawnBuildings = listOf(DrawnBuilding(polygon = polygon, heightMeters = 8.0)),
+            drawnBuildings = listOf(
+                Building("manual", polygon, 8.0, source = BuildingSource.MANUAL)
+            ),
             drawnWalls = emptyList(),
             drawnTrees = emptyList(),
             loadedBuildings = emptyList(),

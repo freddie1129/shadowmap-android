@@ -50,7 +50,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
-import com.example.shadowmap.domain.BuildingFootprint
 import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
 import com.example.shadowmap.domain.DEFAULT_DRAWN_TREE_HEIGHT_METERS

@@ -14,7 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.DrawnTree
 import com.example.shadowmap.domain.DrawnWall
 import com.google.android.filament.Box
@@ -42,7 +42,7 @@ import kotlin.math.sqrt
 
 @Composable
 fun FilamentBuildingView(
-    buildings: List<BuildingFootprint>,
+    buildings: List<Building>,
     modifier: Modifier = Modifier,
     walls: List<DrawnWall> = emptyList(),
     trees: List<DrawnTree> = emptyList(),
@@ -247,7 +247,7 @@ private class FilamentBuildingRenderer(
 
     @Suppress("LongMethod")
     fun setBuildings(
-        buildings: List<BuildingFootprint>,
+        buildings: List<Building>,
         walls: List<DrawnWall>,
         trees: List<DrawnTree>,
         viewport: SceneViewport?,

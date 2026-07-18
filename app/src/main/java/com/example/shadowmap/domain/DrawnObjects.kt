@@ -8,12 +8,6 @@ enum class DrawMode {
     TREE
 }
 
-data class DrawnBuilding(
-    val id: String = UUID.randomUUID().toString(),
-    val polygon: GeoPolygon,
-    val heightMeters: Double = DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
-)
-
 data class DrawnWall(
     val id: String = UUID.randomUUID().toString(),
     val points: List<GeoPoint>,

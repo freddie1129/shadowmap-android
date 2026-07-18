@@ -1,6 +1,6 @@
 package com.example.shadowmap.scene
 
-import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.DrawnTree
@@ -12,7 +12,7 @@ import org.junit.Test
 class BuildingMeshGeneratorTest {
     @Test
     fun squareFootprintCreatesRoofWallsAndGround() {
-        val building = BuildingFootprint(
+        val building = Building(
             id = "one",
             polygon = GeoPolygon(
                 listOf(

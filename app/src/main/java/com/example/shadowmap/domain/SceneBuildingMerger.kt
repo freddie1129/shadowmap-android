@@ -6,14 +6,14 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 
 object SceneBuildingMerger {
-    fun automaticKey(building: BuildingFootprint): String {
+    fun automaticKey(building: Building): String {
         val identity = AutomaticBuildingMatcher.identity(building)
         return identity.selectionId
     }
 
     fun automaticKeysCoveredByManualBuildings(
-        automaticBuildings: List<BuildingFootprint>,
-        manualBuildings: List<DrawnBuilding>
+        automaticBuildings: List<Building>,
+        manualBuildings: List<Building>
     ): Set<String> {
         if (automaticBuildings.isEmpty() || manualBuildings.isEmpty()) return emptySet()
         val manualPolygons = manualBuildings.mapNotNull { it.polygon.toJtsPolygon() }
