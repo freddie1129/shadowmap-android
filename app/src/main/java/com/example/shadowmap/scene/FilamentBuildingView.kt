@@ -55,7 +55,7 @@ fun FilamentBuildingView(
     zenith: Float,
     sunVisible: Boolean,
     sunPath: List<SolarPosition> = emptyList(),
-    skyVisible: Boolean = true,
+    skyVisible: Boolean = false,
     skyPadding: SceneSkyPadding = SceneSkyPadding(),
     sunPathWidthPx: Float = 4f,
     sunConnectorWidthPx: Float = 2f,
@@ -142,6 +142,7 @@ private class FilamentBuildingRenderer(
     private var compassIndexBuffer: IndexBuffer? = null
     private var destroyed = false
     private var sceneRadius = Scene3DCamera.DEFAULT_SCENE_RADIUS_METERS
+    private var sceneCoverageRadius = Scene3DCamera.DEFAULT_SCENE_RADIUS_METERS
     private var cameraYaw = Scene3DCamera.DEFAULT_YAW_DEGREES
     private var cameraPitch = Scene3DCamera.DEFAULT_PITCH_DEGREES
     private var cameraDistance = Scene3DCamera.DEFAULT_DISTANCE_METERS
@@ -156,7 +157,7 @@ private class FilamentBuildingRenderer(
     private var currentZenith = Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES
     private var currentSunVisible = true
     private var currentSunPath = emptyList<SolarPosition>()
-    private var skyVisible = true
+    private var skyVisible = false
     private var skyPadding = SceneSkyPadding()
     private var sunPathWidthPx = 4f
     private var sunConnectorWidthPx = 2f
@@ -247,6 +248,7 @@ private class FilamentBuildingRenderer(
                         )
                     updateProjection()
                     rebuildSunPath()
+                    rebuildSunMarker()
                     updateCamera()
                     return true
                 }
@@ -393,6 +395,7 @@ private class FilamentBuildingRenderer(
             .build(engine, renderableEntity)
         scene.addEntity(renderableEntity)
         sceneRadius = max(mesh.radiusMeters, Scene3DCamera.MIN_SCENE_RADIUS_METERS)
+        sceneCoverageRadius = max(mesh.coverageRadiusMeters, Scene3DCamera.MIN_SCENE_RADIUS_METERS)
         rebuildSky()
         when (cameraView) {
             SceneCameraView.ORBIT -> resetToInitialOrbit()
@@ -442,19 +445,30 @@ private class FilamentBuildingRenderer(
         rebuildSky()
     }
 
+    private fun calculateSkyFrame(): SceneSkyFrame? {
+        val viewport = sceneViewport
+        return if (viewport == null || viewportWidth <= 1 || viewportHeight <= 1) {
+            null
+        } else {
+            SceneSkyGeometry.calculateFrame(
+                viewport = viewport,
+                surfaceWidthPx = viewportWidth,
+                surfaceHeightPx = viewportHeight,
+                padding = skyPadding,
+                compassBandPx = compassBandPx,
+                contentRadiusMeters = sceneCoverageRadius
+            )
+        }
+    }
+
     private fun rebuildSky() {
-        val viewport = sceneViewport ?: return
-        if (!skyVisible || viewportWidth <= 1 || viewportHeight <= 1) {
+        val viewport = sceneViewport
+        val hasRenderableSurface = viewportWidth > 1 && viewportHeight > 1
+        if (viewport == null || !skyVisible || !hasRenderableSurface) {
             clearSky()
             return
         }
-        val frame = SceneSkyGeometry.calculateFrame(
-            viewport,
-            viewportWidth,
-            viewportHeight,
-            skyPadding,
-            compassBandPx = compassBandPx
-        )
+        val frame = checkNotNull(calculateSkyFrame())
         val dome = SceneSkyGeometry.domeMesh(frame.radiusMeters, viewport)
         val compass = SceneSkyGeometry.compassMesh(frame.radiusMeters, viewport)
         clearSky()
@@ -475,7 +489,12 @@ private class FilamentBuildingRenderer(
     private fun rebuildCompass(frame: SceneSkyFrame) {
         clearCompass()
         val ratio = frame.radiusMeters / frame.outerRadiusMeters
-        val bitmap = CompassDialBitmap.create(ratio)
+        val viewport = checkNotNull(sceneViewport)
+        val bitmap = CompassDialBitmap.create(
+            domeToOuterRadiusRatio = ratio,
+            mapHalfWidthToOuterRadiusRatio = viewport.widthMeters / (2f * frame.outerRadiusMeters),
+            mapHalfHeightToOuterRadiusRatio = viewport.heightMeters / (2f * frame.outerRadiusMeters)
+        )
         compassTexture = Texture.Builder()
             .width(bitmap.width)
             .height(bitmap.height)
@@ -501,7 +520,7 @@ private class FilamentBuildingRenderer(
         }
         createCompassRenderable(
             outerRadiusMeters = frame.outerRadiusMeters,
-            viewport = checkNotNull(sceneViewport),
+            viewport = viewport,
             material = checkNotNull(compassMaterial)
         )
     }
@@ -541,40 +560,23 @@ private class FilamentBuildingRenderer(
         viewport: SceneViewport,
         material: Material
     ) {
-        val rightX = viewport.screenRightX
-        val rightZ = viewport.screenRightZ
-        val downX = viewport.screenDownX
-        val downZ = viewport.screenDownZ
-        fun point(right: Float, down: Float): ScenePoint3 = ScenePoint3(
-            x = rightX * right + downX * down,
-            y = COMPASS_GROUND_OFFSET_METERS,
-            z = rightZ * right + downZ * down
-        )
-        val points = listOf(
-            point(-outerRadiusMeters, -outerRadiusMeters),
-            point(outerRadiusMeters, -outerRadiusMeters),
-            point(outerRadiusMeters, outerRadiusMeters),
-            point(-outerRadiusMeters, outerRadiusMeters)
-        )
-        // Android bitmaps use a top-left origin, while Filament samples V from the bottom.
-        val textureCoordinates = listOf(0f to 1f, 1f to 1f, 1f to 0f, 0f to 0f)
+        val disk = createCompassDisk(outerRadiusMeters, viewport)
         val floatsPerVertex = 5
         val vertexBytes = ByteBuffer.allocateDirect(
-            points.size * floatsPerVertex * Float.SIZE_BYTES
+            disk.points.size * floatsPerVertex * Float.SIZE_BYTES
         ).order(ByteOrder.nativeOrder())
-        points.zip(textureCoordinates).forEach { (point, uv) ->
+        disk.points.zip(disk.textureCoordinates).forEach { (point, uv) ->
             vertexBytes.putFloat(point.x).putFloat(point.y).putFloat(point.z)
             vertexBytes.putFloat(uv.first).putFloat(uv.second)
         }
         vertexBytes.flip()
-        val indices = listOf(0, 2, 1, 0, 3, 2)
-        val indexBytes = ByteBuffer.allocateDirect(indices.size * Int.SIZE_BYTES)
+        val indexBytes = ByteBuffer.allocateDirect(disk.indices.size * Int.SIZE_BYTES)
             .order(ByteOrder.nativeOrder())
-        indices.forEach(indexBytes::putInt)
+        disk.indices.forEach(indexBytes::putInt)
         indexBytes.flip()
         compassVertexBuffer = VertexBuffer.Builder()
             .bufferCount(1)
-            .vertexCount(points.size)
+            .vertexCount(disk.points.size)
             .attribute(
                 VertexBuffer.VertexAttribute.POSITION,
                 0,
@@ -592,7 +594,7 @@ private class FilamentBuildingRenderer(
             .build(engine)
             .also { it.setBufferAt(engine, 0, vertexBytes) }
         compassIndexBuffer = IndexBuffer.Builder()
-            .indexCount(indices.size)
+            .indexCount(disk.indices.size)
             .bufferType(IndexBuffer.Builder.IndexType.UINT)
             .build(engine)
             .also { it.setBuffer(engine, indexBytes) }
@@ -615,13 +617,38 @@ private class FilamentBuildingRenderer(
                 checkNotNull(compassVertexBuffer),
                 checkNotNull(compassIndexBuffer),
                 0,
-                indices.size
+                disk.indices.size
             )
             .castShadows(false)
             .receiveShadows(false)
             .culling(false)
             .build(engine, compassRenderableEntity)
         scene.addEntity(compassRenderableEntity)
+    }
+
+    private data class CompassDisk(
+        val points: List<ScenePoint3>,
+        val textureCoordinates: List<Pair<Float, Float>>,
+        val indices: List<Int>
+    )
+
+    private fun createCompassDisk(
+        outerRadiusMeters: Float,
+        viewport: SceneViewport
+    ): CompassDisk {
+        val mesh = SceneSkyGeometry.groundDiskMesh(
+            radiusMeters = outerRadiusMeters,
+            viewport = viewport,
+            yMeters = COMPASS_GROUND_OFFSET_METERS
+        )
+        val textureCoordinates = mesh.vertices.map { point ->
+            val right = point.x * viewport.screenRightX + point.z * viewport.screenRightZ
+            val down = point.x * viewport.screenDownX + point.z * viewport.screenDownZ
+            // Android Canvas uses a top-left origin, while Filament samples V from the bottom.
+            (right / outerRadiusMeters + 1f) / 2f to
+                (1f - down / outerRadiusMeters) / 2f
+        }
+        return CompassDisk(mesh.vertices, textureCoordinates, mesh.indices)
     }
 
     private fun rebuildSunPath(radiusMeters: Float? = null) {
@@ -631,15 +658,11 @@ private class FilamentBuildingRenderer(
         pathIndexBuffer = null
         val hasRenderableSurface = viewportWidth > 1 && viewportHeight > 1
         val canRenderPath = skyVisible && pathMaterial != null && hasRenderableSurface
-        if (!canRenderPath) return
-        val viewport = sceneViewport ?: return
-        val radius = radiusMeters ?: SceneSkyGeometry.calculateFrame(
-            viewport,
-            viewportWidth,
-            viewportHeight,
-            skyPadding,
-            compassBandPx = compassBandPx
-        ).radiusMeters
+        val viewport = sceneViewport
+        val frame = if (radiusMeters == null) calculateSkyFrame() else null
+        val hasRadius = radiusMeters != null || frame != null
+        if (!canRenderPath || viewport == null || !hasRadius) return
+        val radius = radiusMeters ?: checkNotNull(frame).radiusMeters
         val horizontalMetersPerPixel =
             viewport.widthMeters * orthographicZoom / viewportWidth.coerceAtLeast(1)
         val verticalMetersPerPixel =
@@ -662,15 +685,11 @@ private class FilamentBuildingRenderer(
     }
 
     private fun rebuildSunMarker(radiusMeters: Float? = null) {
-        if (!skyVisible) return
-        val viewport = sceneViewport ?: return
-        val radius = radiusMeters ?: SceneSkyGeometry.calculateFrame(
-            viewport,
-            viewportWidth,
-            viewportHeight,
-            skyPadding,
-            compassBandPx = compassBandPx
-        ).radiusMeters
+        val viewport = sceneViewport
+        val frame = if (radiusMeters == null) calculateSkyFrame() else null
+        val hasRadius = radiusMeters != null || frame != null
+        if (!skyVisible || viewport == null || !hasRadius) return
+        val radius = radiusMeters ?: checkNotNull(frame).radiusMeters
         clearLine(markerRenderableEntity, markerVertexBuffer, markerIndexBuffer)
         clearLine(sunBodyRenderableEntity, sunBodyVertexBuffer, sunBodyIndexBuffer)
         markerRenderableEntity = 0

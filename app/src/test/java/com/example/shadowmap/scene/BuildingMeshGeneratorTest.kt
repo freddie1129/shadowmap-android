@@ -36,6 +36,8 @@ class BuildingMeshGeneratorTest {
         assertTrue(mesh.vertices.any { it.y == 12f })
         assertTrue(mesh.vertices.any { it.y == 2f })
         assertTrue(mesh.radiusMeters > 1f)
+        assertTrue(mesh.coverageRadiusMeters > mesh.radiusMeters)
+        assertTrue(mesh.coverageRadiusMeters >= 12f)
         assertTrue(triangleNormalY(mesh, 0) > 0f)
         assertTrue(wallNormalDotProduct(mesh) > 0f)
     }

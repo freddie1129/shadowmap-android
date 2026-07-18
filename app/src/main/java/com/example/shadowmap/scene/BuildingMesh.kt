@@ -23,7 +23,8 @@ data class BuildingMesh(
     val indices: List<Int>,
     val radiusMeters: Float,
     val wallIndexOffset: Int = 0,
-    val groundIndexOffset: Int = 0
+    val groundIndexOffset: Int = 0,
+    val coverageRadiusMeters: Float = radiusMeters
 )
 
 object BuildingMeshGenerator {
@@ -160,6 +161,11 @@ object BuildingMeshGenerator {
         }
         val radius = (vertices.maxOfOrNull { kotlin.math.sqrt(it.x * it.x + it.z * it.z) } ?: 1f)
             .coerceAtLeast(1f)
+        val coverageRadius = (
+            vertices.maxOfOrNull {
+                kotlin.math.sqrt(it.x * it.x + it.y * it.y + it.z * it.z)
+            } ?: radius
+            ).coerceAtLeast(radius)
         val geometryHalfWidth = vertices.maxOfOrNull { abs(it.x) } ?: radius
         val geometryHalfHeight = vertices.maxOfOrNull { abs(it.z) } ?: radius
         val groundHalfWidth = max(
@@ -201,7 +207,14 @@ object BuildingMeshGenerator {
             groundStart + 3,
             groundStart + 2
         )
-        return BuildingMesh(vertices, indices, radius, wallIndexOffset, groundIndexOffset)
+        return BuildingMesh(
+            vertices,
+            indices,
+            radius,
+            wallIndexOffset,
+            groundIndexOffset,
+            coverageRadius
+        )
     }
 
     private fun addWallFace(

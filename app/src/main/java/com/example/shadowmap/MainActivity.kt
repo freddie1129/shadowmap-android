@@ -304,7 +304,7 @@ private fun ShadowMapScreen(
     }
     val show3d = sceneBackStack.lastOrNull() == Scene3DSceneDestination
     var showSatelliteIn3d by remember { mutableStateOf(true) }
-    var showSkyIn3d by remember { mutableStateOf(true) }
+    var showSkyIn3d by remember { mutableStateOf(false) }
     var sceneCameraView by remember { mutableStateOf(SceneCameraView.ORBIT) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
     var buildingLoadArea by remember { mutableStateOf<BuildingLoadArea?>(null) }
@@ -518,10 +518,12 @@ private fun ShadowMapScreen(
     fun enter3d() {
         sceneViewport = mapView?.toSceneViewport()
         sceneCameraView = SceneCameraView.ORBIT
+        showSkyIn3d = false
         if (!show3d) sceneBackStack.add(Scene3DSceneDestination)
     }
 
     fun exit3d() {
+        showSkyIn3d = false
         if (show3d) sceneBackStack.removeLastOrNull()
     }
 

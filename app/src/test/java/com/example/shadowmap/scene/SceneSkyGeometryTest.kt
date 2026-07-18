@@ -19,7 +19,7 @@ class SceneSkyGeometryTest {
     )
 
     @Test
-    fun frameUsesShorterPaddedEdge() {
+    fun frameCoversEveryMapBoundaryCorner() {
         val frame = SceneSkyGeometry.calculateFrame(
             viewport = viewport,
             surfaceWidthPx = 1000,
@@ -29,9 +29,10 @@ class SceneSkyGeometryTest {
         )
 
         assertEquals(80f, frame.usableWidthMeters, 0.001f)
-        assertEquals(136f, frame.usableHeightMeters, 0.001f)
-        assertEquals(40f, frame.outerRadiusMeters, 0.001f)
-        assertEquals(40f, frame.radiusMeters, 0.001f)
+        assertEquals(128f, frame.usableHeightMeters, 0.001f)
+        assertEquals(sqrt(8_900f), frame.radiusMeters, 0.001f)
+        assertEquals(frame.radiusMeters, frame.outerRadiusMeters, 0.001f)
+        assertEquals(2.358f, frame.overviewZoom, 0.001f)
     }
 
     @Test
@@ -45,8 +46,35 @@ class SceneSkyGeometryTest {
             visualMarginMeters = 0f
         )
 
-        assertEquals(40f, frame.outerRadiusMeters, 0.001f)
-        assertEquals(30f, frame.radiusMeters, 0.001f)
+        assertEquals(sqrt(8_900f), frame.radiusMeters, 0.001f)
+        assertEquals(125.786f, frame.outerRadiusMeters, 0.001f)
+        assertEquals(3.145f, frame.overviewZoom, 0.001f)
+    }
+
+    @Test
+    fun frameExpandsToCoverObjectsOutsideMapBoundary() {
+        val frame = SceneSkyGeometry.calculateFrame(
+            viewport = viewport,
+            surfaceWidthPx = 1000,
+            surfaceHeightPx = 2000,
+            contentRadiusMeters = 120f,
+            visualMarginMeters = 0f
+        )
+
+        assertEquals(120f, frame.radiusMeters, 0.001f)
+    }
+
+    @Test
+    fun groundDiskUsesRequestedRadius() {
+        val mesh = SceneSkyGeometry.groundDiskMesh(10f, viewport, segments = 12)
+
+        assertEquals(14, mesh.vertices.size)
+        assertEquals(36, mesh.indices.size)
+        assertTrue(
+            mesh.vertices.drop(1).all {
+                kotlin.math.abs(sqrt(it.x * it.x + it.z * it.z) - 10f) < 0.001f
+            }
+        )
     }
 
     @Test

@@ -11,7 +11,11 @@ import kotlin.math.sin
 object CompassDialBitmap {
     const val TEXTURE_SIZE_PX = 1024
 
-    fun create(domeToOuterRadiusRatio: Float): Bitmap {
+    fun create(
+        domeToOuterRadiusRatio: Float,
+        mapHalfWidthToOuterRadiusRatio: Float,
+        mapHalfHeightToOuterRadiusRatio: Float
+    ): Bitmap {
         val bitmap = Bitmap.createBitmap(
             TEXTURE_SIZE_PX,
             TEXTURE_SIZE_PX,
@@ -19,6 +23,25 @@ object CompassDialBitmap {
         )
         val canvas = Canvas(bitmap)
         val center = TEXTURE_SIZE_PX / 2f
+        val diskPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(58, 214, 220, 224)
+            style = Paint.Style.FILL
+        }
+        val boundaryPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(150, 255, 222, 138)
+            style = Paint.Style.STROKE
+            strokeWidth = TEXTURE_SIZE_PX * 0.002f
+        }
+        canvas.drawCircle(center, center, center - 1f, diskPaint)
+        val mapHalfWidth = center * mapHalfWidthToOuterRadiusRatio.coerceIn(0f, 1f)
+        val mapHalfHeight = center * mapHalfHeightToOuterRadiusRatio.coerceIn(0f, 1f)
+        canvas.drawRect(
+            center - mapHalfWidth,
+            center - mapHalfHeight,
+            center + mapHalfWidth,
+            center + mapHalfHeight,
+            boundaryPaint
+        )
         val ringRadius = center * domeToOuterRadiusRatio.coerceIn(0.55f, 0.92f)
         val tickPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.argb(220, 255, 222, 138)

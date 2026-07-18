@@ -53,7 +53,7 @@ fun Scene3DControls(
         }
         SceneControlButton(
             onClick = onToggleSky,
-            contentDescription = if (showSky) "Hide sun path" else "Show sun path"
+            contentDescription = if (showSky) "Hide sky overview" else "Show sky overview"
         ) {
             Icon(
                 imageVector = Icons.Outlined.WbSunny,

@@ -36,7 +36,8 @@ data class SceneSkyFrame(
     val radiusMeters: Float,
     val outerRadiusMeters: Float,
     val usableWidthMeters: Float,
-    val usableHeightMeters: Float
+    val usableHeightMeters: Float,
+    val overviewZoom: Float
 )
 
 object SceneSkyGeometry {
@@ -51,20 +52,53 @@ object SceneSkyGeometry {
         surfaceHeightPx: Int,
         padding: SceneSkyPadding = SceneSkyPadding(),
         compassBandPx: Float = 0f,
+        contentRadiusMeters: Float = 0f,
         visualMarginMeters: Float = VISUAL_MARGIN_METERS
     ): SceneSkyFrame {
-        val widthPx = (surfaceWidthPx - padding.leftPx - padding.rightPx).coerceAtLeast(1)
-        val heightPx = (surfaceHeightPx - padding.topPx - padding.bottomPx).coerceAtLeast(1)
+        val horizontalInsetPx = maxOf(padding.leftPx, padding.rightPx)
+        val verticalInsetPx = maxOf(padding.topPx, padding.bottomPx)
+        val widthPx = (surfaceWidthPx - 2 * horizontalInsetPx).coerceAtLeast(1)
+        val heightPx = (surfaceHeightPx - 2 * verticalInsetPx).coerceAtLeast(1)
         val usableWidth = viewport.widthMeters * widthPx.toFloat() / surfaceWidthPx.coerceAtLeast(1)
         val usableHeight = viewport.heightMeters * heightPx.toFloat() / surfaceHeightPx.coerceAtLeast(1)
-        val outerRadius = (minOf(usableWidth, usableHeight) / 2f - visualMarginMeters)
-            .coerceAtLeast(1f)
-        val horizontalMetersPerPixel = viewport.widthMeters / surfaceWidthPx.coerceAtLeast(1)
-        val verticalMetersPerPixel = viewport.heightMeters / surfaceHeightPx.coerceAtLeast(1)
-        val compassBandMeters = maxOf(horizontalMetersPerPixel, verticalMetersPerPixel) *
-            compassBandPx.coerceAtLeast(0f)
-        val radius = (outerRadius - compassBandMeters).coerceAtLeast(outerRadius * 0.55f)
-        return SceneSkyFrame(radius, outerRadius, usableWidth, usableHeight)
+        val halfWidth = viewport.widthMeters / 2f
+        val halfHeight = viewport.heightMeters / 2f
+        val mapBoundaryRadius = sqrt(halfWidth * halfWidth + halfHeight * halfHeight)
+        val radius = maxOf(mapBoundaryRadius, contentRadiusMeters.coerceAtLeast(0f)) +
+            visualMarginMeters.coerceAtLeast(0f)
+        val usableRadiusPx = minOf(widthPx, heightPx) / 2f
+        val domeRadiusPx = (usableRadiusPx - compassBandPx.coerceAtLeast(0f))
+            .coerceAtLeast(usableRadiusPx * 0.55f)
+        val outerRadius = radius * usableRadiusPx / domeRadiusPx.coerceAtLeast(1f)
+        val horizontalZoom = 2f * outerRadius * surfaceWidthPx.coerceAtLeast(1) /
+            (viewport.widthMeters * widthPx)
+        val verticalZoom = 2f * outerRadius * surfaceHeightPx.coerceAtLeast(1) /
+            (viewport.heightMeters * heightPx)
+        val overviewZoom = maxOf(horizontalZoom, verticalZoom)
+        return SceneSkyFrame(radius, outerRadius, usableWidth, usableHeight, overviewZoom)
+    }
+
+    fun groundDiskMesh(
+        radiusMeters: Float,
+        viewport: SceneViewport,
+        segments: Int = DEFAULT_RING_SEGMENTS,
+        yMeters: Float = 0f
+    ): SceneTriangleMesh {
+        val vertices = mutableListOf(ScenePoint3(0f, yMeters, 0f))
+        repeat(segments + 1) { index ->
+            val point = pointOnDome(
+                index.toFloat() / segments * 360f,
+                0f,
+                radiusMeters,
+                viewport
+            )
+            vertices += point.copy(y = yMeters)
+        }
+        val indices = mutableListOf<Int>()
+        repeat(segments) { index ->
+            indices += listOf(0, index + 2, index + 1)
+        }
+        return SceneTriangleMesh(vertices, indices)
     }
 
     fun domeMesh(
