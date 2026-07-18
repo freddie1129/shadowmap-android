@@ -30,7 +30,23 @@ class SceneSkyGeometryTest {
 
         assertEquals(80f, frame.usableWidthMeters, 0.001f)
         assertEquals(136f, frame.usableHeightMeters, 0.001f)
+        assertEquals(40f, frame.outerRadiusMeters, 0.001f)
         assertEquals(40f, frame.radiusMeters, 0.001f)
+    }
+
+    @Test
+    fun frameReservesCompassBandOutsideDome() {
+        val frame = SceneSkyGeometry.calculateFrame(
+            viewport = viewport,
+            surfaceWidthPx = 1000,
+            surfaceHeightPx = 2000,
+            padding = SceneSkyPadding(leftPx = 100, topPx = 100, rightPx = 100, bottomPx = 200),
+            compassBandPx = 100f,
+            visualMarginMeters = 0f
+        )
+
+        assertEquals(40f, frame.outerRadiusMeters, 0.001f)
+        assertEquals(30f, frame.radiusMeters, 0.001f)
     }
 
     @Test
@@ -77,6 +93,21 @@ class SceneSkyGeometryTest {
     }
 
     @Test
+    fun domeUsesDenseRingsWithoutIncreasingMeridianCount() {
+        val altitudeRings = SceneSkyGeometry.DEFAULT_ALTITUDE_RINGS
+        val meridianSteps = (altitudeRings + 1) * 3
+        val mesh = SceneSkyGeometry.domeMesh(10f, viewport)
+        val ringVertexCount = (altitudeRings + 1) *
+            (SceneSkyGeometry.DEFAULT_RING_SEGMENTS + 1)
+        val meridianVertexCount = SceneSkyGeometry.DEFAULT_MERIDIAN_COUNT *
+            (meridianSteps + 1)
+
+        assertEquals(ringVertexCount + meridianVertexCount, mesh.vertices.size)
+        assertEquals(24, SceneSkyGeometry.DEFAULT_MERIDIAN_COUNT)
+        assertEquals(180, SceneSkyGeometry.DEFAULT_RING_SEGMENTS)
+    }
+
+    @Test
     fun sunBodyVerticesRemainOnMarkerSphere() {
         val center = ScenePoint3(4f, 7f, -3f)
         val radius = 2f
@@ -89,6 +120,23 @@ class SceneSkyGeometryTest {
                 val dy = vertex.y - center.y
                 val dz = vertex.z - center.z
                 kotlin.math.abs(sqrt(dx * dx + dy * dy + dz * dz) - radius) < 0.001f
+            }
+        )
+    }
+
+    @Test
+    fun connectorTubeUsesRequestedDiameter() {
+        val mesh = SceneSkyGeometry.connectorTubeMesh(
+            start = ScenePoint3(0f, 0f, 0f),
+            end = ScenePoint3(0f, 10f, 0f),
+            diameterMeters = 2f
+        )
+
+        assertEquals(16, mesh.vertices.size)
+        assertEquals(48, mesh.indices.size)
+        assertTrue(
+            mesh.vertices.all {
+                kotlin.math.abs(sqrt(it.x * it.x + it.z * it.z) - 1f) < 0.001f
             }
         )
     }

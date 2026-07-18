@@ -41,13 +41,15 @@ fun Scene3DView(
     val density = LocalDensity.current
     val skyPadding = with(density) {
         SceneSkyPadding(
-            leftPx = 24.dp.roundToPx(),
-            topPx = 24.dp.roundToPx(),
-            rightPx = 24.dp.roundToPx(),
-            bottomPx = 176.dp.roundToPx()
+            leftPx = 32.dp.roundToPx(),
+            topPx = 32.dp.roundToPx(),
+            rightPx = 32.dp.roundToPx(),
+            bottomPx = 184.dp.roundToPx()
         )
     }
     val sunPathWidthPx = with(density) { 4.dp.toPx() }
+    val sunConnectorWidthPx = with(density) { 2.dp.toPx() }
+    val compassBandPx = with(density) { 40.dp.toPx() }
     Box(modifier = modifier.fillMaxSize()) {
         FilamentBuildingView(
             buildings = buildings,
@@ -61,6 +63,8 @@ fun Scene3DView(
             skyVisible = showSky,
             skyPadding = skyPadding,
             sunPathWidthPx = sunPathWidthPx,
+            sunConnectorWidthPx = sunConnectorWidthPx,
+            compassBandPx = compassBandPx,
             cameraView = cameraView,
             onCameraViewChanged = onCameraViewChanged,
             modifier = Modifier.fillMaxSize()

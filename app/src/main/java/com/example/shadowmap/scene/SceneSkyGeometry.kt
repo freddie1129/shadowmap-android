@@ -34,12 +34,14 @@ data class SceneSkyPadding(
 
 data class SceneSkyFrame(
     val radiusMeters: Float,
+    val outerRadiusMeters: Float,
     val usableWidthMeters: Float,
     val usableHeightMeters: Float
 )
 
 object SceneSkyGeometry {
-    const val DEFAULT_SEGMENTS = 24
+    const val DEFAULT_MERIDIAN_COUNT = 24
+    const val DEFAULT_RING_SEGMENTS = 180
     const val DEFAULT_ALTITUDE_RINGS = 5
     const val VISUAL_MARGIN_METERS = 1f
 
@@ -48,29 +50,36 @@ object SceneSkyGeometry {
         surfaceWidthPx: Int,
         surfaceHeightPx: Int,
         padding: SceneSkyPadding = SceneSkyPadding(),
+        compassBandPx: Float = 0f,
         visualMarginMeters: Float = VISUAL_MARGIN_METERS
     ): SceneSkyFrame {
         val widthPx = (surfaceWidthPx - padding.leftPx - padding.rightPx).coerceAtLeast(1)
         val heightPx = (surfaceHeightPx - padding.topPx - padding.bottomPx).coerceAtLeast(1)
         val usableWidth = viewport.widthMeters * widthPx.toFloat() / surfaceWidthPx.coerceAtLeast(1)
         val usableHeight = viewport.heightMeters * heightPx.toFloat() / surfaceHeightPx.coerceAtLeast(1)
-        val radius = (minOf(usableWidth, usableHeight) / 2f - visualMarginMeters)
+        val outerRadius = (minOf(usableWidth, usableHeight) / 2f - visualMarginMeters)
             .coerceAtLeast(1f)
-        return SceneSkyFrame(radius, usableWidth, usableHeight)
+        val horizontalMetersPerPixel = viewport.widthMeters / surfaceWidthPx.coerceAtLeast(1)
+        val verticalMetersPerPixel = viewport.heightMeters / surfaceHeightPx.coerceAtLeast(1)
+        val compassBandMeters = maxOf(horizontalMetersPerPixel, verticalMetersPerPixel) *
+            compassBandPx.coerceAtLeast(0f)
+        val radius = (outerRadius - compassBandMeters).coerceAtLeast(outerRadius * 0.55f)
+        return SceneSkyFrame(radius, outerRadius, usableWidth, usableHeight)
     }
 
     fun domeMesh(
         radiusMeters: Float,
         viewport: SceneViewport,
-        segments: Int = DEFAULT_SEGMENTS,
+        meridianCount: Int = DEFAULT_MERIDIAN_COUNT,
+        ringSegments: Int = DEFAULT_RING_SEGMENTS,
         altitudeRings: Int = DEFAULT_ALTITUDE_RINGS
     ): SceneLineMesh {
         val vertices = mutableListOf<ScenePoint3>()
         val indices = mutableListOf<Int>()
         fun addLoop(altitudeDegrees: Float) {
             val start = vertices.size
-            repeat(segments + 1) { index ->
-                val azimuth = index.toFloat() / segments * 360f
+            repeat(ringSegments + 1) { index ->
+                val azimuth = index.toFloat() / ringSegments * 360f
                 vertices += pointOnDome(azimuth, altitudeDegrees, radiusMeters, viewport)
                 if (index > 0) indices += listOf(start + index - 1, start + index)
             }
@@ -79,9 +88,9 @@ object SceneSkyGeometry {
         for (ring in 1..altitudeRings) {
             addLoop(ring.toFloat() / (altitudeRings + 1) * 90f)
         }
-        repeat(segments) { index ->
+        repeat(meridianCount) { index ->
             val start = vertices.size
-            val azimuth = index.toFloat() / segments * 360f
+            val azimuth = index.toFloat() / meridianCount * 360f
             val meridianSteps = (altitudeRings + 1) * 3
             repeat(meridianSteps + 1) { step ->
                 vertices += pointOnDome(
@@ -101,7 +110,7 @@ object SceneSkyGeometry {
     fun compassMesh(
         radiusMeters: Float,
         viewport: SceneViewport,
-        segments: Int = DEFAULT_SEGMENTS
+        segments: Int = DEFAULT_RING_SEGMENTS
     ): SceneLineMesh = circleMesh(radiusMeters, 0f, viewport, segments)
 
     fun sunPathMesh(
@@ -185,6 +194,41 @@ object SceneSkyGeometry {
                 val second = first + longitudeSegments + 1
                 indices += listOf(first, second, first + 1, first + 1, second, second + 1)
             }
+        }
+        return SceneTriangleMesh(vertices, indices)
+    }
+
+    fun connectorTubeMesh(
+        start: ScenePoint3,
+        end: ScenePoint3,
+        diameterMeters: Float,
+        radialSegments: Int = 8
+    ): SceneTriangleMesh {
+        val direction = (end - start).normalized()
+        val reference = if (kotlin.math.abs(direction.y) < 0.9f) {
+            ScenePoint3(0f, 1f, 0f)
+        } else {
+            ScenePoint3(1f, 0f, 0f)
+        }
+        val firstAxis = direction.cross(reference).normalized()
+        val secondAxis = direction.cross(firstAxis).normalized()
+        val radius = diameterMeters.coerceAtLeast(0.001f) / 2f
+        val vertices = mutableListOf<ScenePoint3>()
+        repeat(radialSegments) { index ->
+            val angle = 2.0 * Math.PI * index / radialSegments
+            val offset = firstAxis * (cos(angle).toFloat() * radius) +
+                secondAxis * (sin(angle).toFloat() * radius)
+            vertices += start + offset
+            vertices += end + offset
+        }
+        val indices = mutableListOf<Int>()
+        repeat(radialSegments) { index ->
+            val next = (index + 1) % radialSegments
+            val startCurrent = index * 2
+            val endCurrent = startCurrent + 1
+            val startNext = next * 2
+            val endNext = startNext + 1
+            indices += listOf(startCurrent, startNext, endCurrent, endCurrent, startNext, endNext)
         }
         return SceneTriangleMesh(vertices, indices)
     }
