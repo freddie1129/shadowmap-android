@@ -1,0 +1,230 @@
+package com.gooludou.shadowplanner.presentation.components
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.ViewInAr
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.gooludou.shadowplanner.R
+import androidx.compose.ui.unit.dp
+import com.gooludou.shadowplanner.domain.Building
+import com.gooludou.shadowplanner.domain.BuildingSource
+import com.gooludou.shadowplanner.domain.GeoPoint
+import com.gooludou.shadowplanner.domain.GeoPolygon
+import com.gooludou.shadowplanner.presentation.ShadowMapUiState
+import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+
+@Composable
+fun Map2DView(
+    uiState: ShadowMapUiState,
+    autoToolState: AutoToolState,
+    isTimeVisible: Boolean,
+    onDateTimeChanged: (Long) -> Unit,
+    onNowSelected: () -> Unit,
+    onToggleTime: () -> Unit,
+    onOpenShadowColor: () -> Unit,
+    onDrawMode: (com.gooludou.shadowplanner.domain.DrawMode) -> Unit,
+    onAutoLoad: () -> Unit,
+    onClear: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpen3D: () -> Unit,
+    onOpenProjects: () -> Unit,
+    onSaveProject: () -> Unit,
+    onOpenLocationSearch: () -> Unit,
+    onShowLocationInfo: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .safeDrawingPadding()
+    ) {
+        Map2DTopControls(
+            uiState = uiState,
+            onOpenSettings = onOpenSettings,
+            onOpenLocationSearch = onOpenLocationSearch,
+            onShowLocationInfo = onShowLocationInfo,
+            onOpen3D = onOpen3D,
+            onOpenProjects = onOpenProjects,
+            onSaveProject = onSaveProject,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
+        Map2DBottomControls(
+            uiState = uiState,
+            autoToolState = autoToolState,
+            isTimeVisible = isTimeVisible,
+            onDateTimeChanged = onDateTimeChanged,
+            onNowSelected = onNowSelected,
+            onToggleTime = onToggleTime,
+            onOpenShadowColor = onOpenShadowColor,
+            onDrawMode = onDrawMode,
+            onAutoLoad = onAutoLoad,
+            onClear = onClear,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+@Composable
+private fun Map2DTopControls(
+    uiState: ShadowMapUiState,
+    onOpenSettings: () -> Unit,
+    onOpenLocationSearch: () -> Unit,
+    onShowLocationInfo: () -> Unit,
+    onOpen3D: () -> Unit,
+    onOpenProjects: () -> Unit,
+    onSaveProject: () -> Unit,
+    modifier: Modifier
+) {
+    val dimensions = ShadowMapDesign.dimensions
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = dimensions.spacingSmall)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensions.spacingLarge),
+            horizontalArrangement = Arrangement.spacedBy(dimensions.spacingSmall),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SettingsIconButton(onClick = onOpenSettings)
+            LocationSearchEntry(
+                label = uiState.selectedLocationLabel,
+                onClick = onOpenLocationSearch,
+                onInfoClick = onShowLocationInfo,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = dimensions.spacingSmall,
+                    start = dimensions.spacingLarge,
+                    end = dimensions.spacingLarge
+                ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (uiState.hasSceneObjects) {
+                SceneViewSwitchButton(
+                    label = stringResource(R.string.view_3d_button),
+                    icon = Icons.Outlined.ViewInAr,
+                    onClick = onOpen3D
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            MapRoundIconButton(onClick = onOpenProjects, contentDescription = stringResource(R.string.open_projects)) {
+                Icon(Icons.Outlined.FolderOpen, contentDescription = null)
+            }
+            MapRoundIconButton(onClick = onSaveProject, contentDescription = stringResource(R.string.save_project)) {
+                Icon(Icons.Outlined.Save, contentDescription = null)
+            }
+        }
+    }
+}
+
+@Composable
+private fun Map2DBottomControls(
+    uiState: ShadowMapUiState,
+    autoToolState: AutoToolState,
+    isTimeVisible: Boolean,
+    onDateTimeChanged: (Long) -> Unit,
+    onNowSelected: () -> Unit,
+    onToggleTime: () -> Unit,
+    onOpenShadowColor: () -> Unit,
+    onDrawMode: (com.gooludou.shadowplanner.domain.DrawMode) -> Unit,
+    onAutoLoad: () -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        MapToolBar(
+            autoState = autoToolState,
+            hasSceneObjects = uiState.hasSceneObjects,
+            isTimeVisible = isTimeVisible,
+            shadowAppearance = uiState.shadowAppearance,
+            onDrawMode = onDrawMode,
+            onAutoLoad = onAutoLoad,
+            onClear = onClear,
+            onToggleTime = onToggleTime,
+            onOpenShadowColor = onOpenShadowColor,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+        androidx.compose.animation.AnimatedVisibility(visible = isTimeVisible) {
+            DateTimeSpinner(
+                selectedEpochMillis = uiState.selectedEpochMillis,
+                timeZoneId = uiState.displayTimeZoneId,
+                onDateTimeChanged = onDateTimeChanged,
+                onNowSelected = onNowSelected
+            )
+        }
+    }
+}
+
+@Preview(name = "2D map view", showBackground = true, backgroundColor = 0xFF6B8064)
+@Composable
+private fun Map2DViewPreview() {
+    ShadowMapTheme(dynamicColor = false) {
+        Map2DView(
+            uiState = ShadowMapUiState(
+                selectedEpochMillis = 1_752_640_000_000L,
+                displayTimeZoneId = "Australia/Brisbane",
+                calculationLocation = GeoPoint(153.0251, -27.4698),
+                selectedLocationLabel = "Brisbane, Queensland",
+                drawnBuildings = listOf(
+                    Building(
+                        id = "preview-building",
+                        polygon = GeoPolygon(
+                            listOf(
+                                listOf(
+                                    GeoPoint(153.025, -27.469),
+                                    GeoPoint(153.026, -27.469),
+                                    GeoPoint(153.026, -27.470),
+                                    GeoPoint(153.025, -27.470)
+                                )
+                            )
+                        ),
+                        heightMeters = 6.0,
+                        source = BuildingSource.MANUAL
+                    )
+                )
+            ),
+            autoToolState = AutoToolState.READY,
+            isTimeVisible = false,
+            onDateTimeChanged = {},
+            onNowSelected = {},
+            onToggleTime = {},
+            onOpenShadowColor = {},
+            onDrawMode = {},
+            onAutoLoad = {},
+            onClear = {},
+            onOpenSettings = {},
+            onOpen3D = {},
+            onOpenProjects = {},
+            onSaveProject = {},
+            onOpenLocationSearch = {},
+            onShowLocationInfo = {}
+        )
+    }
+}

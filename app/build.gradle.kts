@@ -7,19 +7,19 @@ plugins {
 }
 
 android {
-    namespace = "com.example.shadowmap"
+    namespace = "com.gooludou.shadowplanner"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.shadowmap"
+        applicationId = "com.gooludou.shadowplanner"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "com.example.shadowmap.HiltTestRunner"
+        testInstrumentationRunner = "com.gooludou.shadowplanner.HiltTestRunner"
     }
 
     buildTypes {

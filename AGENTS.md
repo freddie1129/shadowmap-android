@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-This is a single-module Android app. App code lives in [`app/src/main/java/com/example/shadowmap`](./app/src/main/java/com/example/shadowmap), with Compose theme code under [`ui/theme`](./app/src/main/java/com/example/shadowmap/ui/theme). Resources are in [`app/src/main/res`](./app/src/main/res), and tests are split between [`app/src/test`](./app/src/test) for local JVM tests and [`app/src/androidTest`](./app/src/androidTest) for instrumented tests.
+This is a single-module Android app. App code lives in [`app/src/main/java/com/gooludou/shadowplanner`](./app/src/main/java/com/gooludou/shadowplanner), with Compose theme code under [`ui/theme`](./app/src/main/java/com/gooludou/shadowplanner/ui/theme). Resources are in [`app/src/main/res`](./app/src/main/res), and tests are split between [`app/src/test`](./app/src/test) for local JVM tests and [`app/src/androidTest`](./app/src/androidTest) for instrumented tests.
 
 ## Build, Test, and Development Commands
 - `./gradlew assembleDebug` builds the debug APK.
