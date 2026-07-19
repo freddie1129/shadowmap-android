@@ -228,7 +228,9 @@ fun DateTimeSpinner(
                 ) { Text(stringResource(R.string.save)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = {
+                    showDatePicker = false
+                }) { Text(stringResource(R.string.cancel)) }
             }
         ) {
             DatePicker(state = pickerState)

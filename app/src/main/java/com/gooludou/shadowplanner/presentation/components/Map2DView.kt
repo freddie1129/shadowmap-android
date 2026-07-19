@@ -17,10 +17,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.res.stringResource
-import com.gooludou.shadowplanner.R
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.Building
 import com.gooludou.shadowplanner.domain.BuildingSource
 import com.gooludou.shadowplanner.domain.GeoPoint
@@ -130,10 +130,16 @@ private fun Map2DTopControls(
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
-            MapRoundIconButton(onClick = onOpenProjects, contentDescription = stringResource(R.string.open_projects)) {
+            MapRoundIconButton(
+                onClick = onOpenProjects,
+                contentDescription = stringResource(R.string.open_projects)
+            ) {
                 Icon(Icons.Outlined.FolderOpen, contentDescription = null)
             }
-            MapRoundIconButton(onClick = onSaveProject, contentDescription = stringResource(R.string.save_project)) {
+            MapRoundIconButton(
+                onClick = onSaveProject,
+                contentDescription = stringResource(R.string.save_project)
+            ) {
                 Icon(Icons.Outlined.Save, contentDescription = null)
             }
         }

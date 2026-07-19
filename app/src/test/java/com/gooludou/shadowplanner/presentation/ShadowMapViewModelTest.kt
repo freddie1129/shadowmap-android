@@ -362,8 +362,9 @@ class ShadowMapViewModelTest {
                 override fun listProjects() =
                     emptyList<com.gooludou.shadowplanner.project.ProjectSummary>()
                 override fun loadProject(id: String) = error("Not used in this test")
-                override fun saveProject(project: com.gooludou.shadowplanner.project.ProjectSnapshot) =
-                    Unit
+                override fun saveProject(
+                    project: com.gooludou.shadowplanner.project.ProjectSnapshot
+                ) = Unit
                 override fun deleteProject(id: String) = Unit
             },
             computationDispatcher = dispatcher

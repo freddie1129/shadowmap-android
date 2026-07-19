@@ -1,9 +1,9 @@
 package com.gooludou.shadowplanner.project
 
-import com.gooludou.shadowplanner.domain.BuildingSource
-import com.gooludou.shadowplanner.domain.ShadowAppearance
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.gooludou.shadowplanner.domain.BuildingSource
+import com.gooludou.shadowplanner.domain.ShadowAppearance
 
 /** JSON codec for the versioned project file format. */
 object ProjectJsonCodec {

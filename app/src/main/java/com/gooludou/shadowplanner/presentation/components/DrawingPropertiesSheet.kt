@@ -32,12 +32,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.gooludou.shadowplanner.domain.DrawnObjectType
 import com.gooludou.shadowplanner.R
+import com.gooludou.shadowplanner.domain.DrawnObjectType
 import com.gooludou.shadowplanner.domain.SceneObjectSource
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 import java.util.Locale
@@ -137,7 +137,13 @@ fun DrawingPropertiesSheet(
 
             PropertyPanelActions(
                 isCreating = isCreating,
-                saveLabel = if (isCreating) config.saveLabel else stringResource(R.string.save_changes),
+                saveLabel = if (isCreating) {
+                    config.saveLabel
+                } else {
+                    stringResource(
+                        R.string.save_changes
+                    )
+                },
                 isSaveEnabled = isHeightValid && isCrownWidthValid,
                 onDelete = onDelete,
                 onSave = {
@@ -182,7 +188,12 @@ private fun BuildingHeightControls(
                     abs(currentHeightMeters - loadedHeightMeters) >=
                     HEIGHT_EQUALITY_TOLERANCE_METERS
             ) {
-                Text(stringResource(R.string.reset_loaded_height, loadedHeightMeters.toEditableText()))
+                Text(
+                    stringResource(
+                        R.string.reset_loaded_height,
+                        loadedHeightMeters.toEditableText()
+                    )
+                )
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -199,7 +210,10 @@ private fun BuildingHeightControls(
 private fun PropertyPanelHeader(title: String, sourceLabel: String, onBack: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
+            Icon(
+                Icons.AutoMirrored.Outlined.ArrowBack,
+                contentDescription = stringResource(R.string.back)
+            )
         }
         Column {
             Text(text = title, style = MaterialTheme.typography.titleLarge)
@@ -233,7 +247,9 @@ private fun TreeCrownEditor(
         isError = crownWidthText.isNotEmpty() && !isValid,
         supportingText = if (crownWidthText.isNotEmpty() && !isValid) {
             stringResource(R.string.enter_tree_crown_width)
-        } else null
+        } else {
+            null
+        }
     )
 }
 

@@ -32,10 +32,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.res.stringResource
-import com.gooludou.shadowplanner.R
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.ShadowAppearance
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 import kotlin.math.roundToInt

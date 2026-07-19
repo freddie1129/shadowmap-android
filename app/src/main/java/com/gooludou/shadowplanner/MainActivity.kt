@@ -97,10 +97,10 @@ import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteS
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.mapbox.maps.plugin.locationcomponent.location
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.ln
 import kotlin.math.max
-import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -414,7 +414,11 @@ private fun ShadowMapScreen(
                         message = if (buildings.isEmpty()) {
                             noBuildingsFoundMessage
                         } else {
-                            String.format(Locale.getDefault(), buildingsLoadedFormat, buildings.size)
+                            String.format(
+                                Locale.getDefault(),
+                                buildingsLoadedFormat,
+                                buildings.size
+                            )
                         },
                         duration = SnackbarDuration.Short
                     )
@@ -847,7 +851,9 @@ private fun ShadowMapScreen(
                 }) { Text(stringResource(R.string.clear_all)) }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showClearConfirmation = false }) { Text(stringResource(R.string.cancel)) }
+                OutlinedButton(onClick = {
+                    showClearConfirmation = false
+                }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }

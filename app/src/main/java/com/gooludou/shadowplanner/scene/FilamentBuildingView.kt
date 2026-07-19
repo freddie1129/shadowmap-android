@@ -14,10 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
-import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.DrawnTree
-import com.gooludou.shadowplanner.domain.DrawnWall
-import com.gooludou.shadowplanner.domain.SolarPosition
 import com.google.android.filament.Box
 import com.google.android.filament.Engine
 import com.google.android.filament.EntityManager
@@ -37,6 +33,10 @@ import com.google.android.filament.android.DisplayHelper
 import com.google.android.filament.android.TextureHelper
 import com.google.android.filament.android.UiHelper
 import com.google.android.filament.filamat.MaterialBuilder
+import com.gooludou.shadowplanner.domain.Building
+import com.gooludou.shadowplanner.domain.DrawnTree
+import com.gooludou.shadowplanner.domain.DrawnWall
+import com.gooludou.shadowplanner.domain.SolarPosition
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.cos

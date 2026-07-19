@@ -2,9 +2,9 @@ package com.gooludou.shadowplanner.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.location.LocationSearchRepository
 import com.gooludou.shadowplanner.location.LocationSearchResult
-import com.gooludou.shadowplanner.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job

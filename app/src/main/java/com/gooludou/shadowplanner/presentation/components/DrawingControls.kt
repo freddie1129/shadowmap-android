@@ -32,12 +32,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.gooludou.shadowplanner.domain.DrawMode
 import com.gooludou.shadowplanner.R
+import com.gooludou.shadowplanner.domain.DrawMode
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
 @Composable
@@ -71,7 +71,9 @@ fun DrawingToolChooser(
     modifier: Modifier = Modifier
 ) {
     if (!expanded) {
-        Button(onClick = onExpand, modifier = modifier) { Text(stringResource(R.string.add_object)) }
+        Button(onClick = onExpand, modifier = modifier) {
+            Text(stringResource(R.string.add_object))
+        }
         return
     }
     Row(
@@ -83,9 +85,15 @@ fun DrawingToolChooser(
             .padding(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        OutlinedButton(onClick = { onSelect(DrawMode.BUILDING) }) { Text(stringResource(R.string.building)) }
-        OutlinedButton(onClick = { onSelect(DrawMode.WALL) }) { Text(stringResource(R.string.wall)) }
-        OutlinedButton(onClick = { onSelect(DrawMode.TREE) }) { Text(stringResource(R.string.tree)) }
+        OutlinedButton(onClick = {
+            onSelect(DrawMode.BUILDING)
+        }) { Text(stringResource(R.string.building)) }
+        OutlinedButton(onClick = {
+            onSelect(DrawMode.WALL)
+        }) { Text(stringResource(R.string.wall)) }
+        OutlinedButton(onClick = {
+            onSelect(DrawMode.TREE)
+        }) { Text(stringResource(R.string.tree)) }
     }
 }
 
@@ -149,7 +157,10 @@ private fun DrawingPanelHeader(
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onCancel) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.cancel_drawing))
+            Icon(
+                Icons.AutoMirrored.Outlined.ArrowBack,
+                contentDescription = stringResource(R.string.cancel_drawing)
+            )
         }
         Text(
             text = title,
@@ -158,7 +169,10 @@ private fun DrawingPanelHeader(
         )
         if (canUndo != null) {
             IconButton(onClick = onUndo, enabled = canUndo) {
-                Icon(Icons.AutoMirrored.Outlined.Undo, contentDescription = stringResource(R.string.undo_last_point))
+                Icon(
+                    Icons.AutoMirrored.Outlined.Undo,
+                    contentDescription = stringResource(R.string.undo_last_point)
+                )
             }
         }
     }

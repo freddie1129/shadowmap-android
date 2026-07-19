@@ -19,13 +19,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.gooludou.shadowplanner.scene.SceneCameraView
 import com.gooludou.shadowplanner.R
+import com.gooludou.shadowplanner.scene.SceneCameraView
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
@@ -48,7 +48,9 @@ fun Scene3DControls(
     ) {
         SceneControlButton(
             onClick = onToggleSatellite,
-            contentDescription = stringResource(if (showSatellite) R.string.hide_satellite else R.string.show_satellite)
+            contentDescription = stringResource(
+                if (showSatellite) R.string.hide_satellite else R.string.show_satellite
+            )
         ) {
             Icon(
                 imageVector = if (showSatellite) {
@@ -61,7 +63,9 @@ fun Scene3DControls(
         }
         SceneControlButton(
             onClick = onToggleSky,
-            contentDescription = stringResource(if (showSky) R.string.hide_sky_overview else R.string.show_sky_overview)
+            contentDescription = stringResource(
+                if (showSky) R.string.hide_sky_overview else R.string.show_sky_overview
+            )
         ) {
             Icon(
                 imageVector = Icons.Outlined.WbSunny,

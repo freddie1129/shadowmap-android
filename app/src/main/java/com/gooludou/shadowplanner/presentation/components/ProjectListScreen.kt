@@ -21,8 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.project.ProjectSummary
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
@@ -57,7 +57,10 @@ fun ProjectListScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(Icons.Outlined.FolderOpen, contentDescription = null)
-                Text(stringResource(R.string.no_saved_projects), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.no_saved_projects),
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Text(stringResource(R.string.save_project_hint))
             }
         } else {
