@@ -6,13 +6,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.example.shadowmap.R
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
 @Composable
 fun SettingsIconButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     MapRoundIconButton(
         onClick = onClick,
-        contentDescription = "Open settings",
+        contentDescription = stringResource(R.string.open_settings),
         modifier = modifier
     ) {
         Icon(Icons.Outlined.Settings, contentDescription = null)

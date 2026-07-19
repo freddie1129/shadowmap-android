@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.example.shadowmap.R
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.domain.ShadowAppearance
 import com.example.shadowmap.ui.theme.ShadowMapTheme
@@ -70,7 +72,7 @@ private fun ShadowColorSheetContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            "Shadow colour",
+            stringResource(R.string.shadow_colour),
             style = androidx.compose.material3.MaterialTheme.typography.titleLarge
         )
         Row(
@@ -104,7 +106,7 @@ private fun ShadowColorSheetContent(
                     if (isSelected) {
                         androidx.compose.material3.Icon(
                             imageVector = Icons.Filled.Check,
-                            contentDescription = "Selected",
+                            contentDescription = stringResource(R.string.selected),
                             tint = Color.White
                         )
                     }
@@ -112,7 +114,7 @@ private fun ShadowColorSheetContent(
             }
         }
         Column {
-            Text("Opacity ${(opacity * 100).roundToInt()}%")
+            Text(stringResource(R.string.opacity, (opacity * 100).roundToInt()))
             Slider(
                 value = opacity,
                 onValueChange = { opacity = it },
@@ -124,13 +126,13 @@ private fun ShadowColorSheetContent(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OutlinedButton(onClick = onDismissRequest, modifier = Modifier.weight(1f)) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
             Button(
                 onClick = { onApply(ShadowAppearance(selectedColor, opacity)) },
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Apply")
+                Text(stringResource(R.string.apply))
             }
         }
         Spacer(Modifier.size(4.dp))

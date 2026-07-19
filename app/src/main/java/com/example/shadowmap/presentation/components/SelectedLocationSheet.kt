@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.example.shadowmap.R
 import com.example.shadowmap.ui.theme.ShadowMapDesign
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
@@ -40,7 +42,7 @@ fun SelectedLocationSheet(address: String, onDismiss: () -> Unit, modifier: Modi
                 tint = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Selected location",
+                text = stringResource(R.string.selected_location),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(

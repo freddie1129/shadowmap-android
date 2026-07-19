@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.example.shadowmap.R
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.BuildingSource
@@ -122,16 +124,16 @@ private fun Map2DTopControls(
         ) {
             if (uiState.hasSceneObjects) {
                 SceneViewSwitchButton(
-                    label = "3D view",
+                    label = stringResource(R.string.view_3d_button),
                     icon = Icons.Outlined.ViewInAr,
                     onClick = onOpen3D
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
-            MapRoundIconButton(onClick = onOpenProjects, contentDescription = "Open projects") {
+            MapRoundIconButton(onClick = onOpenProjects, contentDescription = stringResource(R.string.open_projects)) {
                 Icon(Icons.Outlined.FolderOpen, contentDescription = null)
             }
-            MapRoundIconButton(onClick = onSaveProject, contentDescription = "Save project") {
+            MapRoundIconButton(onClick = onSaveProject, contentDescription = stringResource(R.string.save_project)) {
                 Icon(Icons.Outlined.Save, contentDescription = null)
             }
         }

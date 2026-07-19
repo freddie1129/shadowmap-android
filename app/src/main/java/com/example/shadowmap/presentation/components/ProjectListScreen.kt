@@ -22,6 +22,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.example.shadowmap.R
 import com.example.shadowmap.project.ProjectSummary
 import com.example.shadowmap.ui.theme.ShadowMapDesign
 import com.example.shadowmap.ui.theme.ShadowMapTheme
@@ -38,10 +40,10 @@ fun ProjectListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Projects") },
+                title = { Text(stringResource(R.string.projects)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -55,8 +57,8 @@ fun ProjectListScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(Icons.Outlined.FolderOpen, contentDescription = null)
-                Text("No saved projects yet", style = MaterialTheme.typography.titleMedium)
-                Text("Save a project from the map to see it here.")
+                Text(stringResource(R.string.no_saved_projects), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.save_project_hint))
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {

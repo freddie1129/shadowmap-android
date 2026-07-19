@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.example.shadowmap.R
 import com.example.shadowmap.ui.theme.ShadowMapDesign
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
@@ -26,12 +28,14 @@ fun LocationSearchEntry(
     onInfoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val searchLabel = label ?: stringResource(R.string.search_for_location)
+    val infoDescription = stringResource(R.string.show_selected_location_address)
     val dimensions = ShadowMapDesign.dimensions
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = dimensions.spacingLarge)
-            .semantics { contentDescription = label ?: "Search for a location" },
+            .semantics { contentDescription = searchLabel },
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = dimensions.floatingControlElevation
@@ -55,7 +59,7 @@ fun LocationSearchEntry(
             ) {
                 Icon(Icons.Outlined.Search, contentDescription = null)
                 Text(
-                    text = label ?: "Search for a location",
+                    text = searchLabel,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
@@ -66,7 +70,7 @@ fun LocationSearchEntry(
                 IconButton(
                     onClick = onInfoClick,
                     modifier = Modifier.semantics {
-                        contentDescription = "Show selected location address"
+                        contentDescription = infoDescription
                     }
                 ) {
                     Icon(Icons.Outlined.Info, contentDescription = null)

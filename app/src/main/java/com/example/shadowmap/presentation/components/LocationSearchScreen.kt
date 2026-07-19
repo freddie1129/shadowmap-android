@@ -35,6 +35,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.example.shadowmap.R
 import com.example.shadowmap.location.LocationSearchResult
 import com.example.shadowmap.presentation.LocationSearchUiState
 import com.example.shadowmap.ui.theme.ShadowMapDesign
@@ -71,7 +73,7 @@ fun LocationSearchScreen(
                     keyboardController?.hide()
                     onBack()
                 }) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
                 TextField(
                     value = uiState.query,
@@ -79,12 +81,12 @@ fun LocationSearchScreen(
                     modifier = Modifier
                         .weight(1f)
                         .focusRequester(focusRequester),
-                    placeholder = { Text("Search for a location") },
+                    placeholder = { Text(stringResource(R.string.search_for_location)) },
                     singleLine = true,
                     trailingIcon = {
                         if (uiState.query.isNotEmpty()) {
                             IconButton(onClick = { onQueryChanged("") }) {
-                                Icon(Icons.Outlined.Close, contentDescription = "Clear search")
+                                Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.clear_search))
                             }
                         }
                     },
@@ -105,14 +107,14 @@ fun LocationSearchScreen(
                     )
                 }
 
-                uiState.errorMessage != null -> SearchMessage(
+                uiState.errorMessageRes != null -> SearchMessage(
                     icon = Icons.Outlined.ErrorOutline,
-                    message = uiState.errorMessage
+                    message = stringResource(uiState.errorMessageRes)
                 )
 
                 uiState.query.length >= 2 && uiState.results.isEmpty() -> SearchMessage(
                     icon = Icons.Outlined.Search,
-                    message = "No locations found"
+                    message = stringResource(R.string.no_locations_found)
                 )
 
                 else -> LazyColumn(modifier = Modifier.fillMaxWidth()) {
@@ -200,7 +202,7 @@ private fun SearchMessagePreview() {
     ShadowMapTheme(dynamicColor = false) {
         SearchMessage(
             icon = Icons.Outlined.Search,
-            message = "No locations found"
+            message = stringResource(R.string.no_locations_found)
         )
     }
 }

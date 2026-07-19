@@ -22,8 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.scene.SceneCameraView
+import com.example.shadowmap.R
 import com.example.shadowmap.ui.theme.ShadowMapDesign
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
@@ -46,7 +48,7 @@ fun Scene3DControls(
     ) {
         SceneControlButton(
             onClick = onToggleSatellite,
-            contentDescription = if (showSatellite) "Hide satellite" else "Show satellite"
+            contentDescription = stringResource(if (showSatellite) R.string.hide_satellite else R.string.show_satellite)
         ) {
             Icon(
                 imageVector = if (showSatellite) {
@@ -59,7 +61,7 @@ fun Scene3DControls(
         }
         SceneControlButton(
             onClick = onToggleSky,
-            contentDescription = if (showSky) "Hide sky overview" else "Show sky overview"
+            contentDescription = stringResource(if (showSky) R.string.hide_sky_overview else R.string.show_sky_overview)
         ) {
             Icon(
                 imageVector = Icons.Outlined.WbSunny,
@@ -74,7 +76,7 @@ fun Scene3DControls(
         if (showSky) {
             SceneControlButton(
                 onClick = onRefreshSky,
-                contentDescription = "Refresh sky dome"
+                contentDescription = stringResource(R.string.refresh_sky_dome)
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Refresh,
@@ -85,9 +87,9 @@ fun Scene3DControls(
         SceneControlButton(
             onClick = onToggleCameraView,
             contentDescription = if (cameraView == SceneCameraView.TOP_DOWN) {
-                "Show orbit view"
+                stringResource(R.string.show_orbit_view)
             } else {
-                "Show top-down view"
+                stringResource(R.string.show_top_down_view)
             }
         ) {
             Icon(

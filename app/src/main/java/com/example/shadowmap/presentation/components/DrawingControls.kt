@@ -33,8 +33,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.domain.DrawMode
+import com.example.shadowmap.R
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
 @Composable
@@ -68,7 +71,7 @@ fun DrawingToolChooser(
     modifier: Modifier = Modifier
 ) {
     if (!expanded) {
-        Button(onClick = onExpand, modifier = modifier) { Text("Add object") }
+        Button(onClick = onExpand, modifier = modifier) { Text(stringResource(R.string.add_object)) }
         return
     }
     Row(
@@ -80,9 +83,9 @@ fun DrawingToolChooser(
             .padding(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        OutlinedButton(onClick = { onSelect(DrawMode.BUILDING) }) { Text("Building") }
-        OutlinedButton(onClick = { onSelect(DrawMode.WALL) }) { Text("Wall") }
-        OutlinedButton(onClick = { onSelect(DrawMode.TREE) }) { Text("Tree") }
+        OutlinedButton(onClick = { onSelect(DrawMode.BUILDING) }) { Text(stringResource(R.string.building)) }
+        OutlinedButton(onClick = { onSelect(DrawMode.WALL) }) { Text(stringResource(R.string.wall)) }
+        OutlinedButton(onClick = { onSelect(DrawMode.TREE) }) { Text(stringResource(R.string.tree)) }
     }
 }
 
@@ -146,7 +149,7 @@ private fun DrawingPanelHeader(
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onCancel) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Cancel drawing")
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.cancel_drawing))
         }
         Text(
             text = title,
@@ -155,7 +158,7 @@ private fun DrawingPanelHeader(
         )
         if (canUndo != null) {
             IconButton(onClick = onUndo, enabled = canUndo) {
-                Icon(Icons.AutoMirrored.Outlined.Undo, contentDescription = "Undo last point")
+                Icon(Icons.AutoMirrored.Outlined.Undo, contentDescription = stringResource(R.string.undo_last_point))
             }
         }
     }
@@ -173,35 +176,36 @@ private fun DrawingPanelActions(config: DrawingPanelConfig, onAdd: () -> Unit, o
                 enabled = config.canFinish,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Finish")
+                Text(stringResource(R.string.finish))
             }
         }
     }
 }
 
+@Composable
 private fun DrawMode.toDrawingPanelConfig(vertexCount: Int): DrawingPanelConfig = when (this) {
     DrawMode.BUILDING -> DrawingPanelConfig(
-        title = "Draw building",
-        hint = "Move the map under the crosshair, then add each building corner.",
-        addText = "Add corner",
-        progress = "$vertexCount ${if (vertexCount == 1) "corner" else "corners"}",
+        title = stringResource(R.string.draw_building),
+        hint = stringResource(R.string.building_drawing_hint),
+        addText = stringResource(R.string.add_corner),
+        progress = pluralStringResource(R.plurals.corners_count, vertexCount, vertexCount),
         canUndo = vertexCount > 0,
         canFinish = vertexCount >= 3
     )
 
     DrawMode.WALL -> DrawingPanelConfig(
-        title = "Draw wall",
-        hint = "Move the map under the crosshair, then add each wall point.",
-        addText = "Add point",
-        progress = "$vertexCount ${if (vertexCount == 1) "point" else "points"}",
+        title = stringResource(R.string.draw_wall),
+        hint = stringResource(R.string.wall_drawing_hint),
+        addText = stringResource(R.string.add_point),
+        progress = pluralStringResource(R.plurals.points_count, vertexCount, vertexCount),
         canUndo = vertexCount > 0,
         canFinish = vertexCount >= 2
     )
 
     DrawMode.TREE -> DrawingPanelConfig(
-        title = "Place tree",
-        hint = "Move the map under the crosshair, then add the tree.",
-        addText = "Place tree",
+        title = stringResource(R.string.place_tree),
+        hint = stringResource(R.string.tree_drawing_hint),
+        addText = stringResource(R.string.place_tree),
         progress = null,
         canUndo = null,
         canFinish = null

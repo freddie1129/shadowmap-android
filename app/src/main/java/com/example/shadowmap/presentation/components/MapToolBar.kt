@@ -28,8 +28,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.domain.DrawMode
+import com.example.shadowmap.R
 import com.example.shadowmap.domain.ShadowAppearance
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
@@ -59,7 +61,7 @@ fun MapToolBar(
 
 @Composable
 private fun ShadowColorButton(appearance: ShadowAppearance, onClick: () -> Unit) {
-    MapRoundIconButton(onClick = onClick, contentDescription = "Change shadow colour") {
+    MapRoundIconButton(onClick = onClick, contentDescription = stringResource(R.string.change_shadow_colour)) {
         Box(
             modifier = Modifier
                 .size(22.dp)
@@ -87,17 +89,17 @@ private fun PrimaryToolBar(
         shadowElevation = 6.dp
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            ToolIconButton({ onDrawMode(DrawMode.BUILDING) }, "Draw building") {
+            ToolIconButton({ onDrawMode(DrawMode.BUILDING) }, stringResource(R.string.draw_building)) {
                 Icon(Icons.Outlined.Business, contentDescription = null)
             }
-            ToolIconButton({ onDrawMode(DrawMode.WALL) }, "Draw wall") {
+            ToolIconButton({ onDrawMode(DrawMode.WALL) }, stringResource(R.string.draw_wall)) {
                 Icon(Icons.Outlined.Timeline, contentDescription = null)
             }
-            ToolIconButton({ onDrawMode(DrawMode.TREE) }, "Place tree") {
+            ToolIconButton({ onDrawMode(DrawMode.TREE) }, stringResource(R.string.place_tree)) {
                 Icon(Icons.Outlined.Park, contentDescription = null)
             }
             AutoToolButton(autoState, onAutoLoad)
-            ToolIconButton(onClear, "Clear scene", enabled = hasSceneObjects) {
+            ToolIconButton(onClear, stringResource(R.string.clear_scene), enabled = hasSceneObjects) {
                 Icon(Icons.Outlined.DeleteSweep, contentDescription = null)
             }
         }
@@ -107,9 +109,9 @@ private fun PrimaryToolBar(
 @Composable
 private fun AutoToolButton(autoState: AutoToolState, onClick: () -> Unit) {
     val description = when (autoState) {
-        AutoToolState.TOO_LARGE -> "Zoom in to load buildings"
-        AutoToolState.LOADING -> "Loading buildings"
-        else -> "Load buildings automatically"
+        AutoToolState.TOO_LARGE -> stringResource(R.string.zoom_in_load_buildings)
+        AutoToolState.LOADING -> stringResource(R.string.loading_buildings)
+        else -> stringResource(R.string.load_buildings_automatically)
     }
     val tint = when (autoState) {
         AutoToolState.TOO_LARGE, AutoToolState.CHECKING ->
@@ -139,7 +141,7 @@ private fun AutoToolButton(autoState: AutoToolState, onClick: () -> Unit) {
 private fun TimeToolButton(isTimeVisible: Boolean, onClick: () -> Unit) {
     MapRoundIconButton(
         onClick = onClick,
-        contentDescription = if (isTimeVisible) "Hide date and time" else "Show date and time",
+        contentDescription = stringResource(if (isTimeVisible) R.string.hide_date_time else R.string.show_date_time),
         size = 48.dp,
         containerColor = if (isTimeVisible) {
             MaterialTheme.colorScheme.primary

@@ -34,8 +34,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.domain.DrawnObjectType
+import com.example.shadowmap.R
 import com.example.shadowmap.domain.SceneObjectSource
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 import java.util.Locale
@@ -98,7 +100,7 @@ fun DrawingPropertiesSheet(
                 onBack = onBack
             )
             MeasurementEditor(
-                label = "Height",
+                label = stringResource(R.string.height),
                 value = heightText,
                 onValueChange = { heightText = it.asDecimalInput() },
                 onStep = { delta ->
@@ -108,8 +110,11 @@ fun DrawingPropertiesSheet(
                 },
                 isError = heightText.isNotEmpty() && !isHeightValid,
                 supportingText = if (heightText.isNotEmpty() && !isHeightValid) {
-                    "Enter ${config.heightRange.start.toEditableText()}–" +
-                        "${config.heightRange.endInclusive.toEditableText()} m"
+                    stringResource(
+                        R.string.enter_range_meters,
+                        config.heightRange.start.toEditableText(),
+                        config.heightRange.endInclusive.toEditableText()
+                    )
                 } else {
                     null
                 }
@@ -132,7 +137,7 @@ fun DrawingPropertiesSheet(
 
             PropertyPanelActions(
                 isCreating = isCreating,
-                saveLabel = if (isCreating) config.saveLabel else "Save changes",
+                saveLabel = if (isCreating) config.saveLabel else stringResource(R.string.save_changes),
                 isSaveEnabled = isHeightValid && isCrownWidthValid,
                 onDelete = onDelete,
                 onSave = {
@@ -146,19 +151,20 @@ fun DrawingPropertiesSheet(
     }
 }
 
+@Composable
 private fun propertySourceLabel(
     isCreating: Boolean,
     objectSource: SceneObjectSource?,
     isEditedAutomaticObject: Boolean
 ): String = when {
-    isCreating -> "New manual object"
+    isCreating -> stringResource(R.string.new_manual_object)
 
     objectSource == SceneObjectSource.AUTOMATIC && isEditedAutomaticObject ->
-        "Automatically loaded · Edited"
+        stringResource(R.string.automatically_loaded_edited)
 
-    objectSource == SceneObjectSource.AUTOMATIC -> "Automatically loaded"
+    objectSource == SceneObjectSource.AUTOMATIC -> stringResource(R.string.automatically_loaded)
 
-    else -> "Manually drawn"
+    else -> stringResource(R.string.manually_drawn)
 }
 
 @Composable
@@ -176,13 +182,13 @@ private fun BuildingHeightControls(
                     abs(currentHeightMeters - loadedHeightMeters) >=
                     HEIGHT_EQUALITY_TOLERANCE_METERS
             ) {
-                Text("Reset to loaded height · ${loadedHeightMeters.toEditableText()} m")
+                Text(stringResource(R.string.reset_loaded_height, loadedHeightMeters.toEditableText()))
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(3.0, 6.0, 10.0).forEach { preset ->
                 OutlinedButton(onClick = { onSelected(preset) }) {
-                    Text("${preset.toInt()} m")
+                    Text(stringResource(R.string.preset_meters, preset.toInt()))
                 }
             }
         }
@@ -193,7 +199,7 @@ private fun BuildingHeightControls(
 private fun PropertyPanelHeader(title: String, sourceLabel: String, onBack: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
         }
         Column {
             Text(text = title, style = MaterialTheme.typography.titleLarge)
@@ -214,7 +220,7 @@ private fun TreeCrownEditor(
     onValueChange: (String) -> Unit
 ) {
     MeasurementEditor(
-        label = "Crown width",
+        label = stringResource(R.string.crown_width),
         value = crownWidthText,
         onValueChange = { onValueChange(it.asDecimalInput()) },
         onStep = { delta ->
@@ -225,7 +231,9 @@ private fun TreeCrownEditor(
             )
         },
         isError = crownWidthText.isNotEmpty() && !isValid,
-        supportingText = if (crownWidthText.isNotEmpty() && !isValid) "Enter 1–40 m" else null
+        supportingText = if (crownWidthText.isNotEmpty() && !isValid) {
+            stringResource(R.string.enter_tree_crown_width)
+        } else null
     )
 }
 
@@ -240,7 +248,7 @@ private fun PropertyPanelActions(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (!isCreating) {
             OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) {
-                Text("Delete", color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
             }
         }
         Button(
@@ -268,13 +276,13 @@ private fun MeasurementEditor(
         verticalAlignment = Alignment.CenterVertically
     ) {
         OutlinedButton(onClick = { onStep(-MEASUREMENT_STEP_METERS) }) {
-            Text("−")
+            Text(stringResource(R.string.decrease))
         }
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             label = { Text(label) },
-            suffix = { Text("m") },
+            suffix = { Text(stringResource(R.string.meters)) },
             singleLine = true,
             isError = isError,
             supportingText = if (supportingText == null) {
@@ -286,7 +294,7 @@ private fun MeasurementEditor(
             modifier = Modifier.weight(1f)
         )
         OutlinedButton(onClick = { onStep(MEASUREMENT_STEP_METERS) }) {
-            Text("+")
+            Text(stringResource(R.string.increase))
         }
     }
 }
@@ -307,22 +315,23 @@ private fun String.asDecimalInput(): String = buildString {
 
 private fun Double.toEditableText(): String = String.format(Locale.US, "%.1f", this)
 
+@Composable
 private fun DrawnObjectType.propertyPanelConfig(): PropertyPanelConfig = when (this) {
     DrawnObjectType.BUILDING -> PropertyPanelConfig(
-        title = "Building details",
-        saveLabel = "Save building",
+        title = stringResource(R.string.building_details),
+        saveLabel = stringResource(R.string.save_building),
         heightRange = 2.0..100.0
     )
 
     DrawnObjectType.WALL -> PropertyPanelConfig(
-        title = "Wall details",
-        saveLabel = "Save wall",
+        title = stringResource(R.string.wall_details),
+        saveLabel = stringResource(R.string.save_wall),
         heightRange = 0.5..20.0
     )
 
     DrawnObjectType.TREE -> PropertyPanelConfig(
-        title = "Tree details",
-        saveLabel = "Save tree",
+        title = stringResource(R.string.tree_details),
+        saveLabel = stringResource(R.string.save_tree),
         heightRange = 1.0..50.0
     )
 }

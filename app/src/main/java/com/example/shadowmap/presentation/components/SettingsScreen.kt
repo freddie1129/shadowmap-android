@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.example.shadowmap.R
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
@@ -25,10 +27,10 @@ fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .padding(16.dp)
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
         }
         Text(
-            text = "Settings",
+            text = stringResource(R.string.settings),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(top = 16.dp)
         )

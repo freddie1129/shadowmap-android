@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.example.shadowmap.R
 import androidx.compose.ui.unit.Dp
 import com.example.shadowmap.ui.theme.ShadowMapDesign
 import com.example.shadowmap.ui.theme.ShadowMapTheme
@@ -63,7 +65,7 @@ private fun MapRoundIconButtonPreview() {
     ShadowMapTheme(dynamicColor = false) {
         MapRoundIconButton(
             onClick = {},
-            contentDescription = "Open settings"
+            contentDescription = stringResource(R.string.open_settings)
         ) {
             Icon(Icons.Outlined.Settings, contentDescription = null)
         }

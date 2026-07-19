@@ -13,6 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.example.shadowmap.R
 import androidx.compose.ui.unit.dp
 import com.example.shadowmap.scene.SceneCameraView
 import com.example.shadowmap.ui.theme.ShadowMapDesign
@@ -40,7 +42,7 @@ fun Scene3DControlsOverlay(
             .safeDrawingPadding()
     ) {
         SceneViewSwitchButton(
-            label = "Map view",
+            label = stringResource(R.string.map_view),
             icon = Icons.Outlined.Map,
             onClick = onBackToMap,
             modifier = Modifier.align(Alignment.TopStart)

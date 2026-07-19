@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shadowmap.location.LocationSearchRepository
 import com.example.shadowmap.location.LocationSearchResult
+import com.example.shadowmap.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -18,7 +19,7 @@ data class LocationSearchUiState(
     val query: String = "",
     val results: List<LocationSearchResult> = emptyList(),
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessageRes: Int? = null,
     val selectedLocation: LocationSearchResult? = null
 )
 
@@ -31,7 +32,7 @@ class LocationSearchViewModel @Inject constructor(
     private var searchJob: Job? = null
 
     fun onQueryChanged(query: String) {
-        _uiState.update { it.copy(query = query, errorMessage = null) }
+        _uiState.update { it.copy(query = query, errorMessageRes = null) }
         searchJob?.cancel()
         if (query.trim().length < MIN_QUERY_LENGTH) {
             _uiState.update { it.copy(results = emptyList(), isLoading = false) }
@@ -50,9 +51,7 @@ class LocationSearchViewModel @Inject constructor(
                         it.copy(
                             results = emptyList(),
                             isLoading = false,
-                            errorMessage =
-                                "Unable to search for locations. Check your connection " +
-                                    "and try again."
+                            errorMessageRes = R.string.location_search_failed
                         )
                     }
                 }
@@ -67,7 +66,7 @@ class LocationSearchViewModel @Inject constructor(
 
     fun select(result: LocationSearchResult) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true, errorMessageRes = null) }
             repository.select(result).fold(
                 onSuccess = { selected ->
                     _uiState.update { it.copy(isLoading = false, selectedLocation = selected) }
@@ -77,7 +76,7 @@ class LocationSearchViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = "Unable to select that location. Try again."
+                            errorMessageRes = R.string.location_selection_failed
                         )
                     }
                 }

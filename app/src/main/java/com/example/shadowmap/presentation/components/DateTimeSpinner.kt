@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
@@ -224,10 +225,10 @@ fun DateTimeSpinner(
                         }
                         showDatePicker = false
                     }
-                ) { Text("OK") }
+                ) { Text(stringResource(R.string.save)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) }
             }
         ) {
             DatePicker(state = pickerState)
@@ -320,7 +321,7 @@ private fun SpinnerHeader(
             IconButton(onClick = onReset) {
                 Icon(
                     painter = painterResource(R.drawable.baseline_settings_backup_restore_24),
-                    contentDescription = "Reset to now",
+                    contentDescription = stringResource(R.string.reset_to_now),
                     tint = colors.content,
                     modifier = Modifier.size(dimensions.iconSize)
                 )
@@ -328,7 +329,7 @@ private fun SpinnerHeader(
             IconButton(onClick = onCalendar) {
                 Icon(
                     painter = painterResource(R.drawable.baseline_calendar_month_24),
-                    contentDescription = "Choose date",
+                    contentDescription = stringResource(R.string.choose_date),
                     tint = colors.content,
                     modifier = Modifier.size(dimensions.iconSize)
                 )

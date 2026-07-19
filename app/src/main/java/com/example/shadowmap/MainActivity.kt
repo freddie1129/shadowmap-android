@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -102,6 +103,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ln
 import kotlin.math.max
+import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -218,6 +220,16 @@ private fun ShadowMapScreen(
     navigation: ShadowMapNavigation,
     modifier: Modifier = Modifier
 ) {
+    val noBuildingsFoundMessage = stringResource(R.string.no_buildings_found)
+    val buildingsLoadedFormat = stringResource(R.string.buildings_loaded)
+    val loadingBuildingsMessage = stringResource(R.string.loading_buildings)
+    val checkingMapAreaMessage = stringResource(R.string.checking_visible_map_area)
+    val zoomInLoadMessage = stringResource(R.string.zoom_in_load_buildings)
+    val zoomLoadAction = stringResource(R.string.zoom_load)
+    val moveFartherMessage = stringResource(R.string.move_farther_previous_point)
+    val objectDeletedMessage = stringResource(R.string.object_deleted)
+    val undoMessage = stringResource(R.string.undo)
+    val sceneClearedMessage = stringResource(R.string.scene_cleared)
     val onDateTimeChanged = actions.map.onDateTimeChanged
     val onNowSelected = actions.map.onNowSelected
     val onLoadStarted = actions.map.onLoadStarted
@@ -403,9 +415,9 @@ private fun ShadowMapScreen(
                     onBuildingsLoaded(buildings, calculationLocation)
                     snackbarHostState.showSnackbar(
                         message = if (buildings.isEmpty()) {
-                            "No buildings found in this area"
+                            noBuildingsFoundMessage
                         } else {
-                            "${buildings.size} buildings loaded"
+                            String.format(Locale.getDefault(), buildingsLoadedFormat, buildings.size)
                         },
                         duration = SnackbarDuration.Short
                     )
@@ -413,7 +425,7 @@ private fun ShadowMapScreen(
                 onFailure = { throwable ->
                     onLoadFailed(throwable)
                     snackbarHostState.showSnackbar(
-                        message = throwable.message ?: "Unable to load buildings",
+                        message = throwable.message ?: loadingBuildingsMessage,
                         duration = SnackbarDuration.Short
                     )
                 }
@@ -496,11 +508,11 @@ private fun ShadowMapScreen(
                 val area = buildingLoadArea
                 val result = snackbarHostState.showSnackbar(
                     message = if (area == null) {
-                        "Checking the visible map area"
+                        checkingMapAreaMessage
                     } else {
-                        "Zoom in to load buildings · ${area.formattedDimensions}"
+                        "$zoomInLoadMessage · ${area.formattedDimensions}"
                     },
-                    actionLabel = if (area == null) null else "Zoom & load",
+                    actionLabel = if (area == null) null else zoomLoadAction,
                     duration = if (area == null) SnackbarDuration.Short else SnackbarDuration.Long
                 )
                 if (result == SnackbarResult.ActionPerformed) zoomToValidAreaAndLoad()
@@ -743,7 +755,7 @@ private fun ShadowMapScreen(
                         ) {
                             onAddVertex(point)
                         } else {
-                            onDrawingError("Move farther from the previous point")
+                            onDrawingError(moveFartherMessage)
                         }
                     }
                 },
@@ -786,8 +798,8 @@ private fun ShadowMapScreen(
                         coroutineScope.launch {
                             snackbarHostState.currentSnackbarData?.dismiss()
                             val result = snackbarHostState.showSnackbar(
-                                message = "Object deleted",
-                                actionLabel = "Undo",
+                                message = objectDeletedMessage,
+                                actionLabel = undoMessage,
                                 duration = SnackbarDuration.Long
                             )
                             if (result == SnackbarResult.ActionPerformed) {
@@ -804,13 +816,16 @@ private fun ShadowMapScreen(
     if (showClearConfirmation) {
         AlertDialog(
             onDismissRequest = { showClearConfirmation = false },
-            title = { Text("Clear scene?") },
+            title = { Text(stringResource(R.string.clear_scene_question)) },
             text = {
                 Text(
-                    "Remove ${uiState.visibleLoadedBuildings.size} automatic buildings, " +
-                        "${uiState.drawnBuildings.size} manual buildings, " +
-                        "${uiState.drawnWalls.size} walls, and ${uiState.drawnTrees.size} trees? " +
-                        "Loaded buildings will stay hidden after Auto is used again."
+                    stringResource(
+                        R.string.clear_scene_details,
+                        uiState.visibleLoadedBuildings.size,
+                        uiState.drawnBuildings.size,
+                        uiState.drawnWalls.size,
+                        uiState.drawnTrees.size
+                    )
                 )
             },
             confirmButton = {
@@ -821,8 +836,8 @@ private fun ShadowMapScreen(
                         snackbarHostState.currentSnackbarData?.dismiss()
                         val result = withTimeoutOrNull(CLEAR_UNDO_MILLIS) {
                             snackbarHostState.showSnackbar(
-                                message = "Scene cleared",
-                                actionLabel = "Undo",
+                                message = sceneClearedMessage,
+                                actionLabel = undoMessage,
                                 duration = SnackbarDuration.Indefinite
                             )
                         }
@@ -832,10 +847,10 @@ private fun ShadowMapScreen(
                             snackbarHostState.currentSnackbarData?.dismiss()
                         }
                     }
-                }) { Text("Clear all") }
+                }) { Text(stringResource(R.string.clear_all)) }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showClearConfirmation = false }) { Text("Cancel") }
+                OutlinedButton(onClick = { showClearConfirmation = false }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -843,17 +858,17 @@ private fun ShadowMapScreen(
     if (showDiscardDraftConfirmation) {
         AlertDialog(
             onDismissRequest = { showDiscardDraftConfirmation = false },
-            title = { Text("Discard drawing?") },
-            text = { Text("Your unfinished points will be removed.") },
+            title = { Text(stringResource(R.string.discard_drawing_question)) },
+            text = { Text(stringResource(R.string.unfinished_points_removed)) },
             confirmButton = {
                 Button(onClick = {
                     onStopDrawing()
                     showDiscardDraftConfirmation = false
-                }) { Text("Discard") }
+                }) { Text(stringResource(R.string.discard)) }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showDiscardDraftConfirmation = false }) {
-                    Text("Keep drawing")
+                    Text(stringResource(R.string.keep_drawing))
                 }
             }
         )
@@ -862,17 +877,17 @@ private fun ShadowMapScreen(
     if (showDraft3dConfirmation) {
         AlertDialog(
             onDismissRequest = { showDraft3dConfirmation = false },
-            title = { Text("View committed objects in 3D?") },
-            text = { Text("The unfinished drawing will be kept and restored in Map View.") },
+            title = { Text(stringResource(R.string.view_committed_objects_3d_question)) },
+            text = { Text(stringResource(R.string.unfinished_drawing_kept)) },
             confirmButton = {
                 Button(onClick = {
                     showDraft3dConfirmation = false
                     enter3d()
-                }) { Text("View 3D") }
+                }) { Text(stringResource(R.string.view_3d)) }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showDraft3dConfirmation = false }) {
-                    Text("Continue drawing")
+                    Text(stringResource(R.string.continue_drawing))
                 }
             }
         )
@@ -899,12 +914,12 @@ private fun ShadowMapScreen(
     if (showSaveProjectDialog) {
         AlertDialog(
             onDismissRequest = { showSaveProjectDialog = false },
-            title = { Text("Save project") },
+            title = { Text(stringResource(R.string.save_project)) },
             text = {
                 androidx.compose.material3.OutlinedTextField(
                     value = projectNameDraft,
                     onValueChange = { projectNameDraft = it },
-                    label = { Text("Project name") },
+                    label = { Text(stringResource(R.string.project_name)) },
                     singleLine = true
                 )
             },
@@ -915,11 +930,11 @@ private fun ShadowMapScreen(
                         showSaveProjectDialog = false
                         onSaveProject(projectNameDraft.trim())
                     }
-                ) { Text("Save") }
+                ) { Text(stringResource(R.string.save)) }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showSaveProjectDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
