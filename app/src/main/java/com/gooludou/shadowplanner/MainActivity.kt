@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -97,7 +98,6 @@ import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteS
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.mapbox.maps.plugin.locationcomponent.location
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.ln
 import kotlin.math.max
@@ -218,7 +218,6 @@ private fun ShadowMapScreen(
     modifier: Modifier = Modifier
 ) {
     val noBuildingsFoundMessage = stringResource(R.string.no_buildings_found)
-    val buildingsLoadedFormat = stringResource(R.string.buildings_loaded)
     val loadingBuildingsMessage = stringResource(R.string.loading_buildings)
     val checkingMapAreaMessage = stringResource(R.string.checking_visible_map_area)
     val zoomInLoadMessage = stringResource(R.string.zoom_in_load_buildings)
@@ -258,6 +257,7 @@ private fun ShadowMapScreen(
     val onOpenLocationSearch = navigation.onOpenLocationSearch
     val onOpenSettings = navigation.onOpenSettings
     val context = androidx.compose.ui.platform.LocalContext.current
+    val resources = LocalResources.current
     val density = LocalDensity.current
     val dimensions = ShadowMapDesign.dimensions
     var hasLocationPermission by remember {
@@ -414,9 +414,9 @@ private fun ShadowMapScreen(
                         message = if (buildings.isEmpty()) {
                             noBuildingsFoundMessage
                         } else {
-                            String.format(
-                                Locale.getDefault(),
-                                buildingsLoadedFormat,
+                            resources.getQuantityString(
+                                R.plurals.buildings_loaded,
+                                buildings.size,
                                 buildings.size
                             )
                         },

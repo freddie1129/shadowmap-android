@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Shadow Planner</string>
     <string name="back">Back</string>
     <string name="cancel">Cancel</string>
@@ -90,9 +90,12 @@
     <string name="checking_visible_map_area">Checking the visible map area</string>
     <string name="zoom_load">Zoom &amp; load</string>
     <string name="no_buildings_found">No buildings found in this area</string>
-    <string name="buildings_loaded">%d buildings loaded</string>
+    <plurals name="buildings_loaded">
+        <item quantity="one">%d building loaded</item>
+        <item quantity="other">%d buildings loaded</item>
+    </plurals>
     <string name="move_farther_previous_point">Move farther from the previous point</string>
-    <string name="clear_scene_details">Remove %1$d automatic buildings, %2$d manual buildings, %3$d walls, and %4$d trees? Loaded buildings will stay hidden after Auto is used again.</string>
+    <string name="clear_scene_details" tools:ignore="PluralsCandidate">Remove %1$d automatic buildings, %2$d manual buildings, %3$d walls, and %4$d trees? Loaded buildings will stay hidden after Auto is used again.</string>
     <string name="choose_date">Choose date</string>
     <string name="reset_to_now">Reset to now</string>
     <string name="location_search_failed">Unable to search for locations. Check your connection and try again.</string>
