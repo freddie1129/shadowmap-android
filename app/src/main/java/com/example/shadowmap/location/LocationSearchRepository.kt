@@ -2,8 +2,8 @@ package com.example.shadowmap.location
 
 import com.mapbox.search.autocomplete.PlaceAutocomplete
 import com.mapbox.search.autocomplete.PlaceAutocompleteSuggestion
-import javax.inject.Inject
 import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
 
 class LocationSearchRepository @Inject constructor() {
     private val autocomplete = PlaceAutocomplete.create(locationProvider = null)
@@ -35,23 +35,30 @@ class LocationSearchRepository @Inject constructor() {
         val suggestion = pendingSuggestions[result.id]
             ?: return Result.failure(IllegalStateException("Search result is no longer available"))
         val response = autocomplete.select(suggestion)
-        if (!response.isValue) {
-            return Result.failure(
+        return if (!response.isValue) {
+            Result.failure(
                 IllegalStateException("Mapbox selection failed: ${response.error}")
             )
+        } else {
+            val selected = response.value
+            val coordinate = selected?.coordinate
+            if (selected == null) {
+                Result.failure(
+                    IllegalStateException("Mapbox returned no location for the selected result")
+                )
+            } else if (coordinate == null) {
+                Result.failure(
+                    IllegalStateException("Mapbox returned no coordinates for the selected result")
+                )
+            } else {
+                Result.success(
+                    result.copy(
+                        id = selected.mapboxId ?: result.id,
+                        latitude = coordinate.latitude(),
+                        longitude = coordinate.longitude()
+                    )
+                )
+            }
         }
-        val selected = response.value ?: return Result.failure(
-            IllegalStateException("Mapbox returned no location for the selected result")
-        )
-        val coordinate = selected.coordinate ?: return Result.failure(
-            IllegalStateException("Mapbox returned no coordinates for the selected result")
-        )
-        return Result.success(
-            result.copy(
-                id = selected.mapboxId ?: result.id,
-                latitude = coordinate.latitude(),
-                longitude = coordinate.longitude()
-            )
-        )
     }
 }

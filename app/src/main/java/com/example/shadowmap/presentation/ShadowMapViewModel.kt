@@ -4,25 +4,25 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shadowmap.di.DefaultDispatcher
-import com.example.shadowmap.domain.Building
-import com.example.shadowmap.domain.BuildingSource
-import com.example.shadowmap.domain.BuildingShadowCalculator
 import com.example.shadowmap.domain.AutomaticBuildingIdentity
 import com.example.shadowmap.domain.AutomaticBuildingMatcher
+import com.example.shadowmap.domain.Building
+import com.example.shadowmap.domain.BuildingShadowCalculator
+import com.example.shadowmap.domain.BuildingSource
 import com.example.shadowmap.domain.DrawMode
+import com.example.shadowmap.domain.DrawingGeometryValidator
 import com.example.shadowmap.domain.DrawnObjectSelection
 import com.example.shadowmap.domain.DrawnObjectType
 import com.example.shadowmap.domain.DrawnTree
 import com.example.shadowmap.domain.DrawnWall
-import com.example.shadowmap.domain.DrawingGeometryValidator
 import com.example.shadowmap.domain.GeoPoint
-import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.LoadedBuildingOverride
-import com.example.shadowmap.domain.SceneObjectSource
-import com.example.shadowmap.domain.SolarPositionCalculator
-import com.example.shadowmap.domain.SolarPosition
+import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.SceneBuildingMerger
+import com.example.shadowmap.domain.SceneObjectSource
 import com.example.shadowmap.domain.ShadowAppearance
+import com.example.shadowmap.domain.SolarPosition
+import com.example.shadowmap.domain.SolarPositionCalculator
 import com.example.shadowmap.domain.UserObjectShadowCalculator
 import com.example.shadowmap.project.ProjectRepository
 import com.example.shadowmap.project.ProjectSnapshot
@@ -44,7 +44,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 class ShadowMapViewModel
 @Inject
 constructor(
@@ -81,7 +81,8 @@ constructor(
 
     fun onDateTimeChanged(epochMillis: Long) {
         savedStateHandle[SELECTED_TIME_KEY] = epochMillis
-        _uiState.value = _uiState.value.copy(selectedEpochMillis = epochMillis, isProjectDirty = true)
+        _uiState.value =
+            _uiState.value.copy(selectedEpochMillis = epochMillis, isProjectDirty = true)
         recalculateSunAndShadows()
     }
 
@@ -142,58 +143,64 @@ constructor(
         }
     }
 
-    private fun ShadowMapUiState.toProjectSnapshot(
-        id: String,
-        name: String,
-        createdAt: Long
-    ) = ProjectSnapshot(
-        id = id,
-        name = name,
-        createdAt = createdAt,
-        updatedAt = clock.millis(),
-        selectedEpochMillis = selectedEpochMillis,
-        displayTimeZoneId = displayTimeZoneId,
-        calculationLocation = calculationLocation,
-        selectedLocationLabel = selectedLocationLabel,
-        viewport = viewport,
-        drawnBuildings = drawnBuildings,
-        drawnWalls = drawnWalls,
-        drawnTrees = drawnTrees,
-        loadedBuildings = loadedBuildings,
-        loadedBuildingOverrides = loadedBuildingOverrides,
-        suppressedLoadedBuildings = suppressedLoadedBuildings,
-        shadowAppearance = shadowAppearance
-    )
+    private fun ShadowMapUiState.toProjectSnapshot(id: String, name: String, createdAt: Long) =
+        ProjectSnapshot(
+            id = id,
+            name = name,
+            createdAt = createdAt,
+            updatedAt = clock.millis(),
+            selectedEpochMillis = selectedEpochMillis,
+            displayTimeZoneId = displayTimeZoneId,
+            calculationLocation = calculationLocation,
+            selectedLocationLabel = selectedLocationLabel,
+            viewport = viewport,
+            drawnBuildings = drawnBuildings,
+            drawnWalls = drawnWalls,
+            drawnTrees = drawnTrees,
+            loadedBuildings = loadedBuildings,
+            loadedBuildingOverrides = loadedBuildingOverrides,
+            suppressedLoadedBuildings = suppressedLoadedBuildings,
+            shadowAppearance = shadowAppearance
+        )
 
-    private fun ProjectSnapshot.toUiState(previous: ShadowMapUiState) = previous.copy(
-        selectedEpochMillis = selectedEpochMillis,
-        displayTimeZoneId = displayTimeZoneId,
-        calculationLocation = calculationLocation,
-        selectedLocationLabel = selectedLocationLabel,
-        viewport = viewport,
-        activeProjectId = id,
-        activeProjectName = name,
-        activeProjectCreatedAt = createdAt,
-        isProjectDirty = false,
-        projectError = null,
-        loadedBuildings = loadedBuildings,
-        loadedBuildingOverrides = loadedBuildingOverrides,
-        suppressedLoadedBuildings = suppressedLoadedBuildings,
-        shadowAppearance = shadowAppearance ?: ShadowAppearance.DEFAULT,
-        automaticBuildingKeysCoveredByManual = emptySet(),
-        drawnBuildings = drawnBuildings,
-        drawnWalls = drawnWalls,
-        drawnTrees = drawnTrees,
-        activeDrawMode = null,
-        inProgressVertices = emptyList(),
-        pendingDrawing = null,
-        selectedDrawing = null,
-        shadows = emptyList(),
-        buildingLoadState = if (loadedBuildings.isEmpty()) BuildingLoadState.Idle else BuildingLoadState.Loaded
-    ).withRefreshedAutomaticOverlapSuppression()
+    private fun ProjectSnapshot.toUiState(previous: ShadowMapUiState): ShadowMapUiState {
+        val state = previous.copy(
+            selectedEpochMillis = selectedEpochMillis,
+            displayTimeZoneId = displayTimeZoneId,
+            calculationLocation = calculationLocation,
+            selectedLocationLabel = selectedLocationLabel,
+            viewport = viewport,
+            activeProjectId = id,
+            activeProjectName = name,
+            activeProjectCreatedAt = createdAt,
+            isProjectDirty = false,
+            projectError = null,
+            loadedBuildings = loadedBuildings,
+            loadedBuildingOverrides = loadedBuildingOverrides,
+            suppressedLoadedBuildings = suppressedLoadedBuildings,
+            shadowAppearance = shadowAppearance ?: ShadowAppearance.DEFAULT,
+            automaticBuildingKeysCoveredByManual = emptySet(),
+            drawnBuildings = drawnBuildings,
+            drawnWalls = drawnWalls,
+            drawnTrees = drawnTrees,
+            activeDrawMode = null,
+            inProgressVertices = emptyList(),
+            pendingDrawing = null,
+            selectedDrawing = null,
+            shadows = emptyList(),
+            buildingLoadState = if (loadedBuildings.isEmpty()) {
+                BuildingLoadState.Idle
+            } else {
+                BuildingLoadState.Loaded
+            }
+        )
+        return state.withRefreshedAutomaticOverlapSuppression()
+    }
 
     fun onNowSelected() {
-        onDateTimeChanged(clock.millis().roundToTimeStep())
+        val currentTimeMillis = clock.millis()
+        val selectedTime = currentTimeMillis.roundToTimeStep()
+        onDateTimeChanged(selectedTime)
     }
 
     fun onBuildingLoadStarted() {
@@ -262,7 +269,8 @@ constructor(
         val state = _uiState.value
         if (state.activeDrawMode == mode) return true
         if (state.hasDraft) return false
-        _uiState.value = state.copy(activeDrawMode = mode, selectedDrawing = null, drawingError = null)
+        _uiState.value =
+            state.copy(activeDrawMode = mode, selectedDrawing = null, drawingError = null)
         return true
     }
 
@@ -287,7 +295,11 @@ constructor(
 
     fun addVertex(point: GeoPoint) {
         val state = _uiState.value
-        if (state.activeDrawMode != DrawMode.BUILDING && state.activeDrawMode != DrawMode.WALL) return
+        if (state.activeDrawMode != DrawMode.BUILDING &&
+            state.activeDrawMode != DrawMode.WALL
+        ) {
+            return
+        }
         _uiState.value = state.copy(
             inProgressVertices = state.inProgressVertices + point,
             drawingError = null
@@ -353,10 +365,12 @@ constructor(
                 inProgressVertices = pending.vertices,
                 pendingDrawing = null
             )
+
             is PendingDrawing.Wall -> _uiState.value.copy(
                 inProgressVertices = pending.points,
                 pendingDrawing = null
             )
+
             is PendingDrawing.Tree -> _uiState.value.copy(pendingDrawing = null)
         }
     }
@@ -375,6 +389,7 @@ constructor(
                 activeDrawMode = null,
                 pendingDrawing = null
             )
+
             is PendingDrawing.Wall -> state.copy(
                 drawnWalls = state.drawnWalls + DrawnWall(
                     points = pending.points,
@@ -383,6 +398,7 @@ constructor(
                 activeDrawMode = null,
                 pendingDrawing = null
             )
+
             is PendingDrawing.Tree -> state.copy(
                 drawnTrees = state.drawnTrees + DrawnTree(
                     center = pending.center,
@@ -420,29 +436,37 @@ constructor(
                 },
                 selectedDrawing = null
             )
-        } else when (selection.type) {
-            DrawnObjectType.BUILDING -> state.copy(
-                drawnBuildings = state.drawnBuildings.map {
-                    if (it.id == selection.id) it.copy(heightMeters = heightMeters) else it
-                },
-                selectedDrawing = null
-            )
-            DrawnObjectType.WALL -> state.copy(
-                drawnWalls = state.drawnWalls.map {
-                    if (it.id == selection.id) it.copy(heightMeters = heightMeters) else it
-                },
-                selectedDrawing = null
-            )
-            DrawnObjectType.TREE -> state.copy(
-                drawnTrees = state.drawnTrees.map {
-                    if (it.id == selection.id) {
-                        it.copy(heightMeters = heightMeters, radiusMeters = radiusMeters ?: it.radiusMeters)
-                    } else {
-                        it
-                    }
-                },
-                selectedDrawing = null
-            )
+        } else {
+            when (selection.type) {
+                DrawnObjectType.BUILDING -> state.copy(
+                    drawnBuildings = state.drawnBuildings.map {
+                        if (it.id == selection.id) it.copy(heightMeters = heightMeters) else it
+                    },
+                    selectedDrawing = null
+                )
+
+                DrawnObjectType.WALL -> state.copy(
+                    drawnWalls = state.drawnWalls.map {
+                        if (it.id == selection.id) it.copy(heightMeters = heightMeters) else it
+                    },
+                    selectedDrawing = null
+                )
+
+                DrawnObjectType.TREE -> state.copy(
+                    drawnTrees = state.drawnTrees.map {
+                        if (it.id == selection.id) {
+                            it.copy(
+                                heightMeters = heightMeters,
+                                radiusMeters =
+                                    radiusMeters ?: it.radiusMeters
+                            )
+                        } else {
+                            it
+                        }
+                    },
+                    selectedDrawing = null
+                )
+            }
         }
         recalculateSunAndShadows()
     }
@@ -460,14 +484,17 @@ constructor(
                     selectedDrawing = null
                 )
             }
+
             is DeletedSceneObject.ManualBuilding -> state.copy(
                 drawnBuildings = state.drawnBuildings.filterNot { it.id == deleted.building.id },
                 selectedDrawing = null
             )
+
             is DeletedSceneObject.Wall -> state.copy(
                 drawnWalls = state.drawnWalls.filterNot { it.id == deleted.wall.id },
                 selectedDrawing = null
             )
+
             is DeletedSceneObject.Tree -> state.copy(
                 drawnTrees = state.drawnTrees.filterNot { it.id == deleted.tree.id },
                 selectedDrawing = null
@@ -487,12 +514,15 @@ constructor(
                     suppressedLoadedBuildings = state.suppressedLoadedBuildings - identity
                 )
             }
+
             is DeletedSceneObject.ManualBuilding -> state.copy(
                 drawnBuildings = (state.drawnBuildings + deleted.building).distinctBy { it.id }
             )
+
             is DeletedSceneObject.Wall -> state.copy(
                 drawnWalls = (state.drawnWalls + deleted.wall).distinctBy { it.id }
             )
+
             is DeletedSceneObject.Tree -> state.copy(
                 drawnTrees = (state.drawnTrees + deleted.tree).distinctBy { it.id }
             )
@@ -576,7 +606,8 @@ constructor(
         val state = _uiState.value
         val location = state.calculationLocation
         if (location == null) {
-            _uiState.value = state.copy(solarPosition = null, sunPath = emptyList(), shadows = emptyList())
+            _uiState.value =
+                state.copy(solarPosition = null, sunPath = emptyList(), shadows = emptyList())
             return
         }
         val solarPosition = solarPositionCalculator.calculate(
@@ -599,16 +630,16 @@ constructor(
             viewModelScope.launch(computationDispatcher) {
                 delay(SHADOW_DEBOUNCE_MILLIS)
                 val shadows = shadowCalculator.calculate(
-                        buildings = state.buildings,
-                        azimuthDegrees = solarPosition.azimuthDegrees,
-                        zenithDegrees = solarPosition.zenithDegrees
-                    ) + userObjectShadowCalculator.calculate(
-                        walls = state.drawnWalls,
-                        trees = state.drawnTrees,
-                        origin = location,
-                        azimuthDegrees = solarPosition.azimuthDegrees,
-                        zenithDegrees = solarPosition.zenithDegrees
-                    )
+                    buildings = state.buildings,
+                    azimuthDegrees = solarPosition.azimuthDegrees,
+                    zenithDegrees = solarPosition.zenithDegrees
+                ) + userObjectShadowCalculator.calculate(
+                    walls = state.drawnWalls,
+                    trees = state.drawnTrees,
+                    origin = location,
+                    azimuthDegrees = solarPosition.azimuthDegrees,
+                    zenithDegrees = solarPosition.zenithDegrees
+                )
                 ensureActive()
                 _uiState.value = _uiState.value.copy(shadows = shadows)
             }
@@ -643,13 +674,14 @@ constructor(
     private fun Long.roundToTimeStep(): Long =
         ((this + TIME_STEP_MILLIS / 2) / TIME_STEP_MILLIS) * TIME_STEP_MILLIS
 
-    private fun ShadowMapUiState.withRefreshedAutomaticOverlapSuppression(): ShadowMapUiState = copy(
-        automaticBuildingKeysCoveredByManual =
-            SceneBuildingMerger.automaticKeysCoveredByManualBuildings(
-                automaticBuildings = loadedBuildings,
-                manualBuildings = drawnBuildings
-            )
-    )
+    private fun ShadowMapUiState.withRefreshedAutomaticOverlapSuppression(): ShadowMapUiState =
+        copy(
+            automaticBuildingKeysCoveredByManual =
+                SceneBuildingMerger.automaticKeysCoveredByManualBuildings(
+                    automaticBuildings = loadedBuildings,
+                    manualBuildings = drawnBuildings
+                )
+        )
 
     private fun reconcileLoadedOverrides(
         incoming: List<Building>,
@@ -657,7 +689,10 @@ constructor(
     ): Map<AutomaticBuildingIdentity, LoadedBuildingOverride> {
         if (overrides.isEmpty()) return emptyMap()
         val result = overrides.toMutableMap()
-        val candidates = overrides.map { (identity, override) -> identity to override.referencePolygon }
+        val candidates = overrides.map { (identity, override) ->
+            identity to
+                override.referencePolygon
+        }
         incoming.forEach { building ->
             val newIdentity = AutomaticBuildingMatcher.identity(building)
             val oldIdentity = AutomaticBuildingMatcher.findMatch(building, candidates)
@@ -720,8 +755,10 @@ constructor(
         when (selection.type) {
             DrawnObjectType.BUILDING -> drawnBuildings.firstOrNull { it.id == selection.id }
                 ?.let(DeletedSceneObject::ManualBuilding)
+
             DrawnObjectType.WALL -> drawnWalls.firstOrNull { it.id == selection.id }
                 ?.let(DeletedSceneObject::Wall)
+
             DrawnObjectType.TREE -> drawnTrees.firstOrNull { it.id == selection.id }
                 ?.let(DeletedSceneObject::Tree)
         }
@@ -735,6 +772,7 @@ constructor(
         private const val LOCATION_LABEL_KEY = "location_label"
         private const val TIME_STEP_MILLIS = 5 * 60 * 1000L
         private const val SHADOW_DEBOUNCE_MILLIS = 50L
+
         // Property fields display one decimal place, so half a tenth represents the loaded value.
         private const val HEIGHT_EQUALITY_TOLERANCE_METERS = 0.051
     }
@@ -753,6 +791,7 @@ private data class ClearedSceneSnapshot(
     val drawnBuildings: List<Building>,
     val drawnWalls: List<DrawnWall>,
     val drawnTrees: List<DrawnTree>,
-    val suppressedLoadedBuildings: Map<AutomaticBuildingIdentity, com.example.shadowmap.domain.GeoPolygon>,
+    val suppressedLoadedBuildings:
+    Map<AutomaticBuildingIdentity, com.example.shadowmap.domain.GeoPolygon>,
     val selectedDrawing: DrawnObjectSelection?
 )

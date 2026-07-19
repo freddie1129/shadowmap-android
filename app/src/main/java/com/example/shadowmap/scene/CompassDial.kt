@@ -6,11 +6,7 @@ enum class CompassTickType {
     CARDINAL
 }
 
-data class CompassMark(
-    val azimuthDegrees: Int,
-    val type: CompassTickType,
-    val label: String?
-)
+data class CompassMark(val azimuthDegrees: Int, val type: CompassTickType, val label: String?)
 
 object CompassDial {
     const val TICK_INTERVAL_DEGREES = 5
@@ -20,8 +16,10 @@ object CompassDial {
         val cardinal = cardinalLabel(azimuth)
         when {
             cardinal != null -> CompassMark(azimuth, CompassTickType.CARDINAL, cardinal)
+
             azimuth % MAJOR_INTERVAL_DEGREES == 0 ->
                 CompassMark(azimuth, CompassTickType.MAJOR, "$azimuth°")
+
             else -> CompassMark(azimuth, CompassTickType.MEDIUM, null)
         }
     }

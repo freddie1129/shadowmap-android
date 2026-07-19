@@ -97,8 +97,28 @@ object BuildingMeshGenerator {
                 val length = kotlin.math.sqrt(dx * dx + dz * dz).coerceAtLeast(0.0001f)
                 val nx = -dz / length
                 val nz = dx / length
-                addWallFace(vertices, wallIndices, x0, z0, x1, z1, wall.heightMeters.toFloat(), nx, nz)
-                addWallFace(vertices, wallIndices, x1, z1, x0, z0, wall.heightMeters.toFloat(), -nx, -nz)
+                addWallFace(
+                    vertices,
+                    wallIndices,
+                    x0,
+                    z0,
+                    x1,
+                    z1,
+                    wall.heightMeters.toFloat(),
+                    nx,
+                    nz
+                )
+                addWallFace(
+                    vertices,
+                    wallIndices,
+                    x1,
+                    z1,
+                    x0,
+                    z0,
+                    wall.heightMeters.toFloat(),
+                    -nx,
+                    -nz
+                )
             }
         }
         trees.forEach { tree ->
@@ -129,7 +149,9 @@ object BuildingMeshGenerator {
                 )
             }
             val coneHeight = (height - trunkHeight).coerceAtLeast(0.1f)
-            val normalLength = kotlin.math.sqrt(coneHeight * coneHeight + canopyRadius * canopyRadius)
+            val normalLength = kotlin.math.sqrt(
+                coneHeight * coneHeight + canopyRadius * canopyRadius
+            )
             repeat(TREE_CANOPY_SEGMENTS) { index ->
                 val angle0 = index.toDouble() / TREE_CANOPY_SEGMENTS * 2.0 * PI
                 val angle1 = (index + 1).toDouble() / TREE_CANOPY_SEGMENTS * 2.0 * PI

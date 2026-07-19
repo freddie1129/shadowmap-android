@@ -81,6 +81,7 @@ class UserObjectShadowCalculator @Inject constructor() {
                     }
                 )
             )
+
             else -> (0 until numGeometries).flatMap { getGeometryN(it).toGeoPolygons(projection) }
         }
 

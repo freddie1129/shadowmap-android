@@ -29,6 +29,7 @@ object Scene3DAppearance {
 
     /** High-contrast linear-space orange used for the selected day's sun-path ribbon. */
     val SUN_PATH_COLOR = SceneRgba(1f, 0.42f, 0.08f, 0.9f)
+
     /** Saturated linear-space orange used by the current-sun centre guide. */
     val CURRENT_SUN_COLOR = SceneRgba(1f, 0.30f, 0.002f, 0.82f)
 

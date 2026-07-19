@@ -49,7 +49,9 @@ fun ProjectListScreen(
     ) { padding ->
         if (projects.isEmpty()) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(ShadowMapDesign.dimensions.screenPadding),
+                modifier = Modifier.fillMaxSize().padding(
+                    padding
+                ).padding(ShadowMapDesign.dimensions.screenPadding),
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(Icons.Outlined.FolderOpen, contentDescription = null)
@@ -60,9 +62,13 @@ fun ProjectListScreen(
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
                 items(projects, key = { it.id }) { project ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().clickable { onProjectSelected(project.id) }
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            onProjectSelected(project.id)
+                        }
                             .padding(ShadowMapDesign.dimensions.screenPadding),
-                        horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingMedium)
+                        horizontalArrangement = Arrangement.spacedBy(
+                            ShadowMapDesign.dimensions.spacingMedium
+                        )
                     ) {
                         Icon(Icons.Outlined.FolderOpen, contentDescription = null)
                         Column {

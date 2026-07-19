@@ -114,8 +114,11 @@ private fun AutoToolButton(autoState: AutoToolState, onClick: () -> Unit) {
     val tint = when (autoState) {
         AutoToolState.TOO_LARGE, AutoToolState.CHECKING ->
             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+
         AutoToolState.LOADED -> MaterialTheme.colorScheme.primary
+
         AutoToolState.ERROR -> MaterialTheme.colorScheme.error
+
         else -> MaterialTheme.colorScheme.onSurface
     }
     ToolIconButton(

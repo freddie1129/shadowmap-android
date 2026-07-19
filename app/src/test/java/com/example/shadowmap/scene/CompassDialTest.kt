@@ -11,9 +11,11 @@ class CompassDialTest {
         val marks = CompassDial.marks()
 
         assertEquals(72, marks.size)
-        assertTrue(marks.zipWithNext().all { (first, second) ->
-            second.azimuthDegrees - first.azimuthDegrees == 5
-        })
+        assertTrue(
+            marks.zipWithNext().all { (first, second) ->
+                second.azimuthDegrees - first.azimuthDegrees == 5
+            }
+        )
     }
 
     @Test

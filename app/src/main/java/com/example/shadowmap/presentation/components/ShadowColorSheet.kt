@@ -16,8 +16,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -69,7 +69,10 @@ private fun ShadowColorSheetContent(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Shadow colour", style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
+        Text(
+            "Shadow colour",
+            style = androidx.compose.material3.MaterialTheme.typography.titleLarge
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -87,7 +90,13 @@ private fun ShadowColorSheetContent(
                         .background(Color(color))
                         .border(
                             width = if (isSelected) 3.dp else 1.dp,
-                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.45f),
+                            color = if (isSelected) {
+                                Color.White
+                            } else {
+                                Color.White.copy(
+                                    alpha = 0.45f
+                                )
+                            },
                             shape = CircleShape
                         )
                         .clickable { selectedColor = color }

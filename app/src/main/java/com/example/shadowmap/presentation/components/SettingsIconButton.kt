@@ -9,10 +9,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
 @Composable
-fun SettingsIconButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun SettingsIconButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     MapRoundIconButton(
         onClick = onClick,
         contentDescription = "Open settings",

@@ -17,10 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.example.shadowmap.ui.theme.ShadowMapTheme
 
 @Composable
-fun SettingsScreen(
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     BackHandler(onBack = onBack)
     Column(
         modifier = modifier

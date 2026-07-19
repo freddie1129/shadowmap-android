@@ -39,7 +39,7 @@ object AutomaticBuildingMatcher {
             }?.first
             ?: sameSourceCandidates.singleOrNull()?.first
             ?: candidates.firstOrNull { (candidate, _) ->
-            candidate.geometryFingerprint == identity.geometryFingerprint
+                candidate.geometryFingerprint == identity.geometryFingerprint
             }?.first
             ?: candidates.firstOrNull { (_, polygon) ->
                 building.polygon.stronglyOverlaps(polygon)
@@ -85,14 +85,22 @@ object AutomaticBuildingMatcher {
             val smallerArea = min(first.area, second.area)
             first.envelopeInternal.intersects(second.envelopeInternal) &&
                 smallerArea > 0.0 &&
-                runCatching { first.intersection(second).area / smallerArea >= STRONG_OVERLAP_RATIO }
+                runCatching {
+                    first.intersection(second).area / smallerArea >= STRONG_OVERLAP_RATIO
+                }
                     .getOrDefault(false)
         }
     }
 
     private fun GeoPolygon.toJtsPolygon(): Polygon? {
         val outerRing = rings.firstOrNull()?.takeIf { it.size >= 3 } ?: return null
-        val closedRing = if (outerRing.first() == outerRing.last()) outerRing else outerRing + outerRing.first()
+        val closedRing = if (outerRing.first() ==
+            outerRing.last()
+        ) {
+            outerRing
+        } else {
+            outerRing + outerRing.first()
+        }
         return runCatching {
             GEOMETRY_FACTORY.createPolygon(
                 closedRing.map { Coordinate(it.longitude, it.latitude) }.toTypedArray()

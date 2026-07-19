@@ -1,8 +1,8 @@
 package com.example.shadowmap.map
 
+import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.BuildingSource
-import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DEFAULT_BUILDING_HEIGHT_METERS
 import com.example.shadowmap.domain.DrawMode
 import com.example.shadowmap.domain.DrawnObjectSelection
@@ -18,21 +18,21 @@ import com.mapbox.common.Cancelable
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Geometry
+import com.mapbox.geojson.LineString
 import com.mapbox.geojson.MultiPolygon
 import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
-import com.mapbox.geojson.LineString
 import com.mapbox.maps.MapView
 import com.mapbox.maps.MapboxExperimental
 import com.mapbox.maps.RenderedQueryGeometry
 import com.mapbox.maps.RenderedQueryOptions
 import com.mapbox.maps.Style
-import com.mapbox.maps.extension.style.layers.addLayer
-import com.mapbox.maps.extension.style.layers.getLayerAs
 import com.mapbox.maps.extension.style.expressions.generated.Expression
+import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.generated.circleLayer
 import com.mapbox.maps.extension.style.layers.generated.fillLayer
 import com.mapbox.maps.extension.style.layers.generated.lineLayer
+import com.mapbox.maps.extension.style.layers.getLayerAs
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
@@ -92,34 +92,41 @@ constructor(
             } else {
                 SceneObjectSource.MANUAL
             }
-            callback(if (id != null && type != null) DrawnObjectSelection(id, type, source) else null)
+            callback(
+                if (id != null &&
+                    type != null
+                ) {
+                    DrawnObjectSelection(id, type, source)
+                } else {
+                    null
+                }
+            )
         }
     }
 
     @OptIn(MapboxExperimental::class)
-    suspend fun fetchBuildings(): List<Building> =
-        withContext(Dispatchers.Main.immediate) {
-            var switchedToStandard = false
-            try {
-                withTimeout(STYLE_OPERATION_TIMEOUT_MILLIS) {
-                    awaitStyle(Style.STANDARD)
-                    switchedToStandard = true
-                    awaitMapIdle()
-                    queryBuildings()
-                }
-            } finally {
-                if (switchedToStandard) {
-                    withContext(NonCancellable) {
-                        val restored =
-                            withTimeoutOrNull(STYLE_OPERATION_TIMEOUT_MILLIS) {
-                                awaitStyle(Style.STANDARD_SATELLITE)
-                                awaitMapIdle()
-                            }
-                        checkNotNull(restored) { "Timed out restoring the satellite style" }
-                    }
+    suspend fun fetchBuildings(): List<Building> = withContext(Dispatchers.Main.immediate) {
+        var switchedToStandard = false
+        try {
+            withTimeout(STYLE_OPERATION_TIMEOUT_MILLIS) {
+                awaitStyle(Style.STANDARD)
+                switchedToStandard = true
+                awaitMapIdle()
+                queryBuildings()
+            }
+        } finally {
+            if (switchedToStandard) {
+                withContext(NonCancellable) {
+                    val restored =
+                        withTimeoutOrNull(STYLE_OPERATION_TIMEOUT_MILLIS) {
+                            awaitStyle(Style.STANDARD_SATELLITE)
+                            awaitMapIdle()
+                        }
+                    checkNotNull(restored) { "Timed out restoring the satellite style" }
                 }
             }
         }
+    }
 
     @Suppress("LongMethod", "LongParameterList")
     fun render(
@@ -364,17 +371,23 @@ constructor(
         when (pendingDrawing) {
             is PendingDrawing.Building -> {
                 val ring = pendingDrawing.vertices + pendingDrawing.vertices.first()
-                features += GeoPolygon(listOf(ring)).toFeature(null, TYPE_DRAWN_BUILDING, false).apply {
-                    addStringProperty(PROPERTY_KIND, KIND_PENDING_FILL)
-                }
+                features +=
+                    GeoPolygon(listOf(ring)).toFeature(null, TYPE_DRAWN_BUILDING, false).apply {
+                        addStringProperty(PROPERTY_KIND, KIND_PENDING_FILL)
+                    }
             }
-            is PendingDrawing.Wall -> features += previewLine(pendingDrawing.points, KIND_DRAFT_SOLID)
+
+            is PendingDrawing.Wall ->
+                features +=
+                    previewLine(pendingDrawing.points, KIND_DRAFT_SOLID)
+
             is PendingDrawing.Tree -> {
                 features += DrawnTree(center = pendingDrawing.center).toCanopyPolygon()
                     .toFeature(null, TYPE_TREE, false).apply {
                         addStringProperty(PROPERTY_KIND, KIND_PENDING_FILL)
                     }
             }
+
             null -> Unit
         }
         return FeatureCollection.fromFeatures(features)
@@ -388,11 +401,12 @@ constructor(
     private fun GeoPolygon.toFeature(id: String?, type: String, selected: Boolean): Feature =
         Feature.fromGeometry(toMapboxPolygon()).withProperties(id, type, selected)
 
-    private fun Feature.withProperties(id: String?, type: String, selected: Boolean): Feature = apply {
-        id?.let { addStringProperty(PROPERTY_ID, it) }
-        addStringProperty(PROPERTY_TYPE, type)
-        addBooleanProperty(PROPERTY_SELECTED, selected)
-    }
+    private fun Feature.withProperties(id: String?, type: String, selected: Boolean): Feature =
+        apply {
+            id?.let { addStringProperty(PROPERTY_ID, it) }
+            addStringProperty(PROPERTY_TYPE, type)
+            addBooleanProperty(PROPERTY_SELECTED, selected)
+        }
 
     private fun DrawnTree.toCanopyPolygon(): GeoPolygon {
         val latitudeRadians = center.latitude * PI / 180.0

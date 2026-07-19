@@ -1,10 +1,10 @@
 package com.example.shadowmap.scene
 
 import com.example.shadowmap.domain.SolarPosition
+import kotlin.math.sqrt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.math.sqrt
 
 class SceneSkyGeometryTest {
     private val viewport = SceneViewport(
@@ -219,5 +219,4 @@ class SceneSkyGeometryTest {
             (y - other.y) * (y - other.y) +
             (z - other.z) * (z - other.z)
     )
-
 }

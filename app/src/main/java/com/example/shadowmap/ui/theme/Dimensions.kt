@@ -22,7 +22,7 @@ data class AppDimensions(
     val floatingControlMaxWidth: Dp = 400.dp,
     val floatingControlElevation: Dp = 6.dp,
     val minimumTouchTarget: Dp = 48.dp,
-    val iconSize: Dp = spacingExtraLarge,
+    val iconSize: Dp = spacingExtraLarge
 )
 
 internal val DefaultAppDimensions = AppDimensions()

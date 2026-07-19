@@ -1,10 +1,10 @@
 package com.example.shadowmap.scene
 
 import com.example.shadowmap.domain.Building
-import com.example.shadowmap.domain.GeoPoint
-import com.example.shadowmap.domain.GeoPolygon
 import com.example.shadowmap.domain.DrawnTree
 import com.example.shadowmap.domain.DrawnWall
+import com.example.shadowmap.domain.GeoPoint
+import com.example.shadowmap.domain.GeoPolygon
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

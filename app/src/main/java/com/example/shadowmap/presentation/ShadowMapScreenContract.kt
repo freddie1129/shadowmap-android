@@ -9,9 +9,7 @@ import com.example.shadowmap.location.LocationSearchResult
 import com.example.shadowmap.map.MapboxShadowMapController
 import com.example.shadowmap.project.ProjectViewport
 
-data class MapScreenDependencies(
-    val mapControllerFactory: MapboxShadowMapController.Factory
-)
+data class MapScreenDependencies(val mapControllerFactory: MapboxShadowMapController.Factory)
 
 data class ShadowMapNavigation(
     val pendingLocation: LocationSearchResult?,
@@ -48,14 +46,9 @@ data class DrawingActions(
     val onSelectDrawing: (DrawnObjectSelection?) -> Unit
 )
 
-data class SceneActions(
-    val onClearScene: () -> Unit,
-    val onRestoreClearedScene: () -> Unit
-)
+data class SceneActions(val onClearScene: () -> Unit, val onRestoreClearedScene: () -> Unit)
 
-data class ProjectActions(
-    val onSaveProject: (String?) -> Unit
-)
+data class ProjectActions(val onSaveProject: (String?) -> Unit)
 
 data class ShadowMapActions(
     val map: MapActions,

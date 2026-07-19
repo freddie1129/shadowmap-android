@@ -50,7 +50,9 @@ class LocationSearchViewModel @Inject constructor(
                         it.copy(
                             results = emptyList(),
                             isLoading = false,
-                            errorMessage = "Unable to search for locations. Check your connection and try again."
+                            errorMessage =
+                                "Unable to search for locations. Check your connection " +
+                                    "and try again."
                         )
                     }
                 }

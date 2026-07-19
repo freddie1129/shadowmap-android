@@ -32,7 +32,9 @@ fun AppNavigation(
     modifier: Modifier = Modifier
 ) {
     val backStack = remember { mutableStateListOf<Any>(MapDestination) }
-    var pendingLocation by remember { androidx.compose.runtime.mutableStateOf<LocationSearchResult?>(null) }
+    var pendingLocation by remember {
+        androidx.compose.runtime.mutableStateOf<LocationSearchResult?>(null)
+    }
     var pendingProjectId by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
 
     NavDisplay(

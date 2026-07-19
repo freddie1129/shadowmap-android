@@ -33,18 +33,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,21 +74,21 @@ import com.example.shadowmap.presentation.ShadowMapActions
 import com.example.shadowmap.presentation.ShadowMapNavigation
 import com.example.shadowmap.presentation.ShadowMapUiState
 import com.example.shadowmap.presentation.ShadowMapViewModel
-import com.example.shadowmap.presentation.components.DateTimeSpinner
 import com.example.shadowmap.presentation.components.ActiveDrawingControls
 import com.example.shadowmap.presentation.components.AutoToolState
+import com.example.shadowmap.presentation.components.DateTimeSpinner
 import com.example.shadowmap.presentation.components.DrawingCrosshair
 import com.example.shadowmap.presentation.components.DrawingPropertiesSheet
-import com.example.shadowmap.presentation.components.SelectedLocationSheet
-import com.example.shadowmap.presentation.components.Scene3DView
-import com.example.shadowmap.presentation.components.ShadowColorSheet
 import com.example.shadowmap.presentation.components.Map2DView
+import com.example.shadowmap.presentation.components.Scene3DView
+import com.example.shadowmap.presentation.components.SelectedLocationSheet
+import com.example.shadowmap.presentation.components.ShadowColorSheet
 import com.example.shadowmap.project.ProjectViewport
 import com.example.shadowmap.scene.Scene3DAppearance
 import com.example.shadowmap.scene.SceneCameraView
 import com.example.shadowmap.scene.SceneViewport
-import com.example.shadowmap.ui.theme.ShadowMapTheme
 import com.example.shadowmap.ui.theme.ShadowMapDesign
+import com.example.shadowmap.ui.theme.ShadowMapTheme
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
 import com.mapbox.maps.ScreenCoordinate
@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 internal fun ShadowMapRoute(
     mapControllerFactory: MapboxShadowMapController.Factory,
+    modifier: Modifier = Modifier,
     pendingLocation: LocationSearchResult? = null,
     pendingProjectId: String? = null,
     onLocationApplied: () -> Unit = {},
@@ -143,7 +144,6 @@ internal fun ShadowMapRoute(
     onOpenLocationSearch: () -> Unit = {},
     onOpenProjects: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
-    modifier: Modifier = Modifier,
     viewModel: ShadowMapViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -581,7 +581,10 @@ private fun ShadowMapScreen(
 
     BackHandler(
         enabled = !show3d &&
-            (uiState.activeDrawMode != null || uiState.pendingDrawing != null || selectedType != null)
+            (
+                uiState.activeDrawMode != null || uiState.pendingDrawing != null ||
+                    selectedType != null
+                )
     ) {
         when {
             pendingType != null -> onReturnPendingToDrawing()
@@ -672,6 +675,7 @@ private fun ShadowMapScreen(
                             )
                         }
                     }
+
                     Scene3DSceneDestination -> NavEntry(key) {
                         val currentUiState by latestUiState
                         Scene3DView(
@@ -698,6 +702,7 @@ private fun ShadowMapScreen(
                             onNowSelected = onNowSelected
                         )
                     }
+
                     else -> error("Unknown scene destination: $key")
                 }
             }
@@ -733,7 +738,9 @@ private fun ShadowMapScreen(
                     } else {
                         val last = uiState.inProgressVertices.lastOrNull()
                         val threshold = with(density) { MIN_POINT_SPACING_DP.dp.toPx() }
-                        if (last == null || mapView?.isFarEnoughFrom(last, point, threshold) != false) {
+                        if (last == null ||
+                            mapView?.isFarEnoughFrom(last, point, threshold) != false
+                        ) {
                             onAddVertex(point)
                         } else {
                             onDrawingError("Move farther from the previous point")
@@ -792,7 +799,6 @@ private fun ShadowMapScreen(
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
-
     }
 
     if (showClearConfirmation) {
@@ -918,7 +924,6 @@ private fun ShadowMapScreen(
             }
         )
     }
-
 }
 
 private val THREE_D_BOTTOM_CONTROL_CLEARANCE = 156.dp
@@ -944,7 +949,6 @@ private fun MapView.toSceneViewport(): SceneViewport? {
 private fun MapView.toProjectViewport(): ProjectViewport? {
     if (width <= 0 || height <= 0) return null
     val camera = mapboxMap.cameraState
-    toSceneViewport() ?: return null
     val center = camera.center
     val topLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, 0.0))
     val topRight = mapboxMap.coordinateForPixel(ScreenCoordinate(width.toDouble(), 0.0))
@@ -971,21 +975,26 @@ private fun MapView.toProjectViewport(): ProjectViewport? {
     )
 }
 
-private fun MapView.isFarEnoughFrom(first: GeoPoint, second: GeoPoint, thresholdPixels: Float): Boolean {
+private fun MapView.isFarEnoughFrom(
+    first: GeoPoint,
+    second: GeoPoint,
+    thresholdPixels: Float
+): Boolean {
     val firstPixel = mapboxMap.pixelForCoordinate(Point.fromLngLat(first.longitude, first.latitude))
-    val secondPixel = mapboxMap.pixelForCoordinate(Point.fromLngLat(second.longitude, second.latitude))
+    val secondPixel = mapboxMap.pixelForCoordinate(
+        Point.fromLngLat(second.longitude, second.latitude)
+    )
     val dx = firstPixel.x - secondPixel.x
     val dy = firstPixel.y - secondPixel.y
     return dx * dx + dy * dy >= thresholdPixels * thresholdPixels
 }
 
-private fun MapView.toBuildingLoadArea(): BuildingLoadArea? =
-    toSceneViewport()?.let { viewport ->
-        BuildingLoadArea(
-            widthMeters = viewport.widthMeters,
-            heightMeters = viewport.heightMeters
-        )
-    }
+private fun MapView.toBuildingLoadArea(): BuildingLoadArea? = toSceneViewport()?.let { viewport ->
+    BuildingLoadArea(
+        widthMeters = viewport.widthMeters,
+        heightMeters = viewport.heightMeters
+    )
+}
 
 private const val MIN_POINT_SPACING_DP = 12f
 private const val MAX_AUTO_LOAD_METERS = 500.0

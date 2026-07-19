@@ -34,8 +34,8 @@ import com.google.android.filament.VertexBuffer
 import com.google.android.filament.View
 import com.google.android.filament.Viewport
 import com.google.android.filament.android.DisplayHelper
-import com.google.android.filament.android.UiHelper
 import com.google.android.filament.android.TextureHelper
+import com.google.android.filament.android.UiHelper
 import com.google.android.filament.filamat.MaterialBuilder
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -103,9 +103,8 @@ fun FilamentBuildingView(
 }
 
 @Suppress("TooManyFunctions", "LargeClass")
-private class FilamentBuildingRenderer(
-    private val onCameraViewChanged: (SceneCameraView) -> Unit
-) : Choreographer.FrameCallback {
+private class FilamentBuildingRenderer(private val onCameraViewChanged: (SceneCameraView) -> Unit) :
+    Choreographer.FrameCallback {
     private val engine = Engine.create()
     private val filamentRenderer: Renderer = engine.createRenderer()
     private val scene: Scene = engine.createScene()
@@ -298,7 +297,7 @@ private class FilamentBuildingRenderer(
     }
 
     private fun installTouchListener(
-        surface: SurfaceView,
+        surface: GestureSurfaceView,
         scaleDetector: ScaleGestureDetector,
         gestureDetector: GestureDetector
     ) {
@@ -316,12 +315,16 @@ private class FilamentBuildingRenderer(
             }
 
             if (multiTouchActive) {
-                if (event.pointerCount >= 2 && event.actionMasked != MotionEvent.ACTION_POINTER_UP) {
+                if (event.pointerCount >= 2 &&
+                    event.actionMasked != MotionEvent.ACTION_POINTER_UP
+                ) {
                     val focusX = (0 until event.pointerCount)
                         .sumOf { event.getX(it).toDouble() }.toFloat() / event.pointerCount
                     val focusY = (0 until event.pointerCount)
                         .sumOf { event.getY(it).toDouble() }.toFloat() / event.pointerCount
-                    if (event.actionMasked == MotionEvent.ACTION_MOVE && hasPreviousMultiTouchFocus) {
+                    if (event.actionMasked == MotionEvent.ACTION_MOVE &&
+                        hasPreviousMultiTouchFocus
+                    ) {
                         panCamera(
                             previousMultiTouchFocusX - focusX,
                             previousMultiTouchFocusY - focusY
@@ -810,10 +813,7 @@ private class FilamentBuildingRenderer(
         val indexBuffer: IndexBuffer
     )
 
-    private fun createLineRenderable(
-        mesh: SceneLineMesh,
-        material: Material
-    ): LineResources {
+    private fun createLineRenderable(mesh: SceneLineMesh, material: Material): LineResources {
         val floatsPerVertex = 7
         val vertexBytes = ByteBuffer.allocateDirect(
             mesh.vertices.size * floatsPerVertex * Float.SIZE_BYTES
@@ -870,7 +870,14 @@ private class FilamentBuildingRenderer(
                 )
             )
             .material(0, material.defaultInstance)
-            .geometry(0, RenderableManager.PrimitiveType.LINES, vertexBuffer, indexBuffer, 0, mesh.indices.size)
+            .geometry(
+                0,
+                RenderableManager.PrimitiveType.LINES,
+                vertexBuffer,
+                indexBuffer,
+                0,
+                mesh.indices.size
+            )
             .culling(false)
             .build(engine, entity)
         scene.addEntity(entity)

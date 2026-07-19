@@ -11,6 +11,7 @@ data class ShadowAppearance(
 
     companion object {
         val DEFAULT = ShadowAppearance()
+
         // Opaque RGB presets; shadow opacity is configured independently.
         val PRESET_COLORS = listOf(
             0xFF1E1E1EL, // Charcoal (default)

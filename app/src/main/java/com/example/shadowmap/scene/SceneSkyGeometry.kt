@@ -2,20 +2,14 @@ package com.example.shadowmap.scene
 
 import com.example.shadowmap.domain.SolarPosition
 import kotlin.math.cos
-import kotlin.math.sqrt
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 data class ScenePoint3(val x: Float, val y: Float, val z: Float)
 
-data class SceneLineMesh(
-    val vertices: List<ScenePoint3>,
-    val indices: List<Int>
-)
+data class SceneLineMesh(val vertices: List<ScenePoint3>, val indices: List<Int>)
 
-data class SceneTriangleMesh(
-    val vertices: List<ScenePoint3>,
-    val indices: List<Int>
-)
+data class SceneTriangleMesh(val vertices: List<ScenePoint3>, val indices: List<Int>)
 
 operator fun SceneLineMesh.plus(other: SceneLineMesh): SceneLineMesh {
     val offset = vertices.size

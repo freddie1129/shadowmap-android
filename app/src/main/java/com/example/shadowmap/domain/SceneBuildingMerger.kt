@@ -37,7 +37,13 @@ object SceneBuildingMerger {
 
     private fun GeoPolygon.toJtsPolygon(): Polygon? {
         val outerRing = rings.firstOrNull()?.takeIf { it.size >= 3 } ?: return null
-        val closedRing = if (outerRing.first() == outerRing.last()) outerRing else outerRing + outerRing.first()
+        val closedRing = if (outerRing.first() ==
+            outerRing.last()
+        ) {
+            outerRing
+        } else {
+            outerRing + outerRing.first()
+        }
         return runCatching {
             GEOMETRY_FACTORY.createPolygon(
                 closedRing.map { Coordinate(it.longitude, it.latitude) }.toTypedArray()

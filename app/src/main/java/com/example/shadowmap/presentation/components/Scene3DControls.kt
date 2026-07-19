@@ -49,7 +49,11 @@ fun Scene3DControls(
             contentDescription = if (showSatellite) "Hide satellite" else "Show satellite"
         ) {
             Icon(
-                imageVector = if (showSatellite) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
+                imageVector = if (showSatellite) {
+                    Icons.Outlined.Visibility
+                } else {
+                    Icons.Outlined.VisibilityOff
+                },
                 contentDescription = null
             )
         }
@@ -60,7 +64,11 @@ fun Scene3DControls(
             Icon(
                 imageVector = Icons.Outlined.WbSunny,
                 contentDescription = null,
-                tint = if (showSky) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                tint = if (showSky) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
             )
         }
         if (showSky) {

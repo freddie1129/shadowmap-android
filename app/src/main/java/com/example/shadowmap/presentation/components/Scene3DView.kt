@@ -16,8 +16,8 @@ import com.example.shadowmap.domain.DrawnWall
 import com.example.shadowmap.domain.SolarPosition
 import com.example.shadowmap.scene.FilamentBuildingView
 import com.example.shadowmap.scene.SceneCameraView
-import com.example.shadowmap.scene.SceneViewport
 import com.example.shadowmap.scene.SceneSkyPadding
+import com.example.shadowmap.scene.SceneViewport
 
 @Composable
 fun Scene3DView(

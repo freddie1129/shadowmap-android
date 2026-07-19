@@ -6,15 +6,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -73,7 +73,10 @@ fun DrawingToolChooser(
     }
     Row(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f), RoundedCornerShape(16.dp))
+            .background(
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                RoundedCornerShape(16.dp)
+            )
             .padding(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -159,11 +162,7 @@ private fun DrawingPanelHeader(
 }
 
 @Composable
-private fun DrawingPanelActions(
-    config: DrawingPanelConfig,
-    onAdd: () -> Unit,
-    onDone: () -> Unit
-) {
+private fun DrawingPanelActions(config: DrawingPanelConfig, onAdd: () -> Unit, onDone: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(onClick = onAdd, modifier = Modifier.weight(1f)) {
             Text(config.addText)
@@ -189,6 +188,7 @@ private fun DrawMode.toDrawingPanelConfig(vertexCount: Int): DrawingPanelConfig 
         canUndo = vertexCount > 0,
         canFinish = vertexCount >= 3
     )
+
     DrawMode.WALL -> DrawingPanelConfig(
         title = "Draw wall",
         hint = "Move the map under the crosshair, then add each wall point.",
@@ -197,6 +197,7 @@ private fun DrawMode.toDrawingPanelConfig(vertexCount: Int): DrawingPanelConfig 
         canUndo = vertexCount > 0,
         canFinish = vertexCount >= 2
     )
+
     DrawMode.TREE -> DrawingPanelConfig(
         title = "Place tree",
         hint = "Move the map under the crosshair, then add the tree.",

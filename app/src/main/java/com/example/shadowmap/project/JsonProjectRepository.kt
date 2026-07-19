@@ -7,9 +7,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class JsonProjectRepository @Inject constructor(
-    @ApplicationContext context: Context
-) : ProjectRepository {
+class JsonProjectRepository @Inject constructor(@ApplicationContext context: Context) :
+    ProjectRepository {
     private val directory = File(context.filesDir, PROJECT_DIRECTORY).apply { mkdirs() }
 
     override fun listProjects(): List<ProjectSummary> = directory.listFiles { file ->
@@ -21,9 +20,8 @@ class JsonProjectRepository @Inject constructor(
         }.getOrNull()
     }.sortedByDescending { it.updatedAt }
 
-    override fun loadProject(id: String): ProjectSnapshot {
-        return ProjectJsonCodec.decode(fileFor(id).readText())
-    }
+    override fun loadProject(id: String): ProjectSnapshot =
+        ProjectJsonCodec.decode(fileFor(id).readText())
 
     override fun saveProject(project: ProjectSnapshot) {
         val target = fileFor(project.id)

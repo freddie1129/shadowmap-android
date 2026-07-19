@@ -33,8 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.shadowmap.location.LocationSearchResult
 import com.example.shadowmap.presentation.LocationSearchUiState
 import com.example.shadowmap.ui.theme.ShadowMapDesign
@@ -104,14 +104,17 @@ fun LocationSearchScreen(
                             .padding(top = dimensions.spacingHuge)
                     )
                 }
+
                 uiState.errorMessage != null -> SearchMessage(
                     icon = Icons.Outlined.ErrorOutline,
                     message = uiState.errorMessage
                 )
+
                 uiState.query.length >= 2 && uiState.results.isEmpty() -> SearchMessage(
                     icon = Icons.Outlined.Search,
                     message = "No locations found"
                 )
+
                 else -> LazyColumn(modifier = Modifier.fillMaxWidth()) {
                     items(uiState.results, key = { it.id }) { result ->
                         LocationSearchResultItem(result, onClick = {
@@ -126,10 +129,7 @@ fun LocationSearchScreen(
 }
 
 @Composable
-private fun LocationSearchResultItem(
-    result: LocationSearchResult,
-    onClick: () -> Unit
-) {
+private fun LocationSearchResultItem(result: LocationSearchResult, onClick: () -> Unit) {
     val dimensions = ShadowMapDesign.dimensions
     Row(
         modifier = Modifier
@@ -142,7 +142,11 @@ private fun LocationSearchResultItem(
         horizontalArrangement = Arrangement.spacedBy(dimensions.spacingLarge),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Icon(
+            Icons.Outlined.LocationOn,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary
+        )
         Column(modifier = Modifier.weight(1f)) {
             Text(result.name, style = MaterialTheme.typography.bodyLarge)
             if (result.address.isNotBlank() && result.address != result.name) {
@@ -176,10 +180,7 @@ private fun LocationSearchResultItemPreview() {
 }
 
 @Composable
-private fun SearchMessage(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    message: String
-) {
+private fun SearchMessage(icon: androidx.compose.ui.graphics.vector.ImageVector, message: String) {
     val dimensions = ShadowMapDesign.dimensions
     Column(
         modifier = Modifier

@@ -1,19 +1,19 @@
 package com.example.shadowmap.presentation
 
-import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.AutomaticBuildingIdentity
 import com.example.shadowmap.domain.AutomaticBuildingMatcher
+import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.DrawMode
 import com.example.shadowmap.domain.DrawnObjectSelection
 import com.example.shadowmap.domain.DrawnTree
 import com.example.shadowmap.domain.DrawnWall
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
-import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.LoadedBuildingOverride
-import com.example.shadowmap.domain.SolarPosition
+import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.SceneBuildingMerger
 import com.example.shadowmap.domain.ShadowAppearance
+import com.example.shadowmap.domain.SolarPosition
 import com.example.shadowmap.project.ProjectViewport
 
 data class ShadowMapUiState(
@@ -30,7 +30,8 @@ data class ShadowMapUiState(
     val solarPosition: SolarPosition? = null,
     val sunPath: List<SolarPosition> = emptyList(),
     val loadedBuildings: List<Building> = emptyList(),
-    val loadedBuildingOverrides: Map<AutomaticBuildingIdentity, LoadedBuildingOverride> = emptyMap(),
+    val loadedBuildingOverrides: Map<AutomaticBuildingIdentity, LoadedBuildingOverride> =
+        emptyMap(),
     val suppressedLoadedBuildings: Map<AutomaticBuildingIdentity, GeoPolygon> = emptyMap(),
     val automaticBuildingKeysCoveredByManual: Set<String> = emptySet(),
     val drawnBuildings: List<Building> = emptyList(),
@@ -55,7 +56,10 @@ data class ShadowMapUiState(
                 null
             } else {
                 loadedBuildingOverrides[identity]?.let { override ->
-                    building.copy(heightMeters = override.heightMeters, automaticIdentity = identity)
+                    building.copy(
+                        heightMeters = override.heightMeters,
+                        automaticIdentity = identity
+                    )
                 } ?: building.copy(automaticIdentity = identity)
             }
         }

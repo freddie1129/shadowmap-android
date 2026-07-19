@@ -1,19 +1,19 @@
 package com.example.shadowmap.presentation
 
 import androidx.lifecycle.SavedStateHandle
+import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.Building
 import com.example.shadowmap.domain.BuildingShadowCalculator
-import com.example.shadowmap.domain.AutomaticBuildingMatcher
 import com.example.shadowmap.domain.DrawMode
 import com.example.shadowmap.domain.DrawnObjectSelection
 import com.example.shadowmap.domain.DrawnObjectType
-import com.example.shadowmap.domain.PendingDrawing
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
+import com.example.shadowmap.domain.PendingDrawing
+import com.example.shadowmap.domain.SceneObjectSource
 import com.example.shadowmap.domain.SolarPositionCalculator
 import com.example.shadowmap.domain.UserObjectShadowCalculator
 import com.example.shadowmap.project.ProjectRepository
-import com.example.shadowmap.domain.SceneObjectSource
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -235,7 +235,11 @@ class ShadowMapViewModelTest {
             TEST_LOCATION
         )
 
-        assertEquals(12.5, viewModel.uiState.value.visibleLoadedBuildings.single().heightMeters, 0.0)
+        assertEquals(
+            12.5,
+            viewModel.uiState.value.visibleLoadedBuildings.single().heightMeters,
+            0.0
+        )
         assertEquals(1, viewModel.uiState.value.loadedBuildingOverrides.size)
     }
 
@@ -355,9 +359,11 @@ class ShadowMapViewModelTest {
             clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
             systemZoneId = ZoneId.of("Australia/Brisbane"),
             projectRepository = object : ProjectRepository {
-                override fun listProjects() = emptyList<com.example.shadowmap.project.ProjectSummary>()
+                override fun listProjects() =
+                    emptyList<com.example.shadowmap.project.ProjectSummary>()
                 override fun loadProject(id: String) = error("Not used in this test")
-                override fun saveProject(project: com.example.shadowmap.project.ProjectSnapshot) = Unit
+                override fun saveProject(project: com.example.shadowmap.project.ProjectSnapshot) =
+                    Unit
                 override fun deleteProject(id: String) = Unit
             },
             computationDispatcher = dispatcher

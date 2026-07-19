@@ -5,6 +5,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.withRotation
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -12,7 +14,7 @@ object CompassDialBitmap {
     const val TEXTURE_SIZE_PX = 1024
 
     fun create(domeToOuterRadiusRatio: Float): Bitmap {
-        val bitmap = Bitmap.createBitmap(
+        val bitmap = createBitmap(
             TEXTURE_SIZE_PX,
             TEXTURE_SIZE_PX,
             Bitmap.Config.ARGB_8888
@@ -94,13 +96,12 @@ object CompassDialBitmap {
         labelOutlinePaint.strokeWidth = TEXTURE_SIZE_PX * if (isCardinal) 0.006f else 0.004f
         val labelRadius = tickOuterRadius + TEXTURE_SIZE_PX *
             if (isCardinal) 0.034f else 0.026f
-        canvas.save()
-        canvas.rotate(mark.azimuthDegrees.toFloat(), center, center)
-        val baseline = center - labelRadius -
-            (labelPaint.ascent() + labelPaint.descent()) / 2f
-        canvas.drawText(label, center, baseline, labelOutlinePaint)
-        canvas.drawText(label, center, baseline, labelPaint)
-        canvas.restore()
+        canvas.withRotation(mark.azimuthDegrees.toFloat(), center, center) {
+            val baseline = center - labelRadius -
+                (labelPaint.ascent() + labelPaint.descent()) / 2f
+            drawText(label, center, baseline, labelOutlinePaint)
+            drawText(label, center, baseline, labelPaint)
+        }
     }
 
     private fun tickLength(type: CompassTickType): Float = TEXTURE_SIZE_PX * when (type) {

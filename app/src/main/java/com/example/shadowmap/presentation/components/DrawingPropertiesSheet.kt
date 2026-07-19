@@ -3,15 +3,15 @@ package com.example.shadowmap.presentation.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -67,7 +67,7 @@ fun DrawingPropertiesSheet(
     val crownWidth = crownWidthText.toDoubleOrNull()
     val isHeightValid = height != null && height in config.heightRange
     val isCrownWidthValid = type != DrawnObjectType.TREE ||
-        crownWidth != null && crownWidth in MIN_CROWN_WIDTH_METERS..MAX_CROWN_WIDTH_METERS
+        (crownWidth != null && crownWidth in MIN_CROWN_WIDTH_METERS..MAX_CROWN_WIDTH_METERS)
 
     Surface(
         modifier = modifier
@@ -90,7 +90,11 @@ fun DrawingPropertiesSheet(
         ) {
             PropertyPanelHeader(
                 title = config.title,
-                sourceLabel = propertySourceLabel(isCreating, objectSource, isEditedAutomaticObject),
+                sourceLabel = propertySourceLabel(
+                    isCreating,
+                    objectSource,
+                    isEditedAutomaticObject
+                ),
                 onBack = onBack
             )
             MeasurementEditor(
@@ -148,9 +152,12 @@ private fun propertySourceLabel(
     isEditedAutomaticObject: Boolean
 ): String = when {
     isCreating -> "New manual object"
+
     objectSource == SceneObjectSource.AUTOMATIC && isEditedAutomaticObject ->
         "Automatically loaded · Edited"
+
     objectSource == SceneObjectSource.AUTOMATIC -> "Automatically loaded"
+
     else -> "Manually drawn"
 }
 
@@ -166,7 +173,8 @@ private fun BuildingHeightControls(
             TextButton(
                 onClick = { onSelected(loadedHeightMeters) },
                 enabled = currentHeightMeters == null ||
-                    abs(currentHeightMeters - loadedHeightMeters) >= HEIGHT_EQUALITY_TOLERANCE_METERS
+                    abs(currentHeightMeters - loadedHeightMeters) >=
+                    HEIGHT_EQUALITY_TOLERANCE_METERS
             ) {
                 Text("Reset to loaded height · ${loadedHeightMeters.toEditableText()} m")
             }
@@ -288,6 +296,7 @@ private fun String.asDecimalInput(): String = buildString {
     this@asDecimalInput.forEach { character ->
         when {
             character.isDigit() -> append(character)
+
             character == '.' && !hasDecimalPoint && isNotEmpty() -> {
                 append(character)
                 hasDecimalPoint = true
@@ -304,11 +313,13 @@ private fun DrawnObjectType.propertyPanelConfig(): PropertyPanelConfig = when (t
         saveLabel = "Save building",
         heightRange = 2.0..100.0
     )
+
     DrawnObjectType.WALL -> PropertyPanelConfig(
         title = "Wall details",
         saveLabel = "Save wall",
         heightRange = 0.5..20.0
     )
+
     DrawnObjectType.TREE -> PropertyPanelConfig(
         title = "Tree details",
         saveLabel = "Save tree",

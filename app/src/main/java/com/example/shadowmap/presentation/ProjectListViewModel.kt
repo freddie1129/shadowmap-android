@@ -12,9 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class ProjectListViewModel @Inject constructor(
-    private val repository: ProjectRepository
-) : ViewModel() {
+class ProjectListViewModel @Inject constructor(private val repository: ProjectRepository) :
+    ViewModel() {
     private val _projects = MutableStateFlow<List<ProjectSummary>>(emptyList())
     val projects: StateFlow<List<ProjectSummary>> = _projects.asStateFlow()
 
@@ -22,5 +21,7 @@ class ProjectListViewModel @Inject constructor(
         viewModelScope.launch { _projects.value = repository.listProjects() }
     }
 
-    init { refresh() }
+    init {
+        refresh()
+    }
 }
