@@ -12,6 +12,11 @@ This is a single-module Android app. App code lives in [`app/src/main/java/com/e
 ## Coding Style & Naming Conventions
 Use Kotlin and Jetpack Compose conventions: 4-space indentation, `PascalCase` for composables/classes, `camelCase` for functions, properties, and state variables. Keep composables small and state hoisted where practical. Follow the existing package naming rooted at `com.example.shadowmap`. Keep resource names lowercase with underscores, such as `mapbox_access_token.xml`.
 
+## Compose UI Guidelines
+New reusable Compose components should use `ShadowMapDesign.dimensions` for padding, spacing, margins, touch targets, and repeated layout sizes. Use `MaterialTheme.shapes`, `MaterialTheme.colorScheme`, and `MaterialTheme.typography` instead of hardcoded shapes, colors, and text styles. Use raw `dp` values only for component-specific drawing details or one-off visual geometry; add a named design token when a value is reused. Every new reusable composable should include a `@Preview`. Keep system inset handling at the screen or container level where possible, and avoid baking status or navigation bar padding into small reusable components.
+
+For theme-sensitive Compose UI, add explicit light-mode and dark-mode previews. Preview the component inside the same themed `Surface`, sheet, or container that supplies its runtime background and content colors so the previews accurately represent the emulator or device.
+
 ## Testing Guidelines
 Local tests use JUnit in `app/src/test`, and Android tests use `AndroidJUnit4` in `app/src/androidTest`. Name tests clearly after behavior, for example `MapScreen_showsControlsByDefault`. Prefer adding regression tests alongside feature changes when the behavior can be exercised without Mapbox or device-only dependencies.
 

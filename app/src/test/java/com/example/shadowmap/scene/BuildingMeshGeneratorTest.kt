@@ -1,6 +1,8 @@
 package com.example.shadowmap.scene
 
-import com.example.shadowmap.domain.BuildingFootprint
+import com.example.shadowmap.domain.Building
+import com.example.shadowmap.domain.DrawnTree
+import com.example.shadowmap.domain.DrawnWall
 import com.example.shadowmap.domain.GeoPoint
 import com.example.shadowmap.domain.GeoPolygon
 import org.junit.Assert.assertEquals
@@ -10,7 +12,7 @@ import org.junit.Test
 class BuildingMeshGeneratorTest {
     @Test
     fun squareFootprintCreatesRoofWallsAndGround() {
-        val building = BuildingFootprint(
+        val building = Building(
             id = "one",
             polygon = GeoPolygon(
                 listOf(
@@ -34,6 +36,8 @@ class BuildingMeshGeneratorTest {
         assertTrue(mesh.vertices.any { it.y == 12f })
         assertTrue(mesh.vertices.any { it.y == 2f })
         assertTrue(mesh.radiusMeters > 1f)
+        assertTrue(mesh.coverageRadiusMeters > mesh.radiusMeters)
+        assertTrue(mesh.coverageRadiusMeters >= 12f)
         assertTrue(triangleNormalY(mesh, 0) > 0f)
         assertTrue(wallNormalDotProduct(mesh) > 0f)
     }
@@ -44,6 +48,27 @@ class BuildingMeshGeneratorTest {
 
         assertTrue(mesh.vertices.isEmpty())
         assertTrue(mesh.indices.isEmpty())
+    }
+
+    @Test
+    fun wallsAndTreesAddRenderableGeometry() {
+        val origin = GeoPoint(153.0, -28.0)
+        val wall = DrawnWall(
+            points = listOf(origin, GeoPoint(153.0001, -28.0)),
+            heightMeters = 2.5
+        )
+        val tree = DrawnTree(
+            center = GeoPoint(153.00005, -28.00005),
+            heightMeters = 8.0,
+            radiusMeters = 5.0
+        )
+
+        val mesh = BuildingMeshGenerator.generate(emptyList(), listOf(wall), listOf(tree))
+
+        assertTrue(mesh.vertices.isNotEmpty())
+        assertTrue(mesh.indices.isNotEmpty())
+        assertTrue(mesh.vertices.any { it.y == 8f })
+        assertTrue(mesh.vertices.any { it.y == 2.5f })
     }
 
     private fun triangleNormalY(mesh: BuildingMesh, indexOffset: Int): Float {

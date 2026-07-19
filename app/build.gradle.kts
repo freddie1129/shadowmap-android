@@ -32,6 +32,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -61,9 +62,12 @@ detekt {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.android.desugar.jdk.libs)
+    implementation(libs.gson)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -74,6 +78,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
     implementation(libs.mapbox.maps.android)
     implementation(libs.mapbox.maps.compose)
+    implementation(libs.mapbox.search.android)
+    implementation(libs.mapbox.search.native)
+    implementation(libs.mapbox.search.place.autocomplete)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
     implementation(libs.jts.core)
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)

@@ -68,7 +68,7 @@ class BuildingShadowCalculatorTest {
         )
     }
 
-    private fun squareBuilding(heightMeters: Double): BuildingFootprint {
+    private fun squareBuilding(heightMeters: Double): Building {
         val ring =
             listOf(
                 projection.toPoint(Coordinate(-5.0, -5.0)),
@@ -77,7 +77,7 @@ class BuildingShadowCalculatorTest {
                 projection.toPoint(Coordinate(-5.0, 5.0)),
                 projection.toPoint(Coordinate(-5.0, -5.0))
             )
-        return BuildingFootprint(
+        return Building(
             id = "test-building",
             polygon = GeoPolygon(listOf(ring)),
             heightMeters = heightMeters,

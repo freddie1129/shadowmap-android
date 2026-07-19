@@ -31,7 +31,9 @@ dependencyResolutionManagement {
                 // Secret token (scope: DOWNLOADS:READ) from https://account.mapbox.com/access-tokens/
                 // Set this in ~/.gradle/gradle.properties (NOT this repo's gradle.properties) as:
                 // MAPBOX_DOWNLOADS_TOKEN=sk.xxxxx
-                password = providers.gradleProperty("MAPBOX_DOWNLOADS_TOKEN").getOrElse("")
+                password = providers.gradleProperty("MAPBOX_DOWNLOADS_TOKEN")
+                    .orElse(providers.environmentVariable("MAPBOX_DOWNLOADS_TOKEN"))
+                    .getOrElse("")
             }
         }
     }
