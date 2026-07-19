@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.ViewInAr
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -34,6 +35,7 @@ fun Scene3DControls(
     onToggleCameraView: () -> Unit,
     onToggleSatellite: () -> Unit,
     onToggleSky: () -> Unit,
+    onRefreshSky: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dimensions = ShadowMapDesign.dimensions
@@ -60,6 +62,17 @@ fun Scene3DControls(
                 contentDescription = null,
                 tint = if (showSky) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
+        }
+        if (showSky) {
+            SceneControlButton(
+                onClick = onRefreshSky,
+                contentDescription = "Refresh sky dome"
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Refresh,
+                    contentDescription = null
+                )
+            }
         }
         SceneControlButton(
             onClick = onToggleCameraView,
@@ -122,7 +135,8 @@ private fun Scene3DControlsPreview() {
             showSky = true,
             onToggleCameraView = {},
             onToggleSatellite = {},
-            onToggleSky = {}
+            onToggleSky = {},
+            onRefreshSky = {}
         )
     }
 }
@@ -137,7 +151,8 @@ private fun Scene3DControlsDarkPreview() {
             showSky = true,
             onToggleCameraView = {},
             onToggleSatellite = {},
-            onToggleSky = {}
+            onToggleSky = {},
+            onRefreshSky = {}
         )
     }
 }

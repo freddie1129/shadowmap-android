@@ -3,6 +3,10 @@ package com.example.shadowmap.presentation.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -38,6 +42,7 @@ fun Scene3DView(
     onNowSelected: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var skyRefreshRequest by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val skyPadding = with(density) {
         SceneSkyPadding(
@@ -65,6 +70,7 @@ fun Scene3DView(
             sunPathWidthPx = sunPathWidthPx,
             sunConnectorWidthPx = sunConnectorWidthPx,
             compassBandPx = compassBandPx,
+            skyRefreshRequest = skyRefreshRequest,
             cameraView = cameraView,
             onCameraViewChanged = onCameraViewChanged,
             modifier = Modifier.fillMaxSize()
@@ -84,6 +90,7 @@ fun Scene3DView(
             },
             onToggleSatellite = onToggleSatellite,
             onToggleSky = onToggleSky,
+            onRefreshSky = { skyRefreshRequest++ },
             onBackToMap = onBackToMap,
             selectedEpochMillis = selectedEpochMillis,
             timeZoneId = timeZoneId,

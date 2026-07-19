@@ -33,64 +33,82 @@ data class SceneSkyPadding(
 )
 
 data class SceneSkyFrame(
+    val center: ScenePoint3,
     val radiusMeters: Float,
     val outerRadiusMeters: Float,
-    val usableWidthMeters: Float,
-    val usableHeightMeters: Float,
-    val overviewZoom: Float
+    val horizontalMetersPerPixel: Float,
+    val verticalMetersPerPixel: Float
 )
 
 object SceneSkyGeometry {
     const val DEFAULT_MERIDIAN_COUNT = 24
     const val DEFAULT_RING_SEGMENTS = 180
     const val DEFAULT_ALTITUDE_RINGS = 5
-    const val VISUAL_MARGIN_METERS = 1f
+    private const val MIN_DOME_TO_AVAILABLE_RADIUS_RATIO = 0.55f
 
     fun calculateFrame(
         viewport: SceneViewport,
         surfaceWidthPx: Int,
         surfaceHeightPx: Int,
+        orthographicZoom: Float,
+        centerX: Float,
+        centerZ: Float,
         padding: SceneSkyPadding = SceneSkyPadding(),
-        compassBandPx: Float = 0f,
-        contentRadiusMeters: Float = 0f,
-        visualMarginMeters: Float = VISUAL_MARGIN_METERS
+        compassBandPx: Float = 0f
     ): SceneSkyFrame {
         val horizontalInsetPx = maxOf(padding.leftPx, padding.rightPx)
         val verticalInsetPx = maxOf(padding.topPx, padding.bottomPx)
         val widthPx = (surfaceWidthPx - 2 * horizontalInsetPx).coerceAtLeast(1)
         val heightPx = (surfaceHeightPx - 2 * verticalInsetPx).coerceAtLeast(1)
-        val usableWidth = viewport.widthMeters * widthPx.toFloat() / surfaceWidthPx.coerceAtLeast(1)
-        val usableHeight = viewport.heightMeters * heightPx.toFloat() / surfaceHeightPx.coerceAtLeast(1)
-        val halfWidth = viewport.widthMeters / 2f
-        val halfHeight = viewport.heightMeters / 2f
-        val mapBoundaryRadius = sqrt(halfWidth * halfWidth + halfHeight * halfHeight)
-        val radius = maxOf(mapBoundaryRadius, contentRadiusMeters.coerceAtLeast(0f)) +
-            visualMarginMeters.coerceAtLeast(0f)
-        val usableRadiusPx = minOf(widthPx, heightPx) / 2f
-        val domeRadiusPx = (usableRadiusPx - compassBandPx.coerceAtLeast(0f))
-            .coerceAtLeast(usableRadiusPx * 0.55f)
-        val outerRadius = radius * usableRadiusPx / domeRadiusPx.coerceAtLeast(1f)
-        val horizontalZoom = 2f * outerRadius * surfaceWidthPx.coerceAtLeast(1) /
-            (viewport.widthMeters * widthPx)
-        val verticalZoom = 2f * outerRadius * surfaceHeightPx.coerceAtLeast(1) /
-            (viewport.heightMeters * heightPx)
-        val overviewZoom = maxOf(horizontalZoom, verticalZoom)
-        return SceneSkyFrame(radius, outerRadius, usableWidth, usableHeight, overviewZoom)
+        val horizontalMetersPerPixel = Scene3DCamera.orthographicMetersPerPixel(
+            viewport.widthMeters,
+            orthographicZoom,
+            surfaceWidthPx
+        )
+        val verticalMetersPerPixel = Scene3DCamera.orthographicMetersPerPixel(
+            viewport.heightMeters,
+            orthographicZoom,
+            surfaceHeightPx
+        )
+        val halfWidthPx = widthPx / 2f
+        val halfHeightPx = heightPx / 2f
+        val outerRadius = minOf(
+            halfWidthPx * horizontalMetersPerPixel,
+            halfHeightPx * verticalMetersPerPixel
+        ).coerceAtLeast(0.001f)
+        val reservedBandPx = compassBandPx.coerceAtLeast(0f)
+        val domeHalfWidthPx = (halfWidthPx - reservedBandPx)
+            .coerceAtLeast(halfWidthPx * MIN_DOME_TO_AVAILABLE_RADIUS_RATIO)
+        val domeHalfHeightPx = (halfHeightPx - reservedBandPx)
+            .coerceAtLeast(halfHeightPx * MIN_DOME_TO_AVAILABLE_RADIUS_RATIO)
+        val radius = minOf(
+            domeHalfWidthPx * horizontalMetersPerPixel,
+            domeHalfHeightPx * verticalMetersPerPixel
+        ).coerceIn(0.001f, outerRadius)
+        return SceneSkyFrame(
+            center = ScenePoint3(centerX, 0f, centerZ),
+            radiusMeters = radius,
+            outerRadiusMeters = outerRadius,
+            horizontalMetersPerPixel = horizontalMetersPerPixel,
+            verticalMetersPerPixel = verticalMetersPerPixel
+        )
     }
 
     fun groundDiskMesh(
         radiusMeters: Float,
         viewport: SceneViewport,
+        center: ScenePoint3 = ScenePoint3(0f, 0f, 0f),
         segments: Int = DEFAULT_RING_SEGMENTS,
         yMeters: Float = 0f
     ): SceneTriangleMesh {
-        val vertices = mutableListOf(ScenePoint3(0f, yMeters, 0f))
+        val vertices = mutableListOf(center.copy(y = yMeters))
         repeat(segments + 1) { index ->
             val point = pointOnDome(
                 index.toFloat() / segments * 360f,
                 0f,
                 radiusMeters,
-                viewport
+                viewport,
+                center
             )
             vertices += point.copy(y = yMeters)
         }
@@ -104,6 +122,7 @@ object SceneSkyGeometry {
     fun domeMesh(
         radiusMeters: Float,
         viewport: SceneViewport,
+        center: ScenePoint3 = ScenePoint3(0f, 0f, 0f),
         meridianCount: Int = DEFAULT_MERIDIAN_COUNT,
         ringSegments: Int = DEFAULT_RING_SEGMENTS,
         altitudeRings: Int = DEFAULT_ALTITUDE_RINGS
@@ -114,7 +133,7 @@ object SceneSkyGeometry {
             val start = vertices.size
             repeat(ringSegments + 1) { index ->
                 val azimuth = index.toFloat() / ringSegments * 360f
-                vertices += pointOnDome(azimuth, altitudeDegrees, radiusMeters, viewport)
+                vertices += pointOnDome(azimuth, altitudeDegrees, radiusMeters, viewport, center)
                 if (index > 0) indices += listOf(start + index - 1, start + index)
             }
         }
@@ -131,7 +150,8 @@ object SceneSkyGeometry {
                     azimuth,
                     step.toFloat() / meridianSteps * 90f,
                     radiusMeters,
-                    viewport
+                    viewport,
+                    center
                 )
                 if (step > 0) {
                     indices += listOf(start + step - 1, start + step)
@@ -144,13 +164,15 @@ object SceneSkyGeometry {
     fun compassMesh(
         radiusMeters: Float,
         viewport: SceneViewport,
+        center: ScenePoint3 = ScenePoint3(0f, 0f, 0f),
         segments: Int = DEFAULT_RING_SEGMENTS
-    ): SceneLineMesh = circleMesh(radiusMeters, 0f, viewport, segments)
+    ): SceneLineMesh = circleMesh(radiusMeters, 0f, viewport, center, segments)
 
     fun sunPathMesh(
         positions: List<SolarPosition>,
         radiusMeters: Float,
-        viewport: SceneViewport
+        viewport: SceneViewport,
+        center: ScenePoint3 = ScenePoint3(0f, 0f, 0f)
     ): SceneLineMesh {
         val visible = positions.filter { it.isAboveHorizon }
         val vertices = visible.map {
@@ -158,7 +180,8 @@ object SceneSkyGeometry {
                 it.azimuthDegrees.toFloat(),
                 (90.0 - it.zenithDegrees).toFloat(),
                 radiusMeters,
-                viewport
+                viewport,
+                center
             )
         }
         return SceneLineMesh(vertices, vertices.indices.drop(1).flatMap { listOf(it - 1, it) })
@@ -169,14 +192,16 @@ object SceneSkyGeometry {
         radiusMeters: Float,
         viewport: SceneViewport,
         widthMeters: Float,
-        surfaceOffsetMeters: Float
+        surfaceOffsetMeters: Float,
+        center: ScenePoint3 = ScenePoint3(0f, 0f, 0f)
     ): SceneTriangleMesh {
         val path = positions.filter { it.isAboveHorizon }.map {
             pointOnDome(
                 it.azimuthDegrees.toFloat(),
                 (90.0 - it.zenithDegrees).toFloat(),
                 radiusMeters,
-                viewport
+                viewport,
+                center
             )
         }
         if (path.size < 2) return SceneTriangleMesh(emptyList(), emptyList())
@@ -186,7 +211,7 @@ object SceneSkyGeometry {
             val previous = path[(index - 1).coerceAtLeast(0)]
             val next = path[(index + 1).coerceAtMost(path.lastIndex)]
             val tangent = (next - previous).normalized()
-            val normal = path[index].normalized()
+            val normal = (path[index] - center).normalized()
             val side = normal.cross(tangent).normalized()
             val lifted = path[index] + normal * surfaceOffsetMeters
             vertices += lifted - side * halfWidth
@@ -271,7 +296,8 @@ object SceneSkyGeometry {
         azimuthDegrees: Float,
         altitudeDegrees: Float,
         radiusMeters: Float,
-        viewport: SceneViewport
+        viewport: SceneViewport,
+        center: ScenePoint3 = ScenePoint3(0f, 0f, 0f)
     ): ScenePoint3 {
         val azimuth = Math.toRadians(azimuthDegrees.toDouble())
         val altitude = Math.toRadians(altitudeDegrees.coerceIn(0f, 90f).toDouble())
@@ -279,9 +305,9 @@ object SceneSkyGeometry {
         val east = (sin(azimuth) * horizontal).toFloat()
         val north = (cos(azimuth) * horizontal).toFloat()
         return ScenePoint3(
-            x = viewport.screenRightX * east - viewport.screenDownX * north,
-            y = (sin(altitude) * radiusMeters).toFloat(),
-            z = viewport.screenRightZ * east - viewport.screenDownZ * north
+            x = center.x + viewport.screenRightX * east - viewport.screenDownX * north,
+            y = center.y + (sin(altitude) * radiusMeters).toFloat(),
+            z = center.z + viewport.screenRightZ * east - viewport.screenDownZ * north
         )
     }
 
@@ -289,10 +315,17 @@ object SceneSkyGeometry {
         radiusMeters: Float,
         altitudeDegrees: Float,
         viewport: SceneViewport,
+        center: ScenePoint3,
         segments: Int
     ): SceneLineMesh {
         val vertices = (0..segments).map { index ->
-            pointOnDome(index.toFloat() / segments * 360f, altitudeDegrees, radiusMeters, viewport)
+            pointOnDome(
+                index.toFloat() / segments * 360f,
+                altitudeDegrees,
+                radiusMeters,
+                viewport,
+                center
+            )
         }
         return SceneLineMesh(vertices, vertices.indices.drop(1).flatMap { listOf(it - 1, it) })
     }

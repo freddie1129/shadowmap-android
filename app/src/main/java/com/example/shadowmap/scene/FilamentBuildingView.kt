@@ -60,6 +60,7 @@ fun FilamentBuildingView(
     sunPathWidthPx: Float = 4f,
     sunConnectorWidthPx: Float = 2f,
     compassBandPx: Float = 40f,
+    skyRefreshRequest: Int = 0,
     cameraView: SceneCameraView,
     onCameraViewChanged: (SceneCameraView) -> Unit
 ) {
@@ -94,6 +95,9 @@ fun FilamentBuildingView(
     }
     LaunchedEffect(compassBandPx) {
         renderer.setCompassBand(compassBandPx)
+    }
+    LaunchedEffect(skyRefreshRequest) {
+        if (skyRefreshRequest > 0) renderer.refreshSky()
     }
     DisposableEffect(renderer) { onDispose(renderer::destroy) }
 }
@@ -142,7 +146,6 @@ private class FilamentBuildingRenderer(
     private var compassIndexBuffer: IndexBuffer? = null
     private var destroyed = false
     private var sceneRadius = Scene3DCamera.DEFAULT_SCENE_RADIUS_METERS
-    private var sceneCoverageRadius = Scene3DCamera.DEFAULT_SCENE_RADIUS_METERS
     private var cameraYaw = Scene3DCamera.DEFAULT_YAW_DEGREES
     private var cameraPitch = Scene3DCamera.DEFAULT_PITCH_DEGREES
     private var cameraDistance = Scene3DCamera.DEFAULT_DISTANCE_METERS
@@ -162,6 +165,7 @@ private class FilamentBuildingRenderer(
     private var sunPathWidthPx = 4f
     private var sunConnectorWidthPx = 2f
     private var compassBandPx = 40f
+    private var skyFrame: SceneSkyFrame? = null
 
     private val uiHelper = UiHelper(UiHelper.ContextErrorPolicy.DONT_CHECK).apply {
         isOpaque = false
@@ -183,6 +187,7 @@ private class FilamentBuildingRenderer(
                 viewportHeight = height
                 view.viewport = Viewport(0, 0, width, height)
                 updateProjection()
+                if (skyVisible) skyFrame = captureSkyFrame()
                 rebuildSky()
             }
         }
@@ -265,25 +270,19 @@ private class FilamentBuildingRenderer(
                     distanceX: Float,
                     distanceY: Float
                 ): Boolean {
-                    if (scaleDetector.isInProgress) {
-                        return true
-                    } else if (current.pointerCount >= 2) {
-                        panCamera(distanceX, distanceY)
-                    } else {
-                        if (alignedTopDown) {
-                            alignedTopDown = false
-                            onCameraViewChanged(SceneCameraView.ORBIT)
-                        }
-                        cameraYaw =
-                            (cameraYaw - distanceX * Scene3DCamera.ORBIT_DEGREES_PER_PIXEL) % 360f
-                        cameraPitch =
-                            (cameraPitch + distanceY * Scene3DCamera.ORBIT_DEGREES_PER_PIXEL)
-                                .coerceIn(
-                                    Scene3DCamera.MIN_PITCH_DEGREES,
-                                    Scene3DCamera.MAX_PITCH_DEGREES
-                                )
-                        updateCamera()
+                    if (alignedTopDown) {
+                        alignedTopDown = false
+                        onCameraViewChanged(SceneCameraView.ORBIT)
                     }
+                    cameraYaw =
+                        (cameraYaw - distanceX * Scene3DCamera.ORBIT_DEGREES_PER_PIXEL) % 360f
+                    cameraPitch =
+                        (cameraPitch + distanceY * Scene3DCamera.ORBIT_DEGREES_PER_PIXEL)
+                            .coerceIn(
+                                Scene3DCamera.MIN_PITCH_DEGREES,
+                                Scene3DCamera.MAX_PITCH_DEGREES
+                            )
+                    updateCamera()
                     return true
                 }
 
@@ -294,14 +293,64 @@ private class FilamentBuildingRenderer(
                 }
             }
         )
+        installTouchListener(surface, scaleDetector, gestureDetector)
+        uiHelper.attachTo(surface)
+    }
+
+    private fun installTouchListener(
+        surface: SurfaceView,
+        scaleDetector: ScaleGestureDetector,
+        gestureDetector: GestureDetector
+    ) {
+        var multiTouchActive = false
+        var hasPreviousMultiTouchFocus = false
+        var previousMultiTouchFocusX = 0f
+        var previousMultiTouchFocusY = 0f
         surface.isClickable = true
         surface.setOnTouchListener { _, event ->
             scaleDetector.onTouchEvent(event)
-            gestureDetector.onTouchEvent(event)
-            if (event.actionMasked == MotionEvent.ACTION_UP) surface.performClick()
+            if (event.actionMasked == MotionEvent.ACTION_POINTER_DOWN && event.pointerCount >= 2) {
+                multiTouchActive = true
+                hasPreviousMultiTouchFocus = false
+                cancelGestureDetector(gestureDetector, event)
+            }
+
+            if (multiTouchActive) {
+                if (event.pointerCount >= 2 && event.actionMasked != MotionEvent.ACTION_POINTER_UP) {
+                    val focusX = (0 until event.pointerCount)
+                        .sumOf { event.getX(it).toDouble() }.toFloat() / event.pointerCount
+                    val focusY = (0 until event.pointerCount)
+                        .sumOf { event.getY(it).toDouble() }.toFloat() / event.pointerCount
+                    if (event.actionMasked == MotionEvent.ACTION_MOVE && hasPreviousMultiTouchFocus) {
+                        panCamera(
+                            previousMultiTouchFocusX - focusX,
+                            previousMultiTouchFocusY - focusY
+                        )
+                    }
+                    previousMultiTouchFocusX = focusX
+                    previousMultiTouchFocusY = focusY
+                    hasPreviousMultiTouchFocus = true
+                }
+                if (event.actionMasked in MULTI_TOUCH_END_ACTIONS) {
+                    hasPreviousMultiTouchFocus = false
+                }
+                if (event.actionMasked in GESTURE_END_ACTIONS) {
+                    multiTouchActive = false
+                }
+            } else {
+                gestureDetector.onTouchEvent(event)
+                if (event.actionMasked == MotionEvent.ACTION_UP) surface.performClick()
+            }
             true
         }
-        uiHelper.attachTo(surface)
+    }
+
+    private fun cancelGestureDetector(gestureDetector: GestureDetector, event: MotionEvent) {
+        MotionEvent.obtain(event).also { cancelEvent ->
+            cancelEvent.action = MotionEvent.ACTION_CANCEL
+            gestureDetector.onTouchEvent(cancelEvent)
+            cancelEvent.recycle()
+        }
     }
 
     @Suppress("LongMethod")
@@ -395,7 +444,6 @@ private class FilamentBuildingRenderer(
             .build(engine, renderableEntity)
         scene.addEntity(renderableEntity)
         sceneRadius = max(mesh.radiusMeters, Scene3DCamera.MIN_SCENE_RADIUS_METERS)
-        sceneCoverageRadius = max(mesh.coverageRadiusMeters, Scene3DCamera.MIN_SCENE_RADIUS_METERS)
         rebuildSky()
         when (cameraView) {
             SceneCameraView.ORBIT -> resetToInitialOrbit()
@@ -422,11 +470,17 @@ private class FilamentBuildingRenderer(
         val visibilityChanged = skyVisible != visible
         currentSunPath = sunPath
         skyVisible = visible
-        if (visibilityChanged) rebuildSky() else rebuildSunPath()
+        if (visibilityChanged) {
+            skyFrame = if (visible) captureSkyFrame() else null
+            rebuildSky()
+        } else {
+            rebuildSunPath()
+        }
     }
 
     fun setSkyPadding(padding: SceneSkyPadding) {
         skyPadding = padding
+        if (skyVisible) skyFrame = captureSkyFrame()
         rebuildSky()
     }
 
@@ -442,10 +496,17 @@ private class FilamentBuildingRenderer(
 
     fun setCompassBand(widthPx: Float) {
         compassBandPx = widthPx.coerceAtLeast(0f)
+        if (skyVisible) skyFrame = captureSkyFrame()
         rebuildSky()
     }
 
-    private fun calculateSkyFrame(): SceneSkyFrame? {
+    fun refreshSky() {
+        if (!skyVisible || destroyed) return
+        skyFrame = captureSkyFrame()
+        rebuildSky()
+    }
+
+    private fun captureSkyFrame(): SceneSkyFrame? {
         val viewport = sceneViewport
         return if (viewport == null || viewportWidth <= 1 || viewportHeight <= 1) {
             null
@@ -454,9 +515,11 @@ private class FilamentBuildingRenderer(
                 viewport = viewport,
                 surfaceWidthPx = viewportWidth,
                 surfaceHeightPx = viewportHeight,
+                orthographicZoom = orthographicZoom,
+                centerX = cameraTargetX,
+                centerZ = cameraTargetZ,
                 padding = skyPadding,
-                compassBandPx = compassBandPx,
-                contentRadiusMeters = sceneCoverageRadius
+                compassBandPx = compassBandPx
             )
         }
     }
@@ -468,9 +531,12 @@ private class FilamentBuildingRenderer(
             clearSky()
             return
         }
-        val frame = checkNotNull(calculateSkyFrame())
-        val dome = SceneSkyGeometry.domeMesh(frame.radiusMeters, viewport)
-        val compass = SceneSkyGeometry.compassMesh(frame.radiusMeters, viewport)
+        val frame = skyFrame ?: captureSkyFrame()?.also { skyFrame = it } ?: run {
+            clearSky()
+            return
+        }
+        val dome = SceneSkyGeometry.domeMesh(frame.radiusMeters, viewport, frame.center)
+        val compass = SceneSkyGeometry.compassMesh(frame.radiusMeters, viewport, frame.center)
         clearSky()
         skyMaterial = createLineMaterial("sky_guides", Scene3DAppearance.SKY_GUIDE_COLOR)
         pathMaterial = createLineMaterial("sun_path", Scene3DAppearance.SUN_PATH_COLOR)
@@ -491,9 +557,7 @@ private class FilamentBuildingRenderer(
         val ratio = frame.radiusMeters / frame.outerRadiusMeters
         val viewport = checkNotNull(sceneViewport)
         val bitmap = CompassDialBitmap.create(
-            domeToOuterRadiusRatio = ratio,
-            mapHalfWidthToOuterRadiusRatio = viewport.widthMeters / (2f * frame.outerRadiusMeters),
-            mapHalfHeightToOuterRadiusRatio = viewport.heightMeters / (2f * frame.outerRadiusMeters)
+            domeToOuterRadiusRatio = ratio
         )
         compassTexture = Texture.Builder()
             .width(bitmap.width)
@@ -521,6 +585,7 @@ private class FilamentBuildingRenderer(
         createCompassRenderable(
             outerRadiusMeters = frame.outerRadiusMeters,
             viewport = viewport,
+            center = frame.center,
             material = checkNotNull(compassMaterial)
         )
     }
@@ -558,9 +623,10 @@ private class FilamentBuildingRenderer(
     private fun createCompassRenderable(
         outerRadiusMeters: Float,
         viewport: SceneViewport,
+        center: ScenePoint3,
         material: Material
     ) {
-        val disk = createCompassDisk(outerRadiusMeters, viewport)
+        val disk = createCompassDisk(outerRadiusMeters, viewport, center)
         val floatsPerVertex = 5
         val vertexBytes = ByteBuffer.allocateDirect(
             disk.points.size * floatsPerVertex * Float.SIZE_BYTES
@@ -602,9 +668,9 @@ private class FilamentBuildingRenderer(
         RenderableManager.Builder(1)
             .boundingBox(
                 Box(
-                    0f,
+                    center.x,
                     COMPASS_GROUND_OFFSET_METERS,
-                    0f,
+                    center.z,
                     outerRadiusMeters,
                     0.1f,
                     outerRadiusMeters
@@ -634,16 +700,20 @@ private class FilamentBuildingRenderer(
 
     private fun createCompassDisk(
         outerRadiusMeters: Float,
-        viewport: SceneViewport
+        viewport: SceneViewport,
+        center: ScenePoint3
     ): CompassDisk {
         val mesh = SceneSkyGeometry.groundDiskMesh(
             radiusMeters = outerRadiusMeters,
             viewport = viewport,
+            center = center,
             yMeters = COMPASS_GROUND_OFFSET_METERS
         )
         val textureCoordinates = mesh.vertices.map { point ->
-            val right = point.x * viewport.screenRightX + point.z * viewport.screenRightZ
-            val down = point.x * viewport.screenDownX + point.z * viewport.screenDownZ
+            val relativeX = point.x - center.x
+            val relativeZ = point.z - center.z
+            val right = relativeX * viewport.screenRightX + relativeZ * viewport.screenRightZ
+            val down = relativeX * viewport.screenDownX + relativeZ * viewport.screenDownZ
             // Android Canvas uses a top-left origin, while Filament samples V from the bottom.
             (right / outerRadiusMeters + 1f) / 2f to
                 (1f - down / outerRadiusMeters) / 2f
@@ -659,7 +729,7 @@ private class FilamentBuildingRenderer(
         val hasRenderableSurface = viewportWidth > 1 && viewportHeight > 1
         val canRenderPath = skyVisible && pathMaterial != null && hasRenderableSurface
         val viewport = sceneViewport
-        val frame = if (radiusMeters == null) calculateSkyFrame() else null
+        val frame = if (radiusMeters == null) skyFrame else null
         val hasRadius = radiusMeters != null || frame != null
         if (!canRenderPath || viewport == null || !hasRadius) return
         val radius = radiusMeters ?: checkNotNull(frame).radiusMeters
@@ -673,7 +743,8 @@ private class FilamentBuildingRenderer(
             radiusMeters = radius,
             viewport = viewport,
             widthMeters = pathWidthMeters,
-            surfaceOffsetMeters = max(pathWidthMeters * 0.12f, radius * 0.001f)
+            surfaceOffsetMeters = max(pathWidthMeters * 0.12f, radius * 0.001f),
+            center = (frame ?: skyFrame)?.center ?: return
         )
         if (path.indices.isNotEmpty()) {
             createTriangleRenderable(path, pathMaterial!!).also {
@@ -686,10 +757,11 @@ private class FilamentBuildingRenderer(
 
     private fun rebuildSunMarker(radiusMeters: Float? = null) {
         val viewport = sceneViewport
-        val frame = if (radiusMeters == null) calculateSkyFrame() else null
+        val frame = if (radiusMeters == null) skyFrame else null
         val hasRadius = radiusMeters != null || frame != null
         if (!skyVisible || viewport == null || !hasRadius) return
         val radius = radiusMeters ?: checkNotNull(frame).radiusMeters
+        val domeCenter = (frame ?: skyFrame)?.center ?: return
         clearLine(markerRenderableEntity, markerVertexBuffer, markerIndexBuffer)
         clearLine(sunBodyRenderableEntity, sunBodyVertexBuffer, sunBodyIndexBuffer)
         markerRenderableEntity = 0
@@ -703,7 +775,8 @@ private class FilamentBuildingRenderer(
                 currentAzimuth,
                 90f - currentZenith,
                 radius,
-                viewport
+                viewport,
+                domeCenter
             )
             val bodyRadius = max(radius * 0.025f, 0.6f)
             val metersPerPixel = max(
@@ -711,7 +784,7 @@ private class FilamentBuildingRenderer(
                 viewport.heightMeters * orthographicZoom / viewportHeight.coerceAtLeast(1)
             )
             val marker = SceneSkyGeometry.connectorTubeMesh(
-                start = ScenePoint3(0f, 0f, 0f),
+                start = domeCenter,
                 end = center,
                 diameterMeters = metersPerPixel * sunConnectorWidthPx
             )
@@ -779,8 +852,23 @@ private class FilamentBuildingRenderer(
             .build(engine)
             .also { it.setBuffer(engine, indexBytes) }
         val entity = EntityManager.get().create()
+        val minX = mesh.vertices.minOf(ScenePoint3::x)
+        val minY = mesh.vertices.minOf(ScenePoint3::y)
+        val minZ = mesh.vertices.minOf(ScenePoint3::z)
+        val maxX = mesh.vertices.maxOf(ScenePoint3::x)
+        val maxY = mesh.vertices.maxOf(ScenePoint3::y)
+        val maxZ = mesh.vertices.maxOf(ScenePoint3::z)
         RenderableManager.Builder(1)
-            .boundingBox(Box(-100f, -1f, -100f, 100f, 100f, 100f))
+            .boundingBox(
+                Box(
+                    (minX + maxX) / 2f,
+                    (minY + maxY) / 2f,
+                    (minZ + maxZ) / 2f,
+                    max((maxX - minX) / 2f, 0.01f),
+                    max((maxY - minY) / 2f, 0.01f),
+                    max((maxZ - minZ) / 2f, 0.01f)
+                )
+            )
             .material(0, material.defaultInstance)
             .geometry(0, RenderableManager.PrimitiveType.LINES, vertexBuffer, indexBuffer, 0, mesh.indices.size)
             .culling(false)
@@ -1006,6 +1094,7 @@ private class FilamentBuildingRenderer(
         cameraTargetZ = 0f
         updateProjection()
         rebuildSunPath()
+        rebuildSunMarker()
         updateCamera()
     }
 
@@ -1019,6 +1108,7 @@ private class FilamentBuildingRenderer(
         cameraTargetZ = 0f
         updateProjection()
         rebuildSunPath()
+        rebuildSunMarker()
         updateCamera()
     }
 
@@ -1186,3 +1276,9 @@ private class GestureSurfaceView(context: Context) : SurfaceView(context) {
 }
 
 private const val COMPASS_GROUND_OFFSET_METERS = 0.04f
+private val MULTI_TOUCH_END_ACTIONS = setOf(
+    MotionEvent.ACTION_POINTER_UP,
+    MotionEvent.ACTION_UP,
+    MotionEvent.ACTION_CANCEL
+)
+private val GESTURE_END_ACTIONS = setOf(MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL)

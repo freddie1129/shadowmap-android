@@ -26,6 +26,7 @@ fun Scene3DControlsOverlay(
     onCameraViewChanged: (SceneCameraView) -> Unit,
     onToggleSatellite: () -> Unit,
     onToggleSky: () -> Unit,
+    onRefreshSky: () -> Unit,
     onBackToMap: () -> Unit,
     selectedEpochMillis: Long,
     timeZoneId: String,
@@ -59,6 +60,7 @@ fun Scene3DControlsOverlay(
             },
             onToggleSatellite = onToggleSatellite,
             onToggleSky = onToggleSky,
+            onRefreshSky = onRefreshSky,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
@@ -92,6 +94,7 @@ private fun Scene3DControlsOverlayPreview() {
                 onCameraViewChanged = {},
                 onToggleSatellite = {},
                 onToggleSky = {},
+                onRefreshSky = {},
                 onBackToMap = {},
                 selectedEpochMillis = 1_752_640_000_000L,
                 timeZoneId = "Australia/Brisbane",

@@ -19,20 +19,22 @@ class SceneSkyGeometryTest {
     )
 
     @Test
-    fun frameCoversEveryMapBoundaryCorner() {
+    fun frameUsesCurrentCameraTargetAndSafeDisplayedArea() {
         val frame = SceneSkyGeometry.calculateFrame(
             viewport = viewport,
             surfaceWidthPx = 1000,
             surfaceHeightPx = 2000,
-            padding = SceneSkyPadding(leftPx = 100, topPx = 100, rightPx = 100, bottomPx = 200),
-            visualMarginMeters = 0f
+            orthographicZoom = 1f,
+            centerX = 12f,
+            centerZ = -8f,
+            padding = SceneSkyPadding(leftPx = 100, topPx = 100, rightPx = 100, bottomPx = 200)
         )
 
-        assertEquals(80f, frame.usableWidthMeters, 0.001f)
-        assertEquals(128f, frame.usableHeightMeters, 0.001f)
-        assertEquals(sqrt(8_900f), frame.radiusMeters, 0.001f)
+        assertEquals(ScenePoint3(12f, 0f, -8f), frame.center)
+        assertEquals(0.1f, frame.horizontalMetersPerPixel, 0.001f)
+        assertEquals(0.08f, frame.verticalMetersPerPixel, 0.001f)
+        assertEquals(40f, frame.radiusMeters, 0.001f)
         assertEquals(frame.radiusMeters, frame.outerRadiusMeters, 0.001f)
-        assertEquals(2.358f, frame.overviewZoom, 0.001f)
     }
 
     @Test
@@ -41,27 +43,31 @@ class SceneSkyGeometryTest {
             viewport = viewport,
             surfaceWidthPx = 1000,
             surfaceHeightPx = 2000,
+            orthographicZoom = 1f,
+            centerX = 0f,
+            centerZ = 0f,
             padding = SceneSkyPadding(leftPx = 100, topPx = 100, rightPx = 100, bottomPx = 200),
-            compassBandPx = 100f,
-            visualMarginMeters = 0f
+            compassBandPx = 100f
         )
 
-        assertEquals(sqrt(8_900f), frame.radiusMeters, 0.001f)
-        assertEquals(125.786f, frame.outerRadiusMeters, 0.001f)
-        assertEquals(3.145f, frame.overviewZoom, 0.001f)
+        assertEquals(30f, frame.radiusMeters, 0.001f)
+        assertEquals(40f, frame.outerRadiusMeters, 0.001f)
     }
 
     @Test
-    fun frameExpandsToCoverObjectsOutsideMapBoundary() {
+    fun frameScalesWithCapturedOrthographicZoom() {
         val frame = SceneSkyGeometry.calculateFrame(
             viewport = viewport,
             surfaceWidthPx = 1000,
             surfaceHeightPx = 2000,
-            contentRadiusMeters = 120f,
-            visualMarginMeters = 0f
+            orthographicZoom = 2f,
+            centerX = 0f,
+            centerZ = 0f,
+            padding = SceneSkyPadding(leftPx = 100, topPx = 100, rightPx = 100, bottomPx = 200)
         )
 
-        assertEquals(120f, frame.radiusMeters, 0.001f)
+        assertEquals(80f, frame.radiusMeters, 0.001f)
+        assertEquals(80f, frame.outerRadiusMeters, 0.001f)
     }
 
     @Test
@@ -121,6 +127,19 @@ class SceneSkyGeometryTest {
     }
 
     @Test
+    fun translatedDomeRemainsOnSphereAroundCapturedCenter() {
+        val center = ScenePoint3(14f, 0f, -9f)
+        val radius = 10f
+        val mesh = SceneSkyGeometry.domeMesh(radius, viewport, center)
+
+        assertTrue(
+            mesh.vertices.all { vertex ->
+                kotlin.math.abs(vertex.distanceTo(center) - radius) < 0.001f
+            }
+        )
+    }
+
+    @Test
     fun domeUsesDenseRingsWithoutIncreasingMeridianCount() {
         val altitudeRings = SceneSkyGeometry.DEFAULT_ALTITUDE_RINGS
         val meridianSteps = (altitudeRings + 1) * 3
@@ -174,6 +193,7 @@ class SceneSkyGeometryTest {
         val radius = 10f
         val width = 0.8f
         val offset = 0.1f
+        val center = ScenePoint3(6f, 0f, -4f)
         val mesh = SceneSkyGeometry.sunPathRibbonMesh(
             positions = listOf(
                 SolarPosition(90.0, 70.0),
@@ -183,14 +203,15 @@ class SceneSkyGeometryTest {
             radiusMeters = radius,
             viewport = viewport,
             widthMeters = width,
-            surfaceOffsetMeters = offset
+            surfaceOffsetMeters = offset,
+            center = center
         )
 
         assertEquals(6, mesh.vertices.size)
         assertEquals(12, mesh.indices.size)
         val firstWidth = mesh.vertices[0].distanceTo(mesh.vertices[1])
         assertEquals(width, firstWidth, 0.001f)
-        assertTrue(mesh.vertices.all { it.length() > radius })
+        assertTrue(mesh.vertices.all { it.distanceTo(center) > radius })
     }
 
     private fun ScenePoint3.distanceTo(other: ScenePoint3): Float = sqrt(
@@ -199,5 +220,4 @@ class SceneSkyGeometryTest {
             (z - other.z) * (z - other.z)
     )
 
-    private fun ScenePoint3.length(): Float = sqrt(x * x + y * y + z * z)
 }
