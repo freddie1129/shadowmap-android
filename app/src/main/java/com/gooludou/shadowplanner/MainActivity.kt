@@ -340,7 +340,8 @@ private fun ShadowMapScreen(
     val showMapbox3d = sceneBackStack.lastOrNull() == MapboxScene3DSceneDestination
     val show3d = showFilament3d || showMapbox3d
     var showSatelliteIn3d by remember { mutableStateOf(true) }
-    var showSkyIn3d by remember { mutableStateOf(false) }
+    // The same optional solar guide is available in both 3D renderers.
+    var showDomeIn3d by remember { mutableStateOf(false) }
     var sceneCameraView by remember { mutableStateOf(SceneCameraView.ORBIT) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
     var mapboxSceneViewport by remember { mutableStateOf<MapboxScene3DViewport?>(null) }
@@ -559,7 +560,7 @@ private fun ShadowMapScreen(
     fun enter3d() {
         sceneViewport = mapView?.toSceneViewport()
         sceneCameraView = SceneCameraView.ORBIT
-        showSkyIn3d = false
+        showDomeIn3d = false
         if (!show3d) sceneBackStack.add(Scene3DSceneDestination)
     }
 
@@ -574,7 +575,7 @@ private fun ShadowMapScreen(
     }
 
     fun exit3d() {
-        showSkyIn3d = false
+        showDomeIn3d = false
         if (show3d) sceneBackStack.removeLastOrNull()
     }
 
@@ -772,10 +773,10 @@ private fun ShadowMapScreen(
                             sunPath = currentUiState.sunPath,
                             cameraView = sceneCameraView,
                             showSatellite = showSatelliteIn3d,
-                            showSky = showSkyIn3d,
+                            showSky = showDomeIn3d,
                             onCameraViewChanged = { sceneCameraView = it },
                             onToggleSatellite = { showSatelliteIn3d = !showSatelliteIn3d },
-                            onToggleSky = { showSkyIn3d = !showSkyIn3d },
+                            onToggleSky = { showDomeIn3d = !showDomeIn3d },
                             onBackToMap = ::exit3d,
                             selectedEpochMillis = currentUiState.selectedEpochMillis,
                             timeZoneId = currentUiState.displayTimeZoneId,
@@ -793,10 +794,12 @@ private fun ShadowMapScreen(
                                 trees = currentUiState.drawnTrees,
                                 viewport = viewport,
                                 solarPosition = currentUiState.solarPosition,
+                                showDome = showDomeIn3d,
                                 selectedEpochMillis = currentUiState.selectedEpochMillis,
                                 timeZoneId = currentUiState.displayTimeZoneId,
                                 onDateTimeChanged = onDateTimeChanged,
                                 onNowSelected = onNowSelected,
+                                onToggleDome = { showDomeIn3d = !showDomeIn3d },
                                 onBackToMap = ::exit3d
                             )
                         }

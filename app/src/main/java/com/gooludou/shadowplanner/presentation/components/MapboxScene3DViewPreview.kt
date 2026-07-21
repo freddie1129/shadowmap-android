@@ -31,10 +31,12 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
                 bearing = 0.0
             ),
             solarPosition = SolarPosition(azimuthDegrees = 315.0, zenithDegrees = 45.0),
+            showDome = true,
             selectedEpochMillis = 1_752_640_000_000L,
             timeZoneId = "Australia/Brisbane",
             onDateTimeChanged = {},
             onNowSelected = {},
+            onToggleDome = {},
             onBackToMap = {}
         )
     }

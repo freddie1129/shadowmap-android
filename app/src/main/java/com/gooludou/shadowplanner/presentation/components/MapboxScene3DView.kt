@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.SatelliteAlt
 import androidx.compose.material.icons.outlined.ViewInAr
+import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +48,11 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 import com.mapbox.maps.extension.compose.style.BooleanValue
 import com.mapbox.maps.extension.compose.style.ColorValue
 import com.mapbox.maps.extension.compose.style.DoubleValue
+import com.mapbox.maps.extension.compose.style.DoubleListValue
 import com.mapbox.maps.extension.compose.style.layers.generated.FillExtrusionLayer
+import com.mapbox.maps.extension.compose.style.layers.generated.ModelLayer
+import com.mapbox.maps.extension.compose.style.layers.ModelIdValue
+import com.mapbox.maps.extension.compose.style.layers.generated.ModelTypeValue
 import com.mapbox.maps.extension.compose.style.sources.GeoJSONData
 import com.mapbox.maps.extension.compose.style.sources.generated.GeoJsonSourceState
 import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
@@ -78,10 +83,12 @@ fun MapboxScene3DView(
     trees: List<DrawnTree>,
     viewport: MapboxScene3DViewport,
     solarPosition: SolarPosition?,
+    showDome: Boolean,
     selectedEpochMillis: Long,
     timeZoneId: String,
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
+    onToggleDome: () -> Unit,
     onBackToMap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -101,6 +108,11 @@ fun MapboxScene3DView(
     }
     val treeCanopySource = remember {
         GeoJsonSourceState(TREE_CANOPY_SOURCE_ID).apply { data = GeoJSONData(treeCanopyFeatures) }
+    }
+    val domeSource = remember(viewport.center) {
+        GeoJsonSourceState(DOME_SOURCE_ID).apply {
+            data = GeoJSONData(listOf(Feature.fromGeometry(viewport.center.toMapboxPoint())))
+        }
     }
 
     LaunchedEffect(buildingFeatures) {
@@ -141,7 +153,11 @@ fun MapboxScene3DView(
             canopyColor = canopyColor,
             solarPosition = solarPosition,
             basemapStyle = basemapStyle
-        )
+        ) {
+            if (showDome) {
+                SceneDomeModelLayer(domeSource, viewport)
+            }
+        }
 
         MapboxScene3DControls(
             mapViewportState = mapViewportState,
@@ -156,6 +172,8 @@ fun MapboxScene3DView(
                     MapboxBasemapStyle.SATELLITE -> MapboxBasemapStyle.STANDARD
                 }
             },
+            showDome = showDome,
+            onToggleDome = onToggleDome,
             onBackToMap = onBackToMap
         )
     }
@@ -170,6 +188,8 @@ private fun MapboxScene3DControls(
     onNowSelected: () -> Unit,
     basemapStyle: MapboxBasemapStyle,
     onToggleBasemapStyle: () -> Unit,
+    showDome: Boolean,
+    onToggleDome: () -> Unit,
     onBackToMap: () -> Unit
 ) {
     val currentPitch = mapViewportState.cameraState?.pitch ?: MAPBOX_3D_PITCH_DEGREES
@@ -201,6 +221,16 @@ private fun MapboxScene3DControls(
             },
             onClick = onToggleBasemapStyle,
             modifier = Modifier.align(Alignment.TopEnd)
+        )
+        SceneViewSwitchButton(
+            label = stringResource(
+                if (showDome) R.string.hide_sky_overview else R.string.show_sky_overview
+            ),
+            icon = Icons.Outlined.WbSunny,
+            onClick = onToggleDome,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = MAPBOX_DOME_CONTROL_OFFSET)
         )
         SceneViewSwitchButton(
             label = stringResource(
@@ -251,7 +281,8 @@ private fun MapboxScene3DMap(
     trunkColor: Color,
     canopyColor: Color,
     solarPosition: SolarPosition?,
-    basemapStyle: MapboxBasemapStyle
+    basemapStyle: MapboxBasemapStyle,
+    domeContent: @Composable () -> Unit
 ) {
     if (LocalInspectionMode.current) {
         Box(
@@ -302,6 +333,7 @@ private fun MapboxScene3DMap(
         BuildingExtrusionLayer(buildingSource, buildingColor)
         WallExtrusionLayer(wallSource, wallColor)
         TreeExtrusionLayers(treeTrunkSource, treeCanopySource, trunkColor, canopyColor)
+        domeContent()
         MapEffect(sunVisible, sunAzimuth, sunZenith, basemapStyle) { mapView ->
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
@@ -329,6 +361,22 @@ private fun MapboxScene3DMap(
                 )
             }
         }
+    }
+}
+
+@Composable
+@OptIn(MapboxExperimental::class)
+private fun SceneDomeModelLayer(source: GeoJsonSourceState, viewport: MapboxScene3DViewport) {
+    val radiusMeters = (METERS_PER_PIXEL_AT_EQUATOR / (1 shl viewport.zoom.toInt()))
+        .coerceIn(MIN_DOME_RADIUS_METERS, MAX_DOME_RADIUS_METERS)
+    ModelLayer(sourceState = source, layerId = DOME_LAYER_ID) {
+        modelId = ModelIdValue(modelId = DOME_MODEL_ID, uri = DOME_MODEL_URI)
+        modelType = ModelTypeValue.COMMON_3D
+        modelScale = DoubleListValue(listOf(radiusMeters, radiusMeters, radiusMeters))
+        modelCastShadows = BooleanValue(false)
+        modelReceiveShadows = BooleanValue(false)
+        modelAmbientOcclusionIntensity = DoubleValue(0.0)
+        modelEmissiveStrength = DoubleValue(1.0)
     }
 }
 
@@ -455,6 +503,10 @@ private const val BUILDING_LAYER_ID = "custom-3d-buildings-layer"
 private const val WALL_LAYER_ID = "custom-3d-walls-layer"
 private const val TREE_TRUNK_LAYER_ID = "custom-3d-tree-trunks-layer"
 private const val TREE_CANOPY_LAYER_ID = "custom-3d-tree-canopies-layer"
+private const val DOME_SOURCE_ID = "scene-dome-source"
+private const val DOME_LAYER_ID = "scene-dome-layer"
+private const val DOME_MODEL_ID = "scene-dome-model"
+private const val DOME_MODEL_URI = "asset://scene_dome.glb"
 private const val PROPERTY_HEIGHT = "height"
 private const val PROPERTY_BASE_HEIGHT = "base_height"
 private const val MAPBOX_3D_PITCH_DEGREES = 60.0
@@ -479,4 +531,8 @@ private const val MIN_TRUNK_RADIUS_METERS = 0.15
 private const val MIN_CANOPY_RADIUS_METERS = 0.5
 private const val TREE_SEGMENTS = 12
 private const val EARTH_RADIUS_METERS = 6_378_137.0
+private const val METERS_PER_PIXEL_AT_EQUATOR = 156_543.03392
+private const val MIN_DOME_RADIUS_METERS = 35.0
+private const val MAX_DOME_RADIUS_METERS = 120.0
 private val MAPBOX_BOTTOM_CONTROL_CLEARANCE = 156.dp
+private val MAPBOX_DOME_CONTROL_OFFSET = 52.dp
