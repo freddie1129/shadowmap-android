@@ -7,12 +7,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.SatelliteAlt
 import androidx.compose.material.icons.outlined.ViewInAr
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,7 +50,9 @@ import com.mapbox.maps.extension.compose.style.DoubleValue
 import com.mapbox.maps.extension.compose.style.layers.generated.FillExtrusionLayer
 import com.mapbox.maps.extension.compose.style.sources.GeoJSONData
 import com.mapbox.maps.extension.compose.style.sources.generated.GeoJsonSourceState
+import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
 import com.mapbox.maps.extension.compose.style.standard.MapboxStandardStyle
+import com.mapbox.maps.extension.compose.style.standard.rememberStandardSatelliteStyleState
 import com.mapbox.maps.extension.compose.style.standard.rememberStandardStyleState
 import com.mapbox.maps.extension.compose.style.terrain.generated.TerrainState
 import com.mapbox.maps.extension.style.expressions.generated.Expression
@@ -58,6 +64,11 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlinx.coroutines.flow.first
+
+private enum class MapboxBasemapStyle {
+    STANDARD,
+    SATELLITE
+}
 
 @Composable
 @OptIn(MapboxDelicateApi::class, MapboxExperimental::class)
@@ -74,6 +85,7 @@ fun MapboxScene3DView(
     onBackToMap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var basemapStyle by remember { mutableStateOf(MapboxBasemapStyle.SATELLITE) }
     val buildingFeatures = remember(buildings) { buildings.mapNotNull(Building::toMapboxFeature) }
     val wallFeatures = remember(walls) { walls.mapNotNull(DrawnWall::toMapboxFeature) }
     val treeTrunkFeatures = remember(trees) { trees.map(DrawnTree::toTrunkFeature) }
@@ -127,7 +139,8 @@ fun MapboxScene3DView(
             wallColor = wallColor,
             trunkColor = trunkColor,
             canopyColor = canopyColor,
-            solarPosition = solarPosition
+            solarPosition = solarPosition,
+            basemapStyle = basemapStyle
         )
 
         MapboxScene3DControls(
@@ -136,6 +149,13 @@ fun MapboxScene3DView(
             timeZoneId = timeZoneId,
             onDateTimeChanged = onDateTimeChanged,
             onNowSelected = onNowSelected,
+            basemapStyle = basemapStyle,
+            onToggleBasemapStyle = {
+                basemapStyle = when (basemapStyle) {
+                    MapboxBasemapStyle.STANDARD -> MapboxBasemapStyle.SATELLITE
+                    MapboxBasemapStyle.SATELLITE -> MapboxBasemapStyle.STANDARD
+                }
+            },
             onBackToMap = onBackToMap
         )
     }
@@ -148,6 +168,8 @@ private fun MapboxScene3DControls(
     timeZoneId: String,
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
+    basemapStyle: MapboxBasemapStyle,
+    onToggleBasemapStyle: () -> Unit,
     onBackToMap: () -> Unit
 ) {
     val currentPitch = mapViewportState.cameraState?.pitch ?: MAPBOX_3D_PITCH_DEGREES
@@ -163,6 +185,22 @@ private fun MapboxScene3DControls(
             icon = Icons.Outlined.Map,
             onClick = onBackToMap,
             modifier = Modifier.align(Alignment.TopStart)
+        )
+        SceneViewSwitchButton(
+            label = stringResource(
+                if (basemapStyle == MapboxBasemapStyle.SATELLITE) {
+                    R.string.standard_map_style
+                } else {
+                    R.string.satellite_map_style
+                }
+            ),
+            icon = if (basemapStyle == MapboxBasemapStyle.SATELLITE) {
+                Icons.Outlined.Map
+            } else {
+                Icons.Outlined.SatelliteAlt
+            },
+            onClick = onToggleBasemapStyle,
+            modifier = Modifier.align(Alignment.TopEnd)
         )
         SceneViewSwitchButton(
             label = stringResource(
@@ -212,7 +250,8 @@ private fun MapboxScene3DMap(
     wallColor: Color,
     trunkColor: Color,
     canopyColor: Color,
-    solarPosition: SolarPosition?
+    solarPosition: SolarPosition?,
+    basemapStyle: MapboxBasemapStyle
 ) {
     if (LocalInspectionMode.current) {
         Box(
@@ -235,6 +274,9 @@ private fun MapboxScene3DMap(
     val sunZenith = solarPosition?.zenithDegrees
         ?.coerceIn(MIN_LIGHT_POLAR_ANGLE_DEGREES, MAX_LIGHT_POLAR_ANGLE_DEGREES)
         ?: DEFAULT_LIGHT_POLAR_ANGLE_DEGREES
+    val standardSatelliteStyleState = rememberStandardSatelliteStyleState {
+        terrainState = TerrainState.DISABLED
+    }
     val standardStyleState = rememberStandardStyleState {
         terrainState = TerrainState.DISABLED
     }
@@ -244,13 +286,23 @@ private fun MapboxScene3DMap(
         mapState = mapState,
         scaleBar = { },
         style = {
-            MapboxStandardStyle(standardStyleState = standardStyleState)
+            when (basemapStyle) {
+                MapboxBasemapStyle.STANDARD -> {
+                    MapboxStandardStyle(standardStyleState = standardStyleState)
+                }
+
+                MapboxBasemapStyle.SATELLITE -> {
+                    MapboxStandardSatelliteStyle(
+                        standardSatelliteStyleState = standardSatelliteStyleState
+                    )
+                }
+            }
         }
     ) {
         BuildingExtrusionLayer(buildingSource, buildingColor)
         WallExtrusionLayer(wallSource, wallColor)
         TreeExtrusionLayers(treeTrunkSource, treeCanopySource, trunkColor, canopyColor)
-        MapEffect(sunVisible, sunAzimuth, sunZenith) { mapView ->
+        MapEffect(sunVisible, sunAzimuth, sunZenith, basemapStyle) { mapView ->
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
@@ -265,7 +317,7 @@ private fun MapboxScene3DMap(
             }
             mapView.mapboxMap.setLight(ambientLight, directionalLight)
         }
-        MapEffect(Unit) { mapView ->
+        MapEffect(basemapStyle) { mapView ->
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }

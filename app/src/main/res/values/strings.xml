@@ -44,6 +44,8 @@
     <string name="mapbox_3d_view">Mapbox 3D view</string>
     <string name="top_down_view">Top-down</string>
     <string name="pitch_degrees">Pitch %1$d°</string>
+    <string name="standard_map_style">Standard</string>
+    <string name="satellite_map_style">Satellite</string>
     <string name="change_shadow_colour">Change shadow colour</string>
     <string name="shadow_colour">Shadow colour</string>
     <string name="selected">Selected</string>
