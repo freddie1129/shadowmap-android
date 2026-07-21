@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.ViewInAr
 import androidx.compose.material3.Icon
@@ -43,6 +45,7 @@ fun Map2DView(
     onClear: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpen3D: () -> Unit,
+    onOpenMapbox3D: () -> Unit,
     onOpenProjects: () -> Unit,
     onSaveProject: () -> Unit,
     onOpenLocationSearch: () -> Unit,
@@ -60,6 +63,7 @@ fun Map2DView(
             onOpenLocationSearch = onOpenLocationSearch,
             onShowLocationInfo = onShowLocationInfo,
             onOpen3D = onOpen3D,
+            onOpenMapbox3D = onOpenMapbox3D,
             onOpenProjects = onOpenProjects,
             onSaveProject = onSaveProject,
             modifier = Modifier.align(Alignment.TopCenter)
@@ -87,6 +91,7 @@ private fun Map2DTopControls(
     onOpenLocationSearch: () -> Unit,
     onShowLocationInfo: () -> Unit,
     onOpen3D: () -> Unit,
+    onOpenMapbox3D: () -> Unit,
     onOpenProjects: () -> Unit,
     onSaveProject: () -> Unit,
     modifier: Modifier
@@ -127,6 +132,12 @@ private fun Map2DTopControls(
                     label = stringResource(R.string.view_3d_button),
                     icon = Icons.Outlined.ViewInAr,
                     onClick = onOpen3D
+                )
+                Spacer(modifier = Modifier.width(dimensions.spacingSmall))
+                SceneViewSwitchButton(
+                    label = stringResource(R.string.mapbox_3d_button),
+                    icon = Icons.Outlined.Map,
+                    onClick = onOpenMapbox3D
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -227,6 +238,7 @@ private fun Map2DViewPreview() {
             onClear = {},
             onOpenSettings = {},
             onOpen3D = {},
+            onOpenMapbox3D = {},
             onOpenProjects = {},
             onSaveProject = {},
             onOpenLocationSearch = {},

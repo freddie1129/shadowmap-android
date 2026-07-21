@@ -40,6 +40,10 @@
     <string name="settings">Settings</string>
     <string name="map_view">Map view</string>
     <string name="view_3d_button">3D view</string>
+    <string name="mapbox_3d_button">Mapbox 3D</string>
+    <string name="mapbox_3d_view">Mapbox 3D view</string>
+    <string name="top_down_view">Top-down</string>
+    <string name="pitch_degrees">Pitch %1$d°</string>
     <string name="change_shadow_colour">Change shadow colour</string>
     <string name="shadow_colour">Shadow colour</string>
     <string name="selected">Selected</string>
