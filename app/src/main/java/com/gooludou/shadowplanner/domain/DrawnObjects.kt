@@ -46,6 +46,31 @@ data class DrawnObjectSelection(
     val source: SceneObjectSource = SceneObjectSource.MANUAL
 )
 
+sealed interface SceneObjectGeometry {
+    data class Building(val polygon: GeoPolygon) : SceneObjectGeometry
+
+    data class Wall(val points: List<GeoPoint>) : SceneObjectGeometry
+
+    data class Tree(val center: GeoPoint) : SceneObjectGeometry
+}
+
+data class MoveSession(
+    val selection: DrawnObjectSelection,
+    val original: SceneObjectGeometry,
+    val current: SceneObjectGeometry
+)
+
+fun GeoPoint.translatedBy(longitudeDelta: Double, latitudeDelta: Double): GeoPoint = copy(
+    longitude = longitude + longitudeDelta,
+    latitude = latitude + latitudeDelta
+)
+
+fun GeoPolygon.translatedBy(longitudeDelta: Double, latitudeDelta: Double): GeoPolygon = copy(
+    rings = rings.map { ring ->
+        ring.map { it.translatedBy(longitudeDelta, latitudeDelta) }
+    }
+)
+
 const val DEFAULT_DRAWN_BUILDING_HEIGHT_METERS = 6.0
 const val DEFAULT_DRAWN_WALL_HEIGHT_METERS = 2.5
 const val DEFAULT_DRAWN_TREE_HEIGHT_METERS = 8.0

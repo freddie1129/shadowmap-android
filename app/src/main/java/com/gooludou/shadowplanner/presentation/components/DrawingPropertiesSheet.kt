@@ -54,6 +54,7 @@ fun DrawingPropertiesSheet(
     onApply: (heightMeters: Double, radiusMeters: Double?) -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    onMove: () -> Unit = {},
     objectSource: SceneObjectSource? = null,
     isEditedAutomaticObject: Boolean = false,
     loadedHeightMeters: Double? = null
@@ -146,6 +147,7 @@ fun DrawingPropertiesSheet(
                 },
                 isSaveEnabled = isHeightValid && isCrownWidthValid,
                 onDelete = onDelete,
+                onMove = onMove,
                 onSave = {
                     onApply(
                         requireNotNull(height),
@@ -259,9 +261,15 @@ private fun PropertyPanelActions(
     saveLabel: String,
     isSaveEnabled: Boolean,
     onDelete: () -> Unit,
+    onMove: () -> Unit,
     onSave: () -> Unit
 ) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (!isCreating) {
+            OutlinedButton(onClick = onMove, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.move_object))
+            }
+        }
         if (!isCreating) {
             OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) {
                 Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)

@@ -32,6 +32,11 @@ data class Building(
     val automaticIdentity: AutomaticBuildingIdentity? = null
 )
 
-data class LoadedBuildingOverride(val heightMeters: Double, val referencePolygon: GeoPolygon)
+data class LoadedBuildingOverride(
+    val heightMeters: Double,
+    val referencePolygon: GeoPolygon,
+    /** Null means the automatically loaded geometry is still being used. */
+    val adjustedPolygon: GeoPolygon? = null
+)
 
 const val DEFAULT_BUILDING_HEIGHT_METERS = 10.0

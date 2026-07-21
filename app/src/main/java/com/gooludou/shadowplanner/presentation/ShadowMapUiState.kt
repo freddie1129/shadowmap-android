@@ -10,6 +10,7 @@ import com.gooludou.shadowplanner.domain.DrawnWall
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.domain.LoadedBuildingOverride
+import com.gooludou.shadowplanner.domain.MoveSession
 import com.gooludou.shadowplanner.domain.PendingDrawing
 import com.gooludou.shadowplanner.domain.SceneBuildingMerger
 import com.gooludou.shadowplanner.domain.ShadowAppearance
@@ -41,6 +42,7 @@ data class ShadowMapUiState(
     val inProgressVertices: List<GeoPoint> = emptyList(),
     val pendingDrawing: PendingDrawing? = null,
     val selectedDrawing: DrawnObjectSelection? = null,
+    val moveSession: MoveSession? = null,
     val drawingError: String? = null,
     val shadows: List<GeoPolygon> = emptyList(),
     val shadowAppearance: ShadowAppearance = ShadowAppearance.DEFAULT,
@@ -57,6 +59,7 @@ data class ShadowMapUiState(
             } else {
                 loadedBuildingOverrides[identity]?.let { override ->
                     building.copy(
+                        polygon = override.adjustedPolygon ?: building.polygon,
                         heightMeters = override.heightMeters,
                         automaticIdentity = identity
                     )

@@ -244,6 +244,75 @@ class ShadowMapViewModelTest {
     }
 
     @Test
+    fun movingLoadedBuilding_keepsAutomaticIdentityAndAdjustedFootprint() {
+        val viewModel = createViewModel()
+        viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
+        val building = viewModel.uiState.value.visibleLoadedBuildings.single()
+        val selection = DrawnObjectSelection(
+            id = AutomaticBuildingMatcher.identity(building).selectionId,
+            type = DrawnObjectType.BUILDING,
+            source = SceneObjectSource.AUTOMATIC
+        )
+
+        viewModel.selectDrawing(selection)
+        viewModel.startMoving()
+        viewModel.moveSelectedObject(longitudeDelta = 0.001, latitudeDelta = -0.002)
+
+        val moved = viewModel.uiState.value.visibleLoadedBuildings.single()
+        assertEquals(selection.id, AutomaticBuildingMatcher.identity(moved).selectionId)
+        assertEquals(153.001, moved.polygon.rings.single().first().longitude, 0.0)
+        assertEquals(-27.002, moved.polygon.rings.single().first().latitude, 0.0)
+
+        viewModel.cancelMoving()
+        assertEquals(
+            153.0,
+            viewModel.uiState.value.visibleLoadedBuildings.single()
+                .polygon.rings.single().first().longitude,
+            0.0
+        )
+        assertEquals(null, viewModel.uiState.value.selectedDrawing)
+    }
+
+    @Test
+    fun movingManualWall_translatesAllPointsAndCancelRestoresIt() {
+        val viewModel = createViewModel()
+        viewModel.selectDrawMode(DrawMode.WALL)
+        listOf(
+            GeoPoint(153.0, -28.0),
+            GeoPoint(153.0001, -28.0001)
+        ).forEach(viewModel::addVertex)
+        viewModel.finishWall()
+        viewModel.commitPendingDrawing(heightMeters = 2.5)
+        val wall = viewModel.uiState.value.drawnWalls.single()
+        val selection = DrawnObjectSelection(
+            id = wall.id,
+            type = DrawnObjectType.WALL,
+            source = SceneObjectSource.MANUAL
+        )
+
+        viewModel.selectDrawing(selection)
+        viewModel.startMoving()
+        viewModel.moveSelectedObject(longitudeDelta = 0.01, latitudeDelta = 0.02)
+
+        assertEquals(
+            153.01,
+            viewModel.uiState.value.drawnWalls.single().points.first().longitude,
+            0.0
+        )
+        assertEquals(
+            -27.98,
+            viewModel.uiState.value.drawnWalls.single().points.first().latitude,
+            0.0
+        )
+        viewModel.cancelMoving()
+        assertEquals(
+            153.0,
+            viewModel.uiState.value.drawnWalls.single().points.first().longitude,
+            0.0
+        )
+    }
+
+    @Test
     fun resettingLoadedBuildingHeight_removesOverride() {
         val viewModel = createViewModel()
         viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)

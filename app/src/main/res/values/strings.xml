@@ -6,6 +6,9 @@
     <string name="save">Save</string>
     <string name="delete">Delete</string>
     <string name="finish">Finish</string>
+    <string name="done">Done</string>
+    <string name="move_object">Move</string>
+    <string name="move_object_hint">Drag object to align it</string>
     <string name="building">Building</string>
     <string name="wall">Wall</string>
     <string name="tree">Tree</string>
@@ -72,7 +75,7 @@
     <string name="preset_meters">%d m</string>
     <string name="decrease">−</string>
     <string name="increase">+</string>
-    <string name="save_changes">Save changes</string>
+    <string name="save_changes">Save</string>
     <string name="new_manual_object">New manual object</string>
     <string name="automatically_loaded_edited">Automatically loaded · Edited</string>
     <string name="automatically_loaded">Automatically loaded</string>

@@ -13,18 +13,24 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -40,10 +46,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -189,7 +198,11 @@ internal fun ShadowMapRoute(
                 onUpdateSelectedDrawing = viewModel::updateSelectedDrawing,
                 onDeleteSelectedDrawing = viewModel::deleteSelectedDrawing,
                 onRestoreDeletedObject = viewModel::restoreLastDeletedObject,
-                onSelectDrawing = viewModel::selectDrawing
+                onSelectDrawing = viewModel::selectDrawing,
+                onStartMoving = viewModel::startMoving,
+                onMoveSelectedObject = viewModel::moveSelectedObject,
+                onFinishMoving = viewModel::finishMoving,
+                onCancelMoving = viewModel::cancelMoving
             ),
             scene = SceneActions(
                 onClearScene = viewModel::clearScene,
@@ -247,6 +260,10 @@ private fun ShadowMapScreen(
     val onDeleteSelectedDrawing = actions.drawing.onDeleteSelectedDrawing
     val onRestoreDeletedObject = actions.drawing.onRestoreDeletedObject
     val onSelectDrawing = actions.drawing.onSelectDrawing
+    val onStartMoving = actions.drawing.onStartMoving
+    val onMoveSelectedObject = actions.drawing.onMoveSelectedObject
+    val onFinishMoving = actions.drawing.onFinishMoving
+    val onCancelMoving = actions.drawing.onCancelMoving
     val onClearScene = actions.scene.onClearScene
     val onRestoreClearedScene = actions.scene.onRestoreClearedScene
     val onSaveProject = actions.project.onSaveProject
@@ -569,6 +586,8 @@ private fun ShadowMapScreen(
                 DrawnObjectType.TREE -> DEFAULT_DRAWN_TREE_HEIGHT_METERS
             }
     }
+    val showPropertiesSheet = uiState.moveSession == null &&
+        propertyType != null && propertyInitialHeight != null
     val autoToolState = when {
         uiState.buildingLoadState is BuildingLoadState.Loading -> AutoToolState.LOADING
         buildingLoadArea == null -> AutoToolState.CHECKING
@@ -600,6 +619,7 @@ private fun ShadowMapScreen(
                 )
     ) {
         when {
+            uiState.moveSession != null -> onCancelMoving()
             pendingType != null -> onReturnPendingToDrawing()
             selectedType != null -> onSelectDrawing(null)
             else -> requestDrawingExit()
@@ -623,6 +643,26 @@ private fun ShadowMapScreen(
             style = { MapboxStandardSatelliteStyle() }
         ) {
             MapEffect(Unit) { currentMapView -> mapView = currentMapView }
+        }
+
+        uiState.moveSession?.let {
+            MoveModeOverlay(
+                onDrag = { start, current ->
+                    val map = mapView ?: return@MoveModeOverlay
+                    val startPoint = map.mapboxMap.coordinateForPixel(
+                        ScreenCoordinate(start.x.toDouble(), start.y.toDouble())
+                    )
+                    val currentPoint = map.mapboxMap.coordinateForPixel(
+                        ScreenCoordinate(current.x.toDouble(), current.y.toDouble())
+                    )
+                    onMoveSelectedObject(
+                        currentPoint.longitude() - startPoint.longitude(),
+                        currentPoint.latitude() - startPoint.latitude()
+                    )
+                },
+                onDone = onFinishMoving,
+                onCancel = onCancelMoving
+            )
         }
 
         if (!show3d && uiState.activeDrawMode != null && uiState.pendingDrawing == null) {
@@ -770,7 +810,7 @@ private fun ShadowMapScreen(
             )
         }
 
-        if (!show3d && propertyType != null && propertyInitialHeight != null) {
+        if (!show3d && showPropertiesSheet) {
             DrawingPropertiesSheet(
                 type = propertyType,
                 initialHeightMeters = propertyInitialHeight,
@@ -787,6 +827,7 @@ private fun ShadowMapScreen(
                 onBack = {
                     if (pendingType != null) onReturnPendingToDrawing() else onSelectDrawing(null)
                 },
+                onMove = onStartMoving,
                 onApply = { height, radius ->
                     if (pendingType != null) {
                         onCommitPendingDrawing(height, radius)
@@ -941,6 +982,78 @@ private fun ShadowMapScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun MoveModeOverlay(
+    onDrag: (androidx.compose.ui.geometry.Offset, androidx.compose.ui.geometry.Offset) -> Unit,
+    onDone: () -> Unit,
+    onCancel: () -> Unit
+) {
+    var dragStart by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { dragStart = it },
+                    onDragCancel = { dragStart = null },
+                    onDragEnd = { dragStart = null },
+                    onDrag = { change, amount ->
+                        val start = dragStart ?: change.position
+                        onDrag(start, change.position)
+                    }
+                )
+            }
+    ) {
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 96.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            shape = MaterialTheme.shapes.large,
+            shadowElevation = 8.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.move_object_hint),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = onDone) { Text(stringResource(R.string.done)) }
+            }
+        }
+    }
+}
+
+@Preview(name = "Move mode light", showBackground = true, widthDp = 360, heightDp = 180)
+@Composable
+private fun MoveModeOverlayLightPreview() {
+    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
+        Box(modifier = Modifier.fillMaxSize().background(Color(0xFF71856B))) {
+            MoveModeOverlay(onDrag = { _, _ -> }, onDone = {}, onCancel = {})
+        }
+    }
+}
+
+@Preview(name = "Move mode dark", showBackground = true, widthDp = 360, heightDp = 180)
+@Composable
+private fun MoveModeOverlayDarkPreview() {
+    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
+        Box(modifier = Modifier.fillMaxSize().background(Color(0xFF263326))) {
+            MoveModeOverlay(onDrag = { _, _ -> }, onDone = {}, onCancel = {})
+        }
     }
 }
 

@@ -17,13 +17,16 @@ import com.gooludou.shadowplanner.domain.DrawnTree
 import com.gooludou.shadowplanner.domain.DrawnWall
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.LoadedBuildingOverride
+import com.gooludou.shadowplanner.domain.MoveSession
 import com.gooludou.shadowplanner.domain.PendingDrawing
 import com.gooludou.shadowplanner.domain.SceneBuildingMerger
+import com.gooludou.shadowplanner.domain.SceneObjectGeometry
 import com.gooludou.shadowplanner.domain.SceneObjectSource
 import com.gooludou.shadowplanner.domain.ShadowAppearance
 import com.gooludou.shadowplanner.domain.SolarPosition
 import com.gooludou.shadowplanner.domain.SolarPositionCalculator
 import com.gooludou.shadowplanner.domain.UserObjectShadowCalculator
+import com.gooludou.shadowplanner.domain.translatedBy
 import com.gooludou.shadowplanner.project.ProjectRepository
 import com.gooludou.shadowplanner.project.ProjectSnapshot
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -61,6 +64,7 @@ constructor(
     private var shadowJob: Job? = null
     private var lastDeletedObject: DeletedSceneObject? = null
     private var lastClearedScene: ClearedSceneSnapshot? = null
+    private var moveSnapshot: ShadowMapUiState? = null
 
     private val _uiState =
         MutableStateFlow(
@@ -413,7 +417,73 @@ constructor(
     }
 
     fun selectDrawing(selection: DrawnObjectSelection?) {
-        _uiState.value = _uiState.value.copy(selectedDrawing = selection)
+        moveSnapshot = null
+        _uiState.value = _uiState.value.copy(selectedDrawing = selection, moveSession = null)
+    }
+
+    fun startMoving() {
+        val state = _uiState.value
+        val selection = state.selectedDrawing ?: return
+        val geometry = state.geometryFor(selection) ?: return
+        moveSnapshot = state
+        _uiState.value = state.copy(
+            moveSession = MoveSession(selection, geometry, geometry)
+        )
+    }
+
+    fun moveSelectedObject(longitudeDelta: Double, latitudeDelta: Double) {
+        val state = _uiState.value
+        val session = state.moveSession ?: return
+        val moved = when (val geometry = session.original) {
+            is SceneObjectGeometry.Building ->
+                SceneObjectGeometry.Building(
+                    geometry.polygon.translatedBy(longitudeDelta, latitudeDelta)
+                )
+
+            is SceneObjectGeometry.Wall ->
+                SceneObjectGeometry.Wall(
+                    geometry.points.map { it.translatedBy(longitudeDelta, latitudeDelta) }
+                )
+
+            is SceneObjectGeometry.Tree ->
+                SceneObjectGeometry.Tree(
+                    geometry.center.translatedBy(longitudeDelta, latitudeDelta)
+                )
+        }
+        val updated = state.applyGeometry(session.selection, moved) ?: return
+        _uiState.value = updated.copy(
+            moveSession = session.copy(current = moved),
+            isProjectDirty = true
+        )
+        recalculateSunAndShadows()
+    }
+
+    fun finishMoving() {
+        if (_uiState.value.moveSession == null) return
+        moveSnapshot = null
+        _uiState.value = _uiState.value.copy(
+            moveSession = null,
+            selectedDrawing = null
+        )
+    }
+
+    fun cancelMoving() {
+        val state = _uiState.value
+        val session = state.moveSession ?: return
+        val restored = moveSnapshot
+        moveSnapshot = null
+        if (restored != null) {
+            _uiState.value = restored.copy(selectedDrawing = null)
+            recalculateSunAndShadows()
+        } else {
+            val restoredGeometry =
+                state.applyGeometry(session.selection, session.original) ?: return
+            _uiState.value = restoredGeometry.copy(
+                moveSession = null,
+                selectedDrawing = null
+            )
+            recalculateSunAndShadows()
+        }
     }
 
     fun updateSelectedDrawing(heightMeters: Double, radiusMeters: Double? = null) {
@@ -424,14 +494,26 @@ constructor(
                 AutomaticBuildingMatcher.identity(loaded).selectionId == selection.id
             } ?: return
             val identity = AutomaticBuildingMatcher.identity(building)
+            val existingOverride = state.loadedBuildingOverrides[identity]
             state.copy(
                 loadedBuildingOverrides = if (
                     abs(heightMeters - building.heightMeters) < HEIGHT_EQUALITY_TOLERANCE_METERS
                 ) {
-                    state.loadedBuildingOverrides - identity
+                    if (existingOverride?.adjustedPolygon == null) {
+                        state.loadedBuildingOverrides - identity
+                    } else {
+                        state.loadedBuildingOverrides + (
+                            identity to existingOverride.copy(heightMeters = building.heightMeters)
+                            )
+                    }
                 } else {
                     state.loadedBuildingOverrides + (
-                        identity to LoadedBuildingOverride(heightMeters, building.polygon)
+                        identity to LoadedBuildingOverride(
+                            heightMeters = heightMeters,
+                            referencePolygon =
+                                existingOverride?.referencePolygon ?: building.polygon,
+                            adjustedPolygon = existingOverride?.adjustedPolygon
+                        )
                         )
                 },
                 selectedDrawing = null
@@ -682,6 +764,68 @@ constructor(
                     manualBuildings = drawnBuildings
                 )
         )
+
+    private fun ShadowMapUiState.geometryFor(
+        selection: DrawnObjectSelection
+    ): SceneObjectGeometry? = if (selection.source == SceneObjectSource.AUTOMATIC) {
+        visibleLoadedBuildings.firstOrNull { building ->
+            AutomaticBuildingMatcher.identity(building).selectionId == selection.id
+        }?.let { SceneObjectGeometry.Building(it.polygon) }
+    } else {
+        when (selection.type) {
+            DrawnObjectType.BUILDING -> drawnBuildings.firstOrNull { it.id == selection.id }
+                ?.let { SceneObjectGeometry.Building(it.polygon) }
+
+            DrawnObjectType.WALL -> drawnWalls.firstOrNull { it.id == selection.id }
+                ?.let { SceneObjectGeometry.Wall(it.points) }
+
+            DrawnObjectType.TREE -> drawnTrees.firstOrNull { it.id == selection.id }
+                ?.let { SceneObjectGeometry.Tree(it.center) }
+        }
+    }
+
+    @Suppress("ReturnCount")
+    private fun ShadowMapUiState.applyGeometry(
+        selection: DrawnObjectSelection,
+        geometry: SceneObjectGeometry
+    ): ShadowMapUiState? {
+        if (selection.source == SceneObjectSource.AUTOMATIC) {
+            val building = loadedBuildings.firstOrNull { loaded ->
+                AutomaticBuildingMatcher.identity(loaded).selectionId == selection.id
+            } ?: return null
+            val identity = AutomaticBuildingMatcher.identity(building)
+            val existing = loadedBuildingOverrides[identity]
+            val polygon = (geometry as? SceneObjectGeometry.Building)?.polygon ?: return null
+            return copy(
+                loadedBuildingOverrides = loadedBuildingOverrides + (
+                    identity to LoadedBuildingOverride(
+                        heightMeters = existing?.heightMeters ?: building.heightMeters,
+                        referencePolygon = existing?.referencePolygon ?: building.polygon,
+                        adjustedPolygon = polygon
+                    )
+                    )
+            )
+        }
+        return when (geometry) {
+            is SceneObjectGeometry.Building -> copy(
+                drawnBuildings = drawnBuildings.map {
+                    if (it.id == selection.id) it.copy(polygon = geometry.polygon) else it
+                }
+            )
+
+            is SceneObjectGeometry.Wall -> copy(
+                drawnWalls = drawnWalls.map {
+                    if (it.id == selection.id) it.copy(points = geometry.points) else it
+                }
+            )
+
+            is SceneObjectGeometry.Tree -> copy(
+                drawnTrees = drawnTrees.map {
+                    if (it.id == selection.id) it.copy(center = geometry.center) else it
+                }
+            )
+        }
+    }
 
     private fun reconcileLoadedOverrides(
         incoming: List<Building>,

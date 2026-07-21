@@ -43,7 +43,11 @@ data class DrawingActions(
     val onUpdateSelectedDrawing: (Double, Double?) -> Unit,
     val onDeleteSelectedDrawing: () -> Boolean,
     val onRestoreDeletedObject: () -> Unit,
-    val onSelectDrawing: (DrawnObjectSelection?) -> Unit
+    val onSelectDrawing: (DrawnObjectSelection?) -> Unit,
+    val onStartMoving: () -> Unit,
+    val onMoveSelectedObject: (Double, Double) -> Unit,
+    val onFinishMoving: () -> Unit,
+    val onCancelMoving: () -> Unit
 )
 
 data class SceneActions(val onClearScene: () -> Unit, val onRestoreClearedScene: () -> Unit)
