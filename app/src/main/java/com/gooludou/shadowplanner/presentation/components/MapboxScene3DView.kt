@@ -21,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -49,11 +48,7 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 import com.mapbox.maps.extension.compose.style.BooleanValue
 import com.mapbox.maps.extension.compose.style.ColorValue
 import com.mapbox.maps.extension.compose.style.DoubleValue
-import com.mapbox.maps.extension.compose.style.DoubleListValue
 import com.mapbox.maps.extension.compose.style.layers.generated.FillExtrusionLayer
-import com.mapbox.maps.extension.compose.style.layers.generated.ModelLayer
-import com.mapbox.maps.extension.compose.style.layers.ModelIdValue
-import com.mapbox.maps.extension.compose.style.layers.generated.ModelTypeValue
 import com.mapbox.maps.extension.compose.style.sources.GeoJSONData
 import com.mapbox.maps.extension.compose.style.sources.generated.GeoJsonSourceState
 import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
@@ -84,6 +79,7 @@ fun MapboxScene3DView(
     trees: List<DrawnTree>,
     viewport: MapboxScene3DViewport,
     solarPosition: SolarPosition?,
+    sunPath: List<SolarPosition>,
     showDome: Boolean,
     selectedEpochMillis: Long,
     timeZoneId: String,
@@ -94,40 +90,15 @@ fun MapboxScene3DView(
     modifier: Modifier = Modifier
 ) {
     var basemapStyle by remember { mutableStateOf(MapboxBasemapStyle.SATELLITE) }
+    val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, sunPath)
     val buildingFeatures = remember(buildings) { buildings.mapNotNull(Building::toMapboxFeature) }
     val wallFeatures = remember(walls) { walls.mapNotNull(DrawnWall::toMapboxFeature) }
     val treeTrunkFeatures = remember(trees) { trees.map(DrawnTree::toTrunkFeature) }
     val treeCanopyFeatures = remember(trees) { trees.map(DrawnTree::toCanopyFeature) }
-    val buildingSource = remember {
-        GeoJsonSourceState(BUILDING_SOURCE_ID).apply { data = GeoJSONData(buildingFeatures) }
-    }
-    val wallSource = remember {
-        GeoJsonSourceState(WALL_SOURCE_ID).apply { data = GeoJSONData(wallFeatures) }
-    }
-    val treeTrunkSource = remember {
-        GeoJsonSourceState(TREE_TRUNK_SOURCE_ID).apply { data = GeoJSONData(treeTrunkFeatures) }
-    }
-    val treeCanopySource = remember {
-        GeoJsonSourceState(TREE_CANOPY_SOURCE_ID).apply { data = GeoJSONData(treeCanopyFeatures) }
-    }
-    val domeSource = remember(viewport.center) {
-        GeoJsonSourceState(DOME_SOURCE_ID).apply {
-            data = GeoJSONData(listOf(Feature.fromGeometry(viewport.center.toMapboxPoint())))
-        }
-    }
-
-    LaunchedEffect(buildingFeatures) {
-        buildingSource.data = GeoJSONData(buildingFeatures)
-    }
-    LaunchedEffect(wallFeatures) {
-        wallSource.data = GeoJSONData(wallFeatures)
-    }
-    LaunchedEffect(treeTrunkFeatures) {
-        treeTrunkSource.data = GeoJSONData(treeTrunkFeatures)
-    }
-    LaunchedEffect(treeCanopyFeatures) {
-        treeCanopySource.data = GeoJSONData(treeCanopyFeatures)
-    }
+    val buildingSource = rememberFeatureSource(BUILDING_SOURCE_ID, buildingFeatures)
+    val wallSource = rememberFeatureSource(WALL_SOURCE_ID, wallFeatures)
+    val treeTrunkSource = rememberFeatureSource(TREE_TRUNK_SOURCE_ID, treeTrunkFeatures)
+    val treeCanopySource = rememberFeatureSource(TREE_CANOPY_SOURCE_ID, treeCanopyFeatures)
 
     val mapViewportState = rememberMapViewportState {
         setCameraOptions {
@@ -156,7 +127,7 @@ fun MapboxScene3DView(
             basemapStyle = basemapStyle
         ) {
             if (showDome) {
-                SceneDomeModelLayer(domeSource, viewport)
+                SceneSkyModelLayers(skyState)
             }
         }
 
@@ -178,9 +149,7 @@ fun MapboxScene3DView(
                 if (!showDome) {
                     val currentCenter = mapViewportState.cameraState?.center
                         ?: viewport.center.toMapboxPoint()
-                    domeSource.data = GeoJSONData(
-                        listOf(Feature.fromGeometry(currentCenter))
-                    )
+                    skyState.recenter(currentCenter)
                 }
                 onToggleDome()
             },
@@ -375,29 +344,6 @@ private fun MapboxScene3DMap(
 }
 
 @Composable
-@OptIn(MapboxExperimental::class)
-private fun SceneDomeModelLayer(source: GeoJsonSourceState, viewport: MapboxScene3DViewport) {
-    val density = LocalDensity.current
-    val edgePaddingPixels = with(density) { DOME_EDGE_PADDING.toPx() }
-    val availableWidthMeters = viewport.widthMeters *
-        (1.0 - 2.0 * edgePaddingPixels / viewport.widthPixels).coerceAtLeast(0.0)
-    val availableHeightMeters = viewport.heightMeters *
-        (1.0 - 2.0 * edgePaddingPixels / viewport.heightPixels).coerceAtLeast(0.0)
-    val outerRadiusMeters = minOf(availableWidthMeters, availableHeightMeters) / 2.0
-    val domeRadiusMeters = (outerRadiusMeters / DOME_MODEL_OUTER_RADIUS)
-        .coerceAtLeast(MIN_DOME_SCALE_METERS)
-    ModelLayer(sourceState = source, layerId = DOME_LAYER_ID) {
-        modelId = ModelIdValue(modelId = DOME_MODEL_ID, uri = DOME_MODEL_URI)
-        modelType = ModelTypeValue.COMMON_3D
-        modelScale = DoubleListValue(listOf(domeRadiusMeters, domeRadiusMeters, domeRadiusMeters))
-        modelCastShadows = BooleanValue(false)
-        modelReceiveShadows = BooleanValue(false)
-        modelAmbientOcclusionIntensity = DoubleValue(0.0)
-        modelEmissiveStrength = DoubleValue(1.0)
-    }
-}
-
-@Composable
 private fun BuildingExtrusionLayer(source: GeoJsonSourceState, color: Color) {
     FillExtrusionLayer(sourceState = source, layerId = BUILDING_LAYER_ID) {
         fillExtrusionBase = DoubleValue(Expression.get(PROPERTY_BASE_HEIGHT))
@@ -502,6 +448,17 @@ private fun circlePolygon(center: GeoPoint, radiusMeters: Double): Polygon {
 
 private fun GeoPoint.toMapboxPoint(): Point = Point.fromLngLat(longitude, latitude)
 
+@Composable
+private fun rememberFeatureSource(id: String, features: List<Feature>): GeoJsonSourceState {
+    val source = remember(id) {
+        GeoJsonSourceState(id).apply { data = GeoJSONData(features) }
+    }
+    LaunchedEffect(features) {
+        source.data = GeoJSONData(features)
+    }
+    return source
+}
+
 private const val STANDARD_STYLE_IMPORT_ID = "basemap"
 private const val SUN_LIGHT_ID = "shadow-planner-sun"
 private const val AMBIENT_LIGHT_ID = "shadow-planner-ambient"
@@ -520,10 +477,6 @@ private const val BUILDING_LAYER_ID = "custom-3d-buildings-layer"
 private const val WALL_LAYER_ID = "custom-3d-walls-layer"
 private const val TREE_TRUNK_LAYER_ID = "custom-3d-tree-trunks-layer"
 private const val TREE_CANOPY_LAYER_ID = "custom-3d-tree-canopies-layer"
-private const val DOME_SOURCE_ID = "scene-dome-source"
-private const val DOME_LAYER_ID = "scene-dome-layer"
-private const val DOME_MODEL_ID = "scene-dome-model"
-private const val DOME_MODEL_URI = "asset://scene_dome.glb"
 private const val PROPERTY_HEIGHT = "height"
 private const val PROPERTY_BASE_HEIGHT = "base_height"
 private const val MAPBOX_3D_PITCH_DEGREES = 60.0
@@ -548,8 +501,5 @@ private const val MIN_TRUNK_RADIUS_METERS = 0.15
 private const val MIN_CANOPY_RADIUS_METERS = 0.5
 private const val TREE_SEGMENTS = 12
 private const val EARTH_RADIUS_METERS = 6_378_137.0
-private const val DOME_MODEL_OUTER_RADIUS = 1.22
-private const val MIN_DOME_SCALE_METERS = 0.001
 private val MAPBOX_BOTTOM_CONTROL_CLEARANCE = 156.dp
 private val MAPBOX_DOME_CONTROL_OFFSET = 52.dp
-private val DOME_EDGE_PADDING = 32.dp

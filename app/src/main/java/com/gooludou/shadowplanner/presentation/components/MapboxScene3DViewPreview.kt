@@ -35,6 +35,13 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
                 heightPixels = 2400
             ),
             solarPosition = SolarPosition(azimuthDegrees = 315.0, zenithDegrees = 45.0),
+            sunPath = listOf(
+                SolarPosition(azimuthDegrees = 80.0, zenithDegrees = 85.0),
+                SolarPosition(azimuthDegrees = 120.0, zenithDegrees = 55.0),
+                SolarPosition(azimuthDegrees = 180.0, zenithDegrees = 35.0),
+                SolarPosition(azimuthDegrees = 240.0, zenithDegrees = 55.0),
+                SolarPosition(azimuthDegrees = 280.0, zenithDegrees = 85.0)
+            ),
             showDome = true,
             selectedEpochMillis = 1_752_640_000_000L,
             timeZoneId = "Australia/Brisbane",

@@ -800,6 +800,7 @@ private fun ShadowMapScreen(
                                 trees = currentUiState.drawnTrees,
                                 viewport = viewport,
                                 solarPosition = currentUiState.solarPosition,
+                                sunPath = currentUiState.sunPath,
                                 showDome = showDomeIn3d,
                                 selectedEpochMillis = currentUiState.selectedEpochMillis,
                                 timeZoneId = currentUiState.displayTimeZoneId,
