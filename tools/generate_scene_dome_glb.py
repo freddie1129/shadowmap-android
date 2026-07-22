@@ -1,37 +1,26 @@
 """Generate the app-owned static sky dome with an embedded compass dial."""
 
-import binascii
+import io
 import json
 import math
 import os
 import struct
-import zlib
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError as error:
+    raise SystemExit(
+        "Pillow is required to generate scene_dome.glb: python3 -m pip install Pillow"
+    ) from error
 
 DOME_SEGMENTS = 180
-TEXTURE_SIZE = 1024
+TEXTURE_SIZE = 2048
+TEXTURE_RENDER_SCALE = 2
+DESIGN_TEXTURE_SIZE = 1024
 GRID_HALF_WIDTH = 0.004
 DISK_RADIUS = 1.22
 GRID_POSITIONS = []
 GRID_NORMALS = []
-
-FONT = {
-    "0": ("111", "101", "101", "101", "111"),
-    "1": ("010", "110", "010", "010", "111"),
-    "2": ("111", "001", "111", "100", "111"),
-    "3": ("111", "001", "111", "001", "111"),
-    "4": ("101", "101", "111", "001", "001"),
-    "5": ("111", "100", "111", "001", "111"),
-    "6": ("111", "100", "111", "101", "111"),
-    "7": ("111", "001", "010", "010", "010"),
-    "8": ("111", "101", "111", "101", "111"),
-    "9": ("111", "101", "111", "001", "111"),
-    "N": ("101", "111", "111", "111", "101"),
-    "E": ("111", "100", "110", "100", "111"),
-    "S": ("111", "100", "111", "001", "111"),
-    "W": ("101", "101", "111", "111", "101"),
-    "°": ("11", "11", "00", "00", "00"),
-}
-
 
 def dome_point(azimuth_degrees, altitude_degrees):
     azimuth = math.radians(azimuth_degrees)
@@ -66,114 +55,91 @@ for azimuth in range(0, 360, 15):
         add_ribbon(dome_point(azimuth, index * 5), dome_point(azimuth, (index + 1) * 5))
 
 
-def blend_pixel(pixels, x, y, color):
-    if not (0 <= x < TEXTURE_SIZE and 0 <= y < TEXTURE_SIZE):
-        return
-    offset = (y * TEXTURE_SIZE + x) * 4
-    source_alpha = color[3] / 255.0
-    destination_alpha = pixels[offset + 3] / 255.0
-    output_alpha = source_alpha + destination_alpha * (1.0 - source_alpha)
-    if output_alpha <= 0:
-        return
-    for channel in range(3):
-        pixels[offset + channel] = round(
-            (color[channel] * source_alpha + pixels[offset + channel] *
-             destination_alpha * (1.0 - source_alpha)) / output_alpha
-        )
-    pixels[offset + 3] = round(output_alpha * 255)
+def render_pixels(design_pixels):
+    return round(
+        design_pixels * TEXTURE_SIZE / DESIGN_TEXTURE_SIZE * TEXTURE_RENDER_SCALE
+    )
 
 
-def draw_dot(pixels, x, y, radius, color):
-    for dy in range(-radius, radius + 1):
-        for dx in range(-radius, radius + 1):
-            if dx * dx + dy * dy <= radius * radius:
-                blend_pixel(pixels, x + dx, y + dy, color)
-
-
-def draw_line(pixels, start, end, width, color):
-    dx, dy = end[0] - start[0], end[1] - start[1]
-    steps = max(abs(dx), abs(dy), 1)
-    for step in range(steps + 1):
-        ratio = step / steps
-        draw_dot(
-            pixels,
-            round(start[0] + dx * ratio),
-            round(start[1] + dy * ratio),
-            max(1, width // 2),
-            color,
-        )
-
-
-def draw_text(pixels, text, center_x, center_y, scale, rotation_degrees):
-    widths = [len(FONT[character][0]) for character in text]
-    total_width = sum(widths) * scale + (len(text) - 1) * scale
-    angle = math.radians(rotation_degrees)
-    cosine, sine = math.cos(angle), math.sin(angle)
-
-    def render(color, expansion):
-        cursor = -total_width / 2
-        for character, width in zip(text, widths):
-            glyph = FONT[character]
-            for row, pattern in enumerate(glyph):
-                for column, bit in enumerate(pattern):
-                    if bit != "1":
-                        continue
-                    for py in range(-expansion, scale + expansion):
-                        for px in range(-expansion, scale + expansion):
-                            local_x = cursor + column * scale + px
-                            local_y = (row - 2) * scale + py
-                            x = round(center_x + local_x * cosine - local_y * sine)
-                            y = round(center_y + local_x * sine + local_y * cosine)
-                            blend_pixel(pixels, x, y, color)
-            cursor += (width + 1) * scale
-
-    render((24, 24, 24, 210), 2)
-    render((255, 246, 218, 255), 0)
+def draw_rotated_text(image, text, center_x, center_y, font_size, rotation_degrees):
+    font = ImageFont.load_default(size=font_size)
+    stroke_width = max(2, round(font_size * 0.075))
+    bounds = font.getbbox(text, stroke_width=stroke_width)
+    padding = stroke_width * 2
+    width = bounds[2] - bounds[0] + padding * 2
+    height = bounds[3] - bounds[1] + padding * 2
+    label = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    ImageDraw.Draw(label).text(
+        (width / 2, height / 2),
+        text,
+        font=font,
+        anchor="mm",
+        fill=(255, 246, 218, 255),
+        stroke_width=stroke_width,
+        stroke_fill=(24, 24, 24, 220),
+    )
+    rotated = label.rotate(
+        -rotation_degrees,
+        resample=Image.Resampling.BICUBIC,
+        expand=True,
+    )
+    image.alpha_composite(
+        rotated,
+        (
+            round(center_x - rotated.width / 2),
+            round(center_y - rotated.height / 2),
+        ),
+    )
 
 
 def compass_png():
-    pixels = bytearray(TEXTURE_SIZE * TEXTURE_SIZE * 4)
-    center = TEXTURE_SIZE // 2
-    outer_radius = center - 2
+    render_size = TEXTURE_SIZE * TEXTURE_RENDER_SCALE
+    image = Image.new("RGBA", (render_size, render_size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    center = render_size // 2
+    outer_radius = center - render_pixels(2)
     ring_radius = round(center / DISK_RADIUS)
-    for y in range(TEXTURE_SIZE):
-        for x in range(TEXTURE_SIZE):
-            if (x - center) ** 2 + (y - center) ** 2 <= outer_radius ** 2:
-                blend_pixel(pixels, x, y, (214, 220, 224, 58))
+    draw.ellipse(
+        (
+            center - outer_radius,
+            center - outer_radius,
+            center + outer_radius,
+            center + outer_radius,
+        ),
+        fill=(214, 220, 224, 58),
+    )
 
     for azimuth in range(0, 360, 5):
         cardinal = azimuth in (0, 90, 180, 270)
         major = azimuth % 15 == 0
-        tick_length = 33 if cardinal else (23 if major else 12)
-        tick_width = 4 if cardinal else (3 if major else 2)
+        tick_length = render_pixels(33 if cardinal else (23 if major else 12))
+        tick_width = render_pixels(4 if cardinal else (3 if major else 2))
         angle = math.radians(azimuth)
         direction = (math.sin(angle), -math.cos(angle))
         start = (round(center + direction[0] * ring_radius),
                  round(center + direction[1] * ring_radius))
         end = (round(center + direction[0] * (ring_radius + tick_length)),
                round(center + direction[1] * (ring_radius + tick_length)))
-        draw_line(pixels, start, end, tick_width, (255, 222, 138, 220))
+        draw.line((start, end), fill=(255, 222, 138, 220), width=tick_width)
         if major:
             label = {0: "N", 90: "E", 180: "S", 270: "W"}.get(azimuth, f"{azimuth}°")
-            label_radius = ring_radius + tick_length + (35 if cardinal else 27)
-            draw_text(
-                pixels,
+            label_radius = ring_radius + tick_length + render_pixels(27 if cardinal else 24)
+            draw_rotated_text(
+                image,
                 label,
                 center + direction[0] * label_radius,
                 center + direction[1] * label_radius,
-                7 if cardinal else 4,
+                render_pixels(44 if cardinal else 28),
                 azimuth,
             )
 
-    raw = b"".join(b"\x00" + bytes(pixels[row * TEXTURE_SIZE * 4:(row + 1) * TEXTURE_SIZE * 4])
-                   for row in range(TEXTURE_SIZE))
-
-    def chunk(kind, data):
-        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", binascii.crc32(kind + data) & 0xFFFFFFFF)
-
-    return (b"\x89PNG\r\n\x1a\n" +
-            chunk(b"IHDR", struct.pack(">IIBBBBB", TEXTURE_SIZE, TEXTURE_SIZE, 8, 6, 0, 0, 0)) +
-            chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+    image = image.resize(
+        (TEXTURE_SIZE, TEXTURE_SIZE),
+        resample=Image.Resampling.LANCZOS,
+    )
+    output = io.BytesIO()
+    image.save(output, format="PNG", optimize=True)
+    return output.getvalue()
 
 
 grid_positions = struct.pack(f"<{len(GRID_POSITIONS)}f", *GRID_POSITIONS)
