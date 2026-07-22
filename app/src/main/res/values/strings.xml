@@ -59,6 +59,8 @@
     <string name="show_satellite">Show satellite</string>
     <string name="hide_sky_overview">Hide sky overview</string>
     <string name="show_sky_overview">Show sky overview</string>
+    <string name="show_mapbox_buildings">Show Mapbox buildings</string>
+    <string name="show_drawing_buildings">Show drawing buildings</string>
     <string name="refresh_sky_dome">Refresh sky dome</string>
     <string name="show_orbit_view">Show orbit view</string>
     <string name="show_top_down_view">Show top-down view</string>

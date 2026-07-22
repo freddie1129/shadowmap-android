@@ -9,7 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.SatelliteAlt
 import androidx.compose.material.icons.outlined.ViewInAr
-import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,6 +51,7 @@ import com.mapbox.maps.extension.compose.style.BooleanValue
 import com.mapbox.maps.extension.compose.style.ColorValue
 import com.mapbox.maps.extension.compose.style.DoubleValue
 import com.mapbox.maps.extension.compose.style.layers.generated.FillExtrusionLayer
+import com.mapbox.maps.extension.compose.style.layers.generated.VisibilityValue
 import com.mapbox.maps.extension.compose.style.sources.GeoJSONData
 import com.mapbox.maps.extension.compose.style.sources.generated.GeoJsonSourceState
 import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
@@ -93,6 +93,7 @@ fun MapboxScene3DView(
     modifier: Modifier = Modifier
 ) {
     var basemapStyle by remember { mutableStateOf(MapboxBasemapStyle.SATELLITE) }
+    var useMapboxBuildings by remember { mutableStateOf(false) }
     var sceneMapView by remember { mutableStateOf<MapView?>(null) }
     val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, sunPath)
     val buildingFeatures = remember(buildings) { buildings.mapNotNull(Building::toMapboxFeature) }
@@ -129,6 +130,7 @@ fun MapboxScene3DView(
             canopyColor = canopyColor,
             solarPosition = solarPosition,
             basemapStyle = basemapStyle,
+            useMapboxBuildings = useMapboxBuildings,
             onMapViewReady = { sceneMapView = it }
         ) {
             if (showDome) {
@@ -144,12 +146,17 @@ fun MapboxScene3DView(
             onNowSelected = onNowSelected,
             basemapStyle = basemapStyle,
             onToggleBasemapStyle = {
-                basemapStyle = when (basemapStyle) {
-                    MapboxBasemapStyle.STANDARD -> MapboxBasemapStyle.SATELLITE
-                    MapboxBasemapStyle.SATELLITE -> MapboxBasemapStyle.STANDARD
-                }
+                if (basemapStyle == MapboxBasemapStyle.STANDARD) useMapboxBuildings = false
+                basemapStyle = if (basemapStyle == MapboxBasemapStyle.STANDARD) {
+                    MapboxBasemapStyle.SATELLITE
+                } else MapboxBasemapStyle.STANDARD
             },
             showDome = showDome,
+            useMapboxBuildings = useMapboxBuildings,
+            onToggleBuildingSource = {
+                useMapboxBuildings = !useMapboxBuildings
+                basemapStyle = if (useMapboxBuildings) MapboxBasemapStyle.STANDARD else MapboxBasemapStyle.SATELLITE
+            },
             onToggleDome = {
                 if (!showDome) {
                     val currentViewport = sceneMapView?.currentScene3DViewport(viewport)
@@ -177,6 +184,8 @@ private fun MapboxScene3DControls(
     basemapStyle: MapboxBasemapStyle,
     onToggleBasemapStyle: () -> Unit,
     showDome: Boolean,
+    useMapboxBuildings: Boolean,
+    onToggleBuildingSource: () -> Unit,
     onToggleDome: () -> Unit,
     onBackToMap: () -> Unit
 ) {
@@ -210,15 +219,19 @@ private fun MapboxScene3DControls(
             onClick = onToggleBasemapStyle,
             modifier = Modifier.align(Alignment.TopEnd)
         )
-        SceneViewSwitchButton(
-            label = stringResource(
-                if (showDome) R.string.hide_sky_overview else R.string.show_sky_overview
-            ),
-            icon = Icons.Outlined.WbSunny,
+        MapboxDomeToggle(
+            showDome = showDome,
             onClick = onToggleDome,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = MAPBOX_DOME_CONTROL_OFFSET)
+        )
+        MapboxBuildingSourceToggle(
+            useMapboxBuildings = useMapboxBuildings,
+            onClick = onToggleBuildingSource,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = MAPBOX_BUILDING_CONTROL_OFFSET)
         )
         SceneViewSwitchButton(
             label = stringResource(
@@ -270,6 +283,7 @@ private fun MapboxScene3DMap(
     canopyColor: Color,
     solarPosition: SolarPosition?,
     basemapStyle: MapboxBasemapStyle,
+    useMapboxBuildings: Boolean,
     onMapViewReady: (MapView) -> Unit,
     domeContent: @Composable () -> Unit
 ) {
@@ -319,7 +333,7 @@ private fun MapboxScene3DMap(
             }
         }
     ) {
-        BuildingExtrusionLayer(buildingSource, buildingColor)
+        BuildingExtrusionLayer(buildingSource, buildingColor, !useMapboxBuildings)
         WallExtrusionLayer(wallSource, wallColor)
         TreeExtrusionLayers(treeTrunkSource, treeCanopySource, trunkColor, canopyColor)
         domeContent()
@@ -338,16 +352,16 @@ private fun MapboxScene3DMap(
             }
             mapView.mapboxMap.setLight(ambientLight, directionalLight)
         }
-        MapEffect(basemapStyle) { mapView ->
+        MapEffect(basemapStyle, useMapboxBuildings) { mapView ->
             onMapViewReady(mapView)
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
-            DEFAULT_3D_CONFIG_KEYS.forEach { key ->
+            mapboxNative3dConfig(useMapboxBuildings).forEach { (key, enabled) ->
                 mapView.mapboxMap.setStyleImportConfigProperty(
                     STANDARD_STYLE_IMPORT_ID,
                     key,
-                    Value(false)
+                    Value(enabled)
                 )
             }
         }
@@ -355,7 +369,11 @@ private fun MapboxScene3DMap(
 }
 
 @Composable
-private fun BuildingExtrusionLayer(source: GeoJsonSourceState, color: Color) {
+private fun BuildingExtrusionLayer(
+    source: GeoJsonSourceState,
+    color: Color,
+    visible: Boolean
+) {
     FillExtrusionLayer(sourceState = source, layerId = BUILDING_LAYER_ID) {
         fillExtrusionBase = DoubleValue(Expression.get(PROPERTY_BASE_HEIGHT))
         fillExtrusionHeight = DoubleValue(Expression.get(PROPERTY_HEIGHT))
@@ -363,6 +381,7 @@ private fun BuildingExtrusionLayer(source: GeoJsonSourceState, color: Color) {
         fillExtrusionOpacity = DoubleValue(OBJECT_OPACITY)
         fillExtrusionAmbientOcclusionIntensity = DoubleValue(AMBIENT_OCCLUSION)
         fillExtrusionCastShadows = BooleanValue(true)
+        visibility = if (visible) VisibilityValue.VISIBLE else VisibilityValue.NONE
     }
 }
 
@@ -513,13 +532,6 @@ private fun rememberFeatureSource(id: String, features: List<Feature>): GeoJsonS
 private const val STANDARD_STYLE_IMPORT_ID = "basemap"
 private const val SUN_LIGHT_ID = "shadow-planner-sun"
 private const val AMBIENT_LIGHT_ID = "shadow-planner-ambient"
-private val DEFAULT_3D_CONFIG_KEYS = listOf(
-    "show3dObjects",
-    "show3dBuildings",
-    "show3dTrees",
-    "show3dLandmarks",
-    "show3dFacades"
-)
 private const val BUILDING_SOURCE_ID = "custom-3d-buildings-source"
 private const val WALL_SOURCE_ID = "custom-3d-walls-source"
 private const val TREE_TRUNK_SOURCE_ID = "custom-3d-tree-trunks-source"
@@ -554,3 +566,4 @@ private const val TREE_SEGMENTS = 12
 private const val EARTH_RADIUS_METERS = 6_378_137.0
 private val MAPBOX_BOTTOM_CONTROL_CLEARANCE = 156.dp
 private val MAPBOX_DOME_CONTROL_OFFSET = 52.dp
+private val MAPBOX_BUILDING_CONTROL_OFFSET = 104.dp
