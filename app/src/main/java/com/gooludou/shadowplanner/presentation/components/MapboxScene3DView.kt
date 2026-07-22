@@ -38,10 +38,10 @@ import com.mapbox.geojson.Feature
 import com.mapbox.geojson.LineString
 import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
+import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapboxDelicateApi
 import com.mapbox.maps.MapboxExperimental
 import com.mapbox.maps.MapView
-import com.mapbox.maps.ScreenCoordinate
 import com.mapbox.maps.coroutine.styleLoadedEvents
 import com.mapbox.maps.extension.compose.MapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
@@ -463,10 +463,21 @@ private fun MapView.currentScene3DViewport(
     fallback: MapboxScene3DViewport
 ): MapboxScene3DViewport? {
     if (width <= 0 || height <= 0) return null
-    val center = mapboxMap.cameraState.center
-    val topLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, 0.0))
-    val topRight = mapboxMap.coordinateForPixel(ScreenCoordinate(width.toDouble(), 0.0))
-    val bottomLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, height.toDouble()))
+    val camera = mapboxMap.cameraState
+    val center = camera.center
+    // Pitched screen corners include distant ground and inflate the boundary. Measure the
+    // same center and zoom with a virtual top-down camera so screen-fit sizing is pitch-neutral.
+    val topDownBounds = mapboxMap.coordinateBoundsForCamera(
+        CameraOptions.Builder()
+            .center(center)
+            .zoom(camera.zoom)
+            .bearing(0.0)
+            .pitch(0.0)
+            .build()
+    )
+    val topLeft = topDownBounds.northwest()
+    val topRight = topDownBounds.northeast
+    val bottomLeft = topDownBounds.southwest
     val boundary = SceneViewport.fromScreenCoordinates(
         centerLongitude = center.longitude(),
         centerLatitude = center.latitude(),
@@ -477,7 +488,6 @@ private fun MapView.currentScene3DViewport(
         bottomLeftLongitude = bottomLeft.longitude(),
         bottomLeftLatitude = bottomLeft.latitude()
     )
-    val camera = mapboxMap.cameraState
     return fallback.copy(
         center = GeoPoint(center.longitude(), center.latitude()),
         zoom = camera.zoom,
