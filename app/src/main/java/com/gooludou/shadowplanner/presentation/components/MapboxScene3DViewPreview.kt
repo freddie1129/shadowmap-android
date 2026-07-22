@@ -28,7 +28,11 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
             viewport = MapboxScene3DViewport(
                 center = GeoPoint(153.0251, -27.4698),
                 zoom = 17.0,
-                bearing = 0.0
+                bearing = 0.0,
+                widthMeters = 120.0,
+                heightMeters = 240.0,
+                widthPixels = 1080,
+                heightPixels = 2400
             ),
             solarPosition = SolarPosition(azimuthDegrees = 315.0, zenithDegrees = 45.0),
             showDome = true,

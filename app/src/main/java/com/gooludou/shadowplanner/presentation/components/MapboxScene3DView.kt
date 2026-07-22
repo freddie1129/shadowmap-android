@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -173,7 +174,16 @@ fun MapboxScene3DView(
                 }
             },
             showDome = showDome,
-            onToggleDome = onToggleDome,
+            onToggleDome = {
+                if (!showDome) {
+                    val currentCenter = mapViewportState.cameraState?.center
+                        ?: viewport.center.toMapboxPoint()
+                    domeSource.data = GeoJSONData(
+                        listOf(Feature.fromGeometry(currentCenter))
+                    )
+                }
+                onToggleDome()
+            },
             onBackToMap = onBackToMap
         )
     }
@@ -367,12 +377,19 @@ private fun MapboxScene3DMap(
 @Composable
 @OptIn(MapboxExperimental::class)
 private fun SceneDomeModelLayer(source: GeoJsonSourceState, viewport: MapboxScene3DViewport) {
-    val radiusMeters = (METERS_PER_PIXEL_AT_EQUATOR / (1 shl viewport.zoom.toInt()))
-        .coerceIn(MIN_DOME_RADIUS_METERS, MAX_DOME_RADIUS_METERS)
+    val density = LocalDensity.current
+    val edgePaddingPixels = with(density) { DOME_EDGE_PADDING.toPx() }
+    val availableWidthMeters = viewport.widthMeters *
+        (1.0 - 2.0 * edgePaddingPixels / viewport.widthPixels).coerceAtLeast(0.0)
+    val availableHeightMeters = viewport.heightMeters *
+        (1.0 - 2.0 * edgePaddingPixels / viewport.heightPixels).coerceAtLeast(0.0)
+    val outerRadiusMeters = minOf(availableWidthMeters, availableHeightMeters) / 2.0
+    val domeRadiusMeters = (outerRadiusMeters / DOME_MODEL_OUTER_RADIUS)
+        .coerceAtLeast(MIN_DOME_SCALE_METERS)
     ModelLayer(sourceState = source, layerId = DOME_LAYER_ID) {
         modelId = ModelIdValue(modelId = DOME_MODEL_ID, uri = DOME_MODEL_URI)
         modelType = ModelTypeValue.COMMON_3D
-        modelScale = DoubleListValue(listOf(radiusMeters, radiusMeters, radiusMeters))
+        modelScale = DoubleListValue(listOf(domeRadiusMeters, domeRadiusMeters, domeRadiusMeters))
         modelCastShadows = BooleanValue(false)
         modelReceiveShadows = BooleanValue(false)
         modelAmbientOcclusionIntensity = DoubleValue(0.0)
@@ -531,8 +548,8 @@ private const val MIN_TRUNK_RADIUS_METERS = 0.15
 private const val MIN_CANOPY_RADIUS_METERS = 0.5
 private const val TREE_SEGMENTS = 12
 private const val EARTH_RADIUS_METERS = 6_378_137.0
-private const val METERS_PER_PIXEL_AT_EQUATOR = 156_543.03392
-private const val MIN_DOME_RADIUS_METERS = 35.0
-private const val MAX_DOME_RADIUS_METERS = 120.0
+private const val DOME_MODEL_OUTER_RADIUS = 1.22
+private const val MIN_DOME_SCALE_METERS = 0.001
 private val MAPBOX_BOTTOM_CONTROL_CLEARANCE = 156.dp
 private val MAPBOX_DOME_CONTROL_OFFSET = 52.dp
+private val DOME_EDGE_PADDING = 32.dp

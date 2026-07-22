@@ -565,11 +565,17 @@ private fun ShadowMapScreen(
     }
 
     fun enterMapbox3d() {
-        val camera = mapView?.mapboxMap?.cameraState ?: return
+        val currentMapView = mapView ?: return
+        val camera = currentMapView.mapboxMap.cameraState
+        val viewport = currentMapView.toSceneViewport() ?: return
         mapboxSceneViewport = MapboxScene3DViewport(
             center = GeoPoint(camera.center.longitude(), camera.center.latitude()),
             zoom = camera.zoom,
-            bearing = camera.bearing
+            bearing = camera.bearing,
+            widthMeters = viewport.widthMeters.toDouble(),
+            heightMeters = viewport.heightMeters.toDouble(),
+            widthPixels = currentMapView.width,
+            heightPixels = currentMapView.height
         )
         if (!show3d) sceneBackStack.add(MapboxScene3DSceneDestination)
     }
