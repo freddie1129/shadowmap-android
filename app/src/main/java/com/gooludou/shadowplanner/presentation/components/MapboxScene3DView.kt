@@ -31,6 +31,7 @@ import com.gooludou.shadowplanner.domain.DrawnWall
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.scene.SceneViewport
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.mapbox.bindgen.Value
 import com.mapbox.geojson.Feature
@@ -39,6 +40,8 @@ import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
 import com.mapbox.maps.MapboxDelicateApi
 import com.mapbox.maps.MapboxExperimental
+import com.mapbox.maps.MapView
+import com.mapbox.maps.ScreenCoordinate
 import com.mapbox.maps.coroutine.styleLoadedEvents
 import com.mapbox.maps.extension.compose.MapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
@@ -90,6 +93,7 @@ fun MapboxScene3DView(
     modifier: Modifier = Modifier
 ) {
     var basemapStyle by remember { mutableStateOf(MapboxBasemapStyle.SATELLITE) }
+    var sceneMapView by remember { mutableStateOf<MapView?>(null) }
     val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, sunPath)
     val buildingFeatures = remember(buildings) { buildings.mapNotNull(Building::toMapboxFeature) }
     val wallFeatures = remember(walls) { walls.mapNotNull(DrawnWall::toMapboxFeature) }
@@ -124,7 +128,8 @@ fun MapboxScene3DView(
             trunkColor = trunkColor,
             canopyColor = canopyColor,
             solarPosition = solarPosition,
-            basemapStyle = basemapStyle
+            basemapStyle = basemapStyle,
+            onMapViewReady = { sceneMapView = it }
         ) {
             if (showDome) {
                 SceneSkyModelLayers(skyState)
@@ -147,9 +152,13 @@ fun MapboxScene3DView(
             showDome = showDome,
             onToggleDome = {
                 if (!showDome) {
-                    val currentCenter = mapViewportState.cameraState?.center
-                        ?: viewport.center.toMapboxPoint()
-                    skyState.recenter(currentCenter)
+                    val currentViewport = sceneMapView?.currentScene3DViewport(viewport)
+                        ?: viewport.copy(
+                            center = mapViewportState.cameraState?.center
+                                ?.let { GeoPoint(it.longitude(), it.latitude()) }
+                                ?: viewport.center
+                        )
+                    skyState.updateViewport(currentViewport)
                 }
                 onToggleDome()
             },
@@ -261,6 +270,7 @@ private fun MapboxScene3DMap(
     canopyColor: Color,
     solarPosition: SolarPosition?,
     basemapStyle: MapboxBasemapStyle,
+    onMapViewReady: (MapView) -> Unit,
     domeContent: @Composable () -> Unit
 ) {
     if (LocalInspectionMode.current) {
@@ -329,6 +339,7 @@ private fun MapboxScene3DMap(
             mapView.mapboxMap.setLight(ambientLight, directionalLight)
         }
         MapEffect(basemapStyle) { mapView ->
+            onMapViewReady(mapView)
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
@@ -447,6 +458,36 @@ private fun circlePolygon(center: GeoPoint, radiusMeters: Double): Polygon {
 }
 
 private fun GeoPoint.toMapboxPoint(): Point = Point.fromLngLat(longitude, latitude)
+
+private fun MapView.currentScene3DViewport(
+    fallback: MapboxScene3DViewport
+): MapboxScene3DViewport? {
+    if (width <= 0 || height <= 0) return null
+    val center = mapboxMap.cameraState.center
+    val topLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, 0.0))
+    val topRight = mapboxMap.coordinateForPixel(ScreenCoordinate(width.toDouble(), 0.0))
+    val bottomLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, height.toDouble()))
+    val boundary = SceneViewport.fromScreenCoordinates(
+        centerLongitude = center.longitude(),
+        centerLatitude = center.latitude(),
+        topLeftLongitude = topLeft.longitude(),
+        topLeftLatitude = topLeft.latitude(),
+        topRightLongitude = topRight.longitude(),
+        topRightLatitude = topRight.latitude(),
+        bottomLeftLongitude = bottomLeft.longitude(),
+        bottomLeftLatitude = bottomLeft.latitude()
+    )
+    val camera = mapboxMap.cameraState
+    return fallback.copy(
+        center = GeoPoint(center.longitude(), center.latitude()),
+        zoom = camera.zoom,
+        bearing = camera.bearing,
+        widthMeters = boundary.widthMeters.toDouble(),
+        heightMeters = boundary.heightMeters.toDouble(),
+        widthPixels = width,
+        heightPixels = height
+    )
+}
 
 @Composable
 private fun rememberFeatureSource(id: String, features: List<Feature>): GeoJsonSourceState {

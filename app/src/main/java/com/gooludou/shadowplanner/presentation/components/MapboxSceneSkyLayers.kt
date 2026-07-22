@@ -33,18 +33,35 @@ import com.mapbox.maps.extension.compose.style.sources.generated.GeoJsonSourceSt
 import com.mapbox.maps.extension.style.expressions.generated.Expression
 
 internal class MapboxSceneSkyLayers(
-    initialCenter: GeoPoint,
-    val metrics: MapboxSkyMetrics,
+    initialViewport: MapboxScene3DViewport,
+    private val edgePaddingPixels: Double,
+    private val pathWidthPixels: Double,
+    private val connectorWidthPixels: Double,
     val domeSource: GeoJsonSourceState,
     val segmentSource: GeoJsonSourceState,
     val markerSource: GeoJsonSourceState
 ) {
-    var center by mutableStateOf(initialCenter)
+    var center by mutableStateOf(initialViewport.center)
         private set
 
-    fun recenter(point: Point) {
-        center = GeoPoint(point.longitude(), point.latitude())
+    var metrics by mutableStateOf(calculateMetrics(initialViewport))
+        private set
+
+    fun updateViewport(viewport: MapboxScene3DViewport) {
+        metrics = calculateMetrics(viewport)
+        center = viewport.center
     }
+
+    private fun calculateMetrics(viewport: MapboxScene3DViewport): MapboxSkyMetrics =
+        MapboxSceneSkyGeometry.calculateMetrics(
+            viewportWidthMeters = viewport.widthMeters,
+            viewportHeightMeters = viewport.heightMeters,
+            viewportWidthPixels = viewport.widthPixels,
+            viewportHeightPixels = viewport.heightPixels,
+            edgePaddingPixels = edgePaddingPixels,
+            pathWidthPixels = pathWidthPixels,
+            connectorWidthPixels = connectorWidthPixels
+        )
 }
 
 @Composable
@@ -54,22 +71,21 @@ internal fun rememberMapboxSceneSkyState(
     sunPath: List<SolarPosition>
 ): MapboxSceneSkyLayers {
     val density = LocalDensity.current
-    val metrics = remember(viewport, density) {
-        MapboxSceneSkyGeometry.calculateMetrics(
-            viewportWidthMeters = viewport.widthMeters,
-            viewportHeightMeters = viewport.heightMeters,
-            viewportWidthPixels = viewport.widthPixels,
-            viewportHeightPixels = viewport.heightPixels,
-            edgePaddingPixels = with(density) { DOME_EDGE_PADDING.toPx().toDouble() },
-            pathWidthPixels = with(density) { SUN_PATH_WIDTH.toPx().toDouble() },
-            connectorWidthPixels = with(density) { SUN_CONNECTOR_WIDTH.toPx().toDouble() }
-        )
-    }
-    val state = remember(viewport.center, metrics) {
+    val edgePaddingPixels = with(density) { DOME_EDGE_PADDING.toPx().toDouble() }
+    val pathWidthPixels = with(density) { SUN_PATH_WIDTH.toPx().toDouble() }
+    val connectorWidthPixels = with(density) { SUN_CONNECTOR_WIDTH.toPx().toDouble() }
+    val state = remember(
+        viewport,
+        edgePaddingPixels,
+        pathWidthPixels,
+        connectorWidthPixels
+    ) {
         val initialFeature = Feature.fromGeometry(viewport.center.toMapboxPoint())
         MapboxSceneSkyLayers(
-            initialCenter = viewport.center,
-            metrics = metrics,
+            initialViewport = viewport,
+            edgePaddingPixels = edgePaddingPixels,
+            pathWidthPixels = pathWidthPixels,
+            connectorWidthPixels = connectorWidthPixels,
             domeSource = GeoJsonSourceState(DOME_SOURCE_ID).apply {
                 data = GeoJSONData(listOf(initialFeature))
             },
@@ -81,6 +97,7 @@ internal fun rememberMapboxSceneSkyState(
             }
         )
     }
+    val metrics = state.metrics
     val segmentFeatures = remember(state.center, metrics, sunPath, solarPosition) {
         val center = state.center.toMapboxPoint()
         MapboxSceneSkyGeometry.pathSegments(sunPath, metrics)
