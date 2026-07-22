@@ -27,6 +27,7 @@ class MapboxSceneSkyGeometryTest {
         )
         assertEquals(0.4, metrics.pathDiameterMeters, 0.001)
         assertEquals(0.2, metrics.connectorDiameterMeters, 0.001)
+        assertEquals(metrics.domeRadiusMeters * 0.035, metrics.markerRadiusMeters, 0.001)
     }
 
     @Test

@@ -11,7 +11,14 @@ SPHERE_LATITUDE_SEGMENTS = 12
 SPHERE_LONGITUDE_SEGMENTS = 24
 
 
-def write_glb(filename, positions, normals, indices):
+def write_glb(
+    filename,
+    positions,
+    normals,
+    indices,
+    base_color=(1.0, 1.0, 1.0, 1.0),
+    emissive_color=(1.0, 1.0, 1.0),
+):
     if len(positions) != len(normals):
         raise ValueError(f"{filename}: positions and normals must have equal counts")
     if not positions or not indices or len(indices) % 3:
@@ -78,11 +85,11 @@ def write_glb(filename, positions, normals, indices):
             {
                 "doubleSided": True,
                 "pbrMetallicRoughness": {
-                    "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
+                    "baseColorFactor": list(base_color),
                     "metallicFactor": 0.0,
                     "roughnessFactor": 1.0,
                 },
-                "emissiveFactor": [1.0, 1.0, 1.0],
+                "emissiveFactor": list(emissive_color),
             }
         ],
         "meshes": [
@@ -178,4 +185,9 @@ def sphere_geometry():
 
 
 write_glb("scene_sun_segment.glb", *segment_geometry())
-write_glb("scene_sun_sphere.glb", *sphere_geometry())
+write_glb(
+    "scene_sun_sphere.glb",
+    *sphere_geometry(),
+    base_color=(1.0, 213.0 / 255.0, 79.0 / 255.0, 1.0),
+    emissive_color=(1.0, 213.0 / 255.0, 79.0 / 255.0),
+)

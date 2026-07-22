@@ -234,5 +234,5 @@ private const val SUN_PATH_COLOR_HEX = "#FFFFB547"
 private const val SUN_CONNECTOR_COLOR_HEX = "#FFFFE082"
 private val SUN_MARKER_COLOR = Color(0xFFFFD54F)
 private val DOME_EDGE_PADDING = 32.dp
-private val SUN_PATH_WIDTH = 4.dp
-private val SUN_CONNECTOR_WIDTH = 2.dp
+private val SUN_PATH_WIDTH = 2.dp
+private val SUN_CONNECTOR_WIDTH = 1.dp

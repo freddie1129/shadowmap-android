@@ -50,8 +50,8 @@ data class MapboxSkyMetrics(
 object MapboxSceneSkyGeometry {
     const val DOME_MODEL_OUTER_RADIUS = 1.22
     private const val MIN_SCALE_METERS = 0.001
-    private const val MARKER_RADIUS_RATIO = 0.025
-    private const val MIN_MARKER_RADIUS_METERS = 0.6
+    private const val MARKER_RADIUS_RATIO = 0.035
+    private const val MIN_MARKER_RADIUS_METERS = 0.8
     private const val PATH_SURFACE_OFFSET_RATIO = 0.001
     private const val PATH_WIDTH_SURFACE_OFFSET_RATIO = 0.12
 
