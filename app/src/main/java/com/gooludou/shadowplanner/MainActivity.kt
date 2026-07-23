@@ -347,7 +347,7 @@ private fun ShadowMapScreen(
     var mapboxSceneViewport by remember { mutableStateOf<MapboxScene3DViewport?>(null) }
     var buildingLoadArea by remember { mutableStateOf<BuildingLoadArea?>(null) }
     var crosshairPoint by remember { mutableStateOf<GeoPoint?>(null) }
-    var showDateTime by remember { mutableStateOf(false) }
+    var showDateTime by remember { mutableStateOf(true) }
     var autoLoadAfterZoom by remember { mutableStateOf(false) }
     var showClearConfirmation by remember { mutableStateOf(false) }
     var showDiscardDraftConfirmation by remember { mutableStateOf(false) }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,9 +14,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.DeleteSweep
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Park
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timeline
+import androidx.compose.material.icons.outlined.ViewInAr
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +38,7 @@ import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.DrawMode
 import com.gooludou.shadowplanner.domain.ShadowAppearance
+import com.gooludou.shadowplanner.ui.theme.Map3DActionBlue
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
 @Composable
@@ -48,6 +52,7 @@ fun MapToolBar(
     onClear: () -> Unit,
     onToggleTime: () -> Unit,
     onOpenShadowColor: () -> Unit,
+    onOpenMapbox3D: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -58,6 +63,10 @@ fun MapToolBar(
         ShadowColorButton(shadowAppearance, onOpenShadowColor)
         PrimaryToolBar(autoState, hasSceneObjects, onDrawMode, onAutoLoad, onClear)
         TimeToolButton(isTimeVisible, onToggleTime)
+        if (hasSceneObjects) {
+            Spacer(modifier = Modifier.weight(1f))
+            Open3DToolButton(onOpenMapbox3D)
+        }
     }
 }
 
@@ -163,7 +172,24 @@ private fun TimeToolButton(isTimeVisible: Boolean, onClick: () -> Unit) {
         ),
         size = 48.dp
     ) {
-        Icon(Icons.Outlined.Schedule, contentDescription = null)
+        Icon(
+            imageVector = if (isTimeVisible) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+            contentDescription = null
+        )
+    }
+}
+
+@Composable
+private fun Open3DToolButton(onClick: () -> Unit) {
+    MapRoundIconButton(
+        onClick = onClick,
+        contentDescription = stringResource(R.string.open_3d_button),
+        size = 48.dp,
+        containerColor = Map3DActionBlue,
+        contentColor = Color.White,
+        border = null
+    ) {
+        Icon(Icons.Outlined.ViewInAr, contentDescription = null)
     }
 }
 
@@ -218,6 +244,7 @@ private fun MapToolBarPreview() {
         onAutoLoad = {},
         onClear = {},
         onToggleTime = {},
-        onOpenShadowColor = {}
+        onOpenShadowColor = {},
+        onOpenMapbox3D = {}
     )
 }

@@ -20,10 +20,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.gooludou.shadowplanner.ui.theme.Map3DActionBlue
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
-
-private val ThreeDActionBlue = Color(0xFF005FCC)
 
 @Composable
 fun SceneViewSwitchButton(
@@ -38,7 +37,7 @@ fun SceneViewSwitchButton(
         modifier = modifier,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (emphasized) {
-                ThreeDActionBlue
+                Map3DActionBlue
             } else {
                 MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
             },

@@ -34,6 +34,7 @@ fun Map2DBottomControls(
     onDrawMode: (DrawMode) -> Unit,
     onAutoLoad: () -> Unit,
     onClear: () -> Unit,
+    onOpenMapbox3D: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -50,8 +51,9 @@ fun Map2DBottomControls(
             onClear = onClear,
             onToggleTime = onToggleTime,
             onOpenShadowColor = onOpenShadowColor,
+            onOpenMapbox3D = onOpenMapbox3D,
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
+                .align(Alignment.Start)
                 .padding(horizontal = 8.dp)
         )
         AnimatedVisibility(visible = isTimeVisible) {
@@ -102,7 +104,8 @@ private fun Map2DBottomControlsPreview() {
             onOpenShadowColor = {},
             onDrawMode = {},
             onAutoLoad = {},
-            onClear = {}
+            onClear = {},
+            onOpenMapbox3D = {}
         )
     }
 }

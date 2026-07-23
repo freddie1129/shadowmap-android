@@ -2,6 +2,8 @@ package com.gooludou.shadowplanner.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val Map3DActionBlue = Color(0xFF005FCC)
+
 val LightPrimary = Color(0xFF171717)
 val LightOnPrimary = Color(0xFFFFFFFF)
 val LightPrimaryContainer = Color(0xFFE8E8E8)

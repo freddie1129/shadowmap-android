@@ -64,6 +64,7 @@ fun Map2DView(
             onDrawMode = onDrawMode,
             onAutoLoad = onAutoLoad,
             onClear = onClear,
+            onOpenMapbox3D = onOpenMapbox3D,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
