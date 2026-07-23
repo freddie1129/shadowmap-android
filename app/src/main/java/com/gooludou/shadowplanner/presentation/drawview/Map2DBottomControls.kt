@@ -19,6 +19,7 @@ import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
 import com.gooludou.shadowplanner.presentation.components.MapToolBar
+import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
 @Composable
@@ -37,8 +38,7 @@ fun Map2DBottomControls(
 ) {
     Column(
         modifier = modifier
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .fillMaxWidth()
     ) {
         MapToolBar(
             autoState = autoToolState,
@@ -50,7 +50,9 @@ fun Map2DBottomControls(
             onClear = onClear,
             onToggleTime = onToggleTime,
             onOpenShadowColor = onOpenShadowColor,
-            modifier = Modifier.Companion.padding(horizontal = 8.dp)
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(horizontal = 8.dp)
         )
         AnimatedVisibility(visible = isTimeVisible) {
             DateTimeSpinner(

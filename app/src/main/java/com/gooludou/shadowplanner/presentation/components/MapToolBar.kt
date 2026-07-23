@@ -2,6 +2,7 @@ package com.gooludou.shadowplanner.presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -72,7 +73,7 @@ private fun ShadowColorButton(appearance: ShadowAppearance, onClick: () -> Unit)
                 .background(Color(appearance.colorArgb), CircleShape)
                 .border(
                     width = 2.dp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = appearance.opacity),
+                    color = MaterialTheme.colorScheme.outline,
                     shape = CircleShape
                 )
         )
@@ -90,6 +91,10 @@ private fun PrimaryToolBar(
     Surface(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+        ),
         shadowElevation = 6.dp
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -156,17 +161,7 @@ private fun TimeToolButton(isTimeVisible: Boolean, onClick: () -> Unit) {
         contentDescription = stringResource(
             if (isTimeVisible) R.string.hide_date_time else R.string.show_date_time
         ),
-        size = 48.dp,
-        containerColor = if (isTimeVisible) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-        },
-        contentColor = if (isTimeVisible) {
-            MaterialTheme.colorScheme.onPrimary
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        }
+        size = 48.dp
     ) {
         Icon(Icons.Outlined.Schedule, contentDescription = null)
     }

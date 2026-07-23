@@ -80,24 +80,19 @@ fun Map2DTopControls(
         ) {
             if (uiState.hasSceneObjects) {
                 SceneViewSwitchButton(
-                    label = stringResource(R.string.view_3d_button),
-                    icon = Icons.Outlined.ViewInAr,
-                    onClick = onOpen3D
-                )
-                Spacer(modifier = Modifier.Companion.width(dimensions.spacingSmall))
-                SceneViewSwitchButton(
                     label = stringResource(R.string.mapbox_3d_button),
-                    icon = Icons.Outlined.Map,
+                    icon = Icons.Outlined.ViewInAr,
                     onClick = onOpenMapbox3D
                 )
             }
-            Spacer(modifier = Modifier.Companion.weight(1f))
+            Spacer(modifier = Modifier.weight(1f))
             MapRoundIconButton(
                 onClick = onOpenProjects,
                 contentDescription = stringResource(R.string.open_projects)
             ) {
                 Icon(Icons.Outlined.FolderOpen, contentDescription = null)
             }
+            Spacer(modifier = Modifier.width(ShadowMapDesign.dimensions.spacingSmall))
             MapRoundIconButton(
                 onClick = onSaveProject,
                 contentDescription = stringResource(R.string.save_project)

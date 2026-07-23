@@ -71,48 +71,61 @@ fun Map2DView(
 
 @Preview(name = "2D map view", showBackground = true, backgroundColor = 0xFF6B8064)
 @Composable
-private fun Map2DViewPreview() {
-    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
-        Map2DView(
-            uiState = ShadowMapUiState(
-                selectedEpochMillis = 1_752_640_000_000L,
-                displayTimeZoneId = "Australia/Brisbane",
-                calculationLocation = GeoPoint(153.0251, -27.4698),
-                selectedLocationLabel = "Brisbane, Queensland",
-                drawnBuildings = listOf(
-                    Building(
-                        id = "preview-building",
-                        polygon = GeoPolygon(
-                            listOf(
-                                listOf(
-                                    GeoPoint(153.025, -27.469),
-                                    GeoPoint(153.026, -27.469),
-                                    GeoPoint(153.026, -27.470),
-                                    GeoPoint(153.025, -27.470)
-                                )
-                            )
-                        ),
-                        heightMeters = 6.0,
-                        source = BuildingSource.MANUAL
-                    )
-                )
-            ),
-            autoToolState = AutoToolState.READY,
-            isTimeVisible = false,
-            onDateTimeChanged = {},
-            onNowSelected = {},
-            onToggleTime = {},
-            onOpenShadowColor = {},
-            onDrawMode = {},
-            onAutoLoad = {},
-            onClear = {},
-            onOpenSettings = {},
-            onOpen3D = {},
-            onOpenMapbox3D = {},
-            onOpenProjects = {},
-            onSaveProject = {},
-            onOpenLocationSearch = {},
-            onShowLocationInfo = {}
-        )
+private fun Map2DViewLightPreview() {
+    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
+        Map2DViewPreview()
     }
+}
+
+@Preview(name = "2D map view (dark)", showBackground = true, backgroundColor = 0xFF263238)
+@Composable
+private fun Map2DViewDarkPreview() {
+    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
+        Map2DViewPreview()
+    }
+}
+
+@Composable
+private fun Map2DViewPreview() {
+    Map2DView(
+        uiState = ShadowMapUiState(
+            selectedEpochMillis = 1_752_640_000_000L,
+            displayTimeZoneId = "Australia/Brisbane",
+            calculationLocation = GeoPoint(153.0251, -27.4698),
+            selectedLocationLabel = "Brisbane, Queensland",
+            drawnBuildings = listOf(
+                Building(
+                    id = "preview-building",
+                    polygon = GeoPolygon(
+                        listOf(
+                            listOf(
+                                GeoPoint(153.025, -27.469),
+                                GeoPoint(153.026, -27.469),
+                                GeoPoint(153.026, -27.470),
+                                GeoPoint(153.025, -27.470)
+                            )
+                        )
+                    ),
+                    heightMeters = 6.0,
+                    source = BuildingSource.MANUAL
+                )
+            )
+        ),
+        autoToolState = AutoToolState.READY,
+        isTimeVisible = false,
+        onDateTimeChanged = {},
+        onNowSelected = {},
+        onToggleTime = {},
+        onOpenShadowColor = {},
+        onDrawMode = {},
+        onAutoLoad = {},
+        onClear = {},
+        onOpenSettings = {},
+        onOpen3D = {},
+        onOpenMapbox3D = {},
+        onOpenProjects = {},
+        onSaveProject = {},
+        onOpenLocationSearch = {},
+        onShowLocationInfo = {}
+    )
 }
