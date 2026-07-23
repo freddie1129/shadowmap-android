@@ -112,7 +112,7 @@ private fun Map2DViewPreview() {
             )
         ),
         autoToolState = AutoToolState.READY,
-        isTimeVisible = false,
+        isTimeVisible = true,
         onDateTimeChanged = {},
         onNowSelected = {},
         onToggleTime = {},

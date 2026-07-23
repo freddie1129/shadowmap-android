@@ -78,14 +78,7 @@ fun Map2DTopControls(
                 ),
             verticalAlignment = Alignment.Companion.CenterVertically
         ) {
-            if (uiState.hasSceneObjects) {
-                SceneViewSwitchButton(
-                    label = stringResource(R.string.mapbox_3d_button),
-                    icon = Icons.Outlined.ViewInAr,
-                    onClick = onOpenMapbox3D
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
+
             MapRoundIconButton(
                 onClick = onOpenProjects,
                 contentDescription = stringResource(R.string.open_projects)
@@ -98,6 +91,14 @@ fun Map2DTopControls(
                 contentDescription = stringResource(R.string.save_project)
             ) {
                 Icon(Icons.Outlined.Save, contentDescription = null)
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            if (uiState.hasSceneObjects) {
+                SceneViewSwitchButton(
+                    label = stringResource(R.string.mapbox_3d_button),
+                    icon = Icons.Outlined.ViewInAr,
+                    onClick = onOpenMapbox3D
+                )
             }
         }
     }
