@@ -31,15 +31,15 @@ import com.mapbox.geojson.LineString
 import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
 import com.mapbox.maps.CameraOptions
+import com.mapbox.maps.MapView
 import com.mapbox.maps.MapboxDelicateApi
 import com.mapbox.maps.MapboxExperimental
-import com.mapbox.maps.MapView
 import com.mapbox.maps.coroutine.styleLoadedEvents
 import com.mapbox.maps.extension.compose.MapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.MapViewportState
-import com.mapbox.maps.extension.compose.rememberMapState
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import com.mapbox.maps.extension.compose.rememberMapState
 import com.mapbox.maps.extension.compose.style.BooleanValue
 import com.mapbox.maps.extension.compose.style.ColorValue
 import com.mapbox.maps.extension.compose.style.DoubleValue
@@ -62,9 +62,9 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlinx.coroutines.flow.first
 
+/** Hosts the Mapbox 3D scene, drawing layers, sky dome, and scene controls. */
 @Composable
 @OptIn(MapboxDelicateApi::class, MapboxExperimental::class)
-/** Hosts the Mapbox 3D scene, drawing layers, sky dome, and scene controls. */
 fun MapboxScene3DView(
     buildings: List<Building>,
     walls: List<DrawnWall>,
@@ -85,14 +85,7 @@ fun MapboxScene3DView(
     var useMapboxBuildings by remember { mutableStateOf(false) }
     var sceneMapView by remember { mutableStateOf<MapView?>(null) }
     val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, sunPath)
-    val buildingFeatures = remember(buildings) { buildings.mapNotNull(Building::toMapboxFeature) }
-    val wallFeatures = remember(walls) { walls.mapNotNull(DrawnWall::toMapboxFeature) }
-    val treeTrunkFeatures = remember(trees) { trees.map(DrawnTree::toTrunkFeature) }
-    val treeCanopyFeatures = remember(trees) { trees.map(DrawnTree::toCanopyFeature) }
-    val buildingSource = rememberFeatureSource(Scene3DDrawingLayers.BUILDING_SOURCE, buildingFeatures)
-    val wallSource = rememberFeatureSource(Scene3DDrawingLayers.WALL_SOURCE, wallFeatures)
-    val treeTrunkSource = rememberFeatureSource(Scene3DDrawingLayers.TREE_TRUNK_SOURCE, treeTrunkFeatures)
-    val treeCanopySource = rememberFeatureSource(Scene3DDrawingLayers.TREE_CANOPY_SOURCE, treeCanopyFeatures)
+    val mapSources = rememberMapboxScene3DMapSources(buildings, walls, trees)
 
     val mapViewportState = rememberMapViewportState {
         setCameraOptions {
@@ -109,10 +102,10 @@ fun MapboxScene3DView(
     Box(modifier = modifier.fillMaxSize()) {
         MapboxScene3DMap(
             mapViewportState = mapViewportState,
-            buildingSource = buildingSource,
-            wallSource = wallSource,
-            treeTrunkSource = treeTrunkSource,
-            treeCanopySource = treeCanopySource,
+            buildingSource = mapSources.buildingSource,
+            wallSource = mapSources.wallSource,
+            treeTrunkSource = mapSources.treeTrunkSource,
+            treeCanopySource = mapSources.treeCanopySource,
             buildingColor = buildingColor,
             wallColor = wallColor,
             trunkColor = trunkColor,
@@ -138,17 +131,24 @@ fun MapboxScene3DView(
                 if (basemapStyle == MapboxBasemapStyle.STANDARD) useMapboxBuildings = false
                 basemapStyle = if (basemapStyle == MapboxBasemapStyle.STANDARD) {
                     MapboxBasemapStyle.SATELLITE
-                } else MapboxBasemapStyle.STANDARD
+                } else {
+                    MapboxBasemapStyle.STANDARD
+                }
             },
             showDome = showDome,
             useMapboxBuildings = useMapboxBuildings,
             onToggleBuildingSource = {
                 useMapboxBuildings = !useMapboxBuildings
-                basemapStyle = if (useMapboxBuildings) MapboxBasemapStyle.STANDARD else MapboxBasemapStyle.SATELLITE
+                basemapStyle = if (useMapboxBuildings) {
+                    MapboxBasemapStyle.STANDARD
+                } else {
+                    MapboxBasemapStyle.SATELLITE
+                }
             },
             onToggleDome = {
                 if (!showDome) {
-                    val currentViewport = sceneMapView?.currentScene3DViewport(viewport)
+                    val currentViewport = sceneMapView
+                        ?.currentScene3DViewport(viewport)
                         ?: viewport.copy(
                             center = mapViewportState.cameraState?.center
                                 ?.let { GeoPoint(it.longitude(), it.latitude()) }
@@ -163,9 +163,9 @@ fun MapboxScene3DView(
     }
 }
 
+/** Creates the Mapbox map, applies the selected style, and installs scene layers. */
 @Composable
 @OptIn(MapboxExperimental::class)
-/** Creates the Mapbox map, applies the selected style, and installs scene layers. */
 private fun MapboxScene3DMap(
     mapViewportState: MapViewportState,
     buildingSource: GeoJsonSourceState,
@@ -264,13 +264,9 @@ private fun MapboxScene3DMap(
     }
 }
 
-@Composable
 /** Renders user-drawn building polygons as height-aware Mapbox extrusions. */
-private fun BuildingExtrusionLayer(
-    source: GeoJsonSourceState,
-    color: Color,
-    visible: Boolean
-) {
+@Composable
+private fun BuildingExtrusionLayer(source: GeoJsonSourceState, color: Color, visible: Boolean) {
     FillExtrusionLayer(sourceState = source, layerId = Scene3DDrawingLayers.BUILDING_LAYER) {
         fillExtrusionBase = DoubleValue(Expression.get(Scene3DFeatureProperties.BASE_HEIGHT))
         fillExtrusionHeight = DoubleValue(Expression.get(Scene3DFeatureProperties.HEIGHT))
@@ -282,9 +278,9 @@ private fun BuildingExtrusionLayer(
     }
 }
 
+/** Renders user-drawn walls as shadow-casting extruded lines. */
 @Composable
 @OptIn(MapboxExperimental::class)
-/** Renders user-drawn walls as shadow-casting extruded lines. */
 private fun WallExtrusionLayer(source: GeoJsonSourceState, color: Color) {
     FillExtrusionLayer(sourceState = source, layerId = Scene3DDrawingLayers.WALL_LAYER) {
         fillExtrusionHeight = DoubleValue(Expression.get(Scene3DFeatureProperties.HEIGHT))
@@ -295,9 +291,9 @@ private fun WallExtrusionLayer(source: GeoJsonSourceState, color: Color) {
     }
 }
 
+/** Renders the trunk and canopy extrusions for user-drawn trees. */
 @Composable
 @OptIn(MapboxExperimental::class)
-/** Renders the trunk and canopy extrusions for user-drawn trees. */
 private fun TreeExtrusionLayers(
     trunkSource: GeoJsonSourceState,
     canopySource: GeoJsonSourceState,
@@ -310,7 +306,10 @@ private fun TreeExtrusionLayers(
         fillExtrusionOpacity = DoubleValue(Scene3DObjectStyle.OBJECT_OPACITY)
         fillExtrusionCastShadows = BooleanValue(true)
     }
-    FillExtrusionLayer(sourceState = canopySource, layerId = Scene3DDrawingLayers.TREE_CANOPY_LAYER) {
+    FillExtrusionLayer(
+        sourceState = canopySource,
+        layerId = Scene3DDrawingLayers.TREE_CANOPY_LAYER
+    ) {
         fillExtrusionBase = DoubleValue(Expression.get(Scene3DFeatureProperties.BASE_HEIGHT))
         fillExtrusionHeight = DoubleValue(Expression.get(Scene3DFeatureProperties.HEIGHT))
         fillExtrusionColor = ColorValue(canopyColor)
@@ -326,7 +325,10 @@ private fun Building.toMapboxFeature(): Feature? {
     if (polygon.rings.firstOrNull().orEmpty().distinct().size < 3) return null
     return Feature.fromGeometry(polygon.toMapboxPolygon()).apply {
         addNumberProperty(Scene3DFeatureProperties.BASE_HEIGHT, minHeightMeters.coerceAtLeast(0.0))
-        addNumberProperty(Scene3DFeatureProperties.HEIGHT, heightMeters.coerceAtLeast(minHeightMeters))
+        addNumberProperty(
+            Scene3DFeatureProperties.HEIGHT,
+            heightMeters.coerceAtLeast(minHeightMeters)
+        )
     }
 }
 
@@ -358,7 +360,10 @@ private fun DrawnTree.toCanopyFeature(): Feature = Feature.fromGeometry(
     circlePolygon(center, radiusMeters.coerceAtLeast(Scene3DTreeGeometry.MIN_CANOPY_RADIUS_METERS))
 ).apply {
     val height = heightMeters.coerceAtLeast(Scene3DTreeGeometry.MIN_TREE_HEIGHT_METERS)
-    addNumberProperty(Scene3DFeatureProperties.BASE_HEIGHT, height * Scene3DTreeGeometry.CANOPY_BASE_RATIO)
+    addNumberProperty(
+        Scene3DFeatureProperties.BASE_HEIGHT,
+        height * Scene3DTreeGeometry.CANOPY_BASE_RATIO
+    )
     addNumberProperty(Scene3DFeatureProperties.HEIGHT, height)
 }
 
@@ -433,8 +438,42 @@ private fun MapView.currentScene3DViewport(
     )
 }
 
+private data class MapboxScene3DMapSources(
+    val buildingSource: GeoJsonSourceState,
+    val wallSource: GeoJsonSourceState,
+    val treeTrunkSource: GeoJsonSourceState,
+    val treeCanopySource: GeoJsonSourceState
+)
+
 @Composable
+private fun rememberMapboxScene3DMapSources(
+    buildings: List<Building>,
+    walls: List<DrawnWall>,
+    trees: List<DrawnTree>
+): MapboxScene3DMapSources {
+    val buildingFeatures = remember(buildings) { buildings.mapNotNull(Building::toMapboxFeature) }
+    val wallFeatures = remember(walls) { walls.mapNotNull(DrawnWall::toMapboxFeature) }
+    val treeTrunkFeatures = remember(trees) { trees.map(DrawnTree::toTrunkFeature) }
+    val treeCanopyFeatures = remember(trees) { trees.map(DrawnTree::toCanopyFeature) }
+    return MapboxScene3DMapSources(
+        buildingSource = rememberFeatureSource(
+            Scene3DDrawingLayers.BUILDING_SOURCE,
+            buildingFeatures
+        ),
+        wallSource = rememberFeatureSource(Scene3DDrawingLayers.WALL_SOURCE, wallFeatures),
+        treeTrunkSource = rememberFeatureSource(
+            Scene3DDrawingLayers.TREE_TRUNK_SOURCE,
+            treeTrunkFeatures
+        ),
+        treeCanopySource = rememberFeatureSource(
+            Scene3DDrawingLayers.TREE_CANOPY_SOURCE,
+            treeCanopyFeatures
+        )
+    )
+}
+
 /** Remembers a GeoJSON source and refreshes its data when features change. */
+@Composable
 private fun rememberFeatureSource(id: String, features: List<Feature>): GeoJsonSourceState {
     val source = remember(id) {
         GeoJsonSourceState(id).apply { data = GeoJSONData(features) }

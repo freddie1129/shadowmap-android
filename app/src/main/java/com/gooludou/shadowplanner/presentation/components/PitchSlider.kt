@@ -22,11 +22,7 @@ import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 import kotlin.math.roundToInt
 
 @Composable
-fun PitchSlider(
-    pitch: Float,
-    onPitchChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun PitchSlider(pitch: Float, onPitchChange: (Float) -> Unit, modifier: Modifier = Modifier) {
     val dimensions = ShadowMapDesign.dimensions
     Surface(
         modifier = modifier,

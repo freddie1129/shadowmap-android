@@ -166,10 +166,7 @@ private fun SceneSunSegmentModelLayer(source: GeoJsonSourceState) {
 
 @Composable
 @OptIn(MapboxExperimental::class)
-private fun SceneSunMarkerModelLayer(
-    source: GeoJsonSourceState,
-    metrics: MapboxSkyMetrics
-) {
+private fun SceneSunMarkerModelLayer(source: GeoJsonSourceState, metrics: MapboxSkyMetrics) {
     val radius = metrics.markerRadiusMeters
     ModelLayer(sourceState = source, layerId = SceneSunMarkerGlb.LAYER_ID) {
         modelId = ModelIdValue(

@@ -8,11 +8,7 @@ import kotlin.math.max
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-data class MapboxSkyPoint(
-    val eastMeters: Double,
-    val northMeters: Double,
-    val upMeters: Double
-) {
+data class MapboxSkyPoint(val eastMeters: Double, val northMeters: Double, val upMeters: Double) {
     fun toMapboxModelTranslation(): DoubleArray = doubleArrayOf(
         eastMeters,
         -northMeters,
@@ -129,10 +125,7 @@ object MapboxSceneSkyGeometry {
             }
     }
 
-    fun connector(
-        position: SolarPosition?,
-        metrics: MapboxSkyMetrics
-    ): MapboxSkySegment? {
+    fun connector(position: SolarPosition?, metrics: MapboxSkyMetrics): MapboxSkySegment? {
         if (position?.isAboveHorizon != true) return null
         return segmentBetween(
             start = MapboxSkyPoint(0.0, 0.0, 0.0),

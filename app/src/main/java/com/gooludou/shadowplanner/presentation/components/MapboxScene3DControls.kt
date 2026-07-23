@@ -1,6 +1,7 @@
 package com.gooludou.shadowplanner.presentation.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -42,76 +43,124 @@ internal fun MapboxScene3DControls(
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
-        SceneViewSwitchButton(
-            label = stringResource(R.string.map_view),
-            icon = Icons.Outlined.Map,
-            onClick = onBackToMap,
-            modifier = Modifier.align(Alignment.TopStart)
-        )
-        SceneViewSwitchButton(
-            label = stringResource(
-                if (basemapStyle == MapboxBasemapStyle.SATELLITE) {
-                    R.string.standard_map_style
-                } else {
-                    R.string.satellite_map_style
-                }
-            ),
-            icon = if (basemapStyle == MapboxBasemapStyle.SATELLITE) {
-                Icons.Outlined.Map
-            } else {
-                Icons.Outlined.SatelliteAlt
-            },
-            onClick = onToggleBasemapStyle,
-            modifier = Modifier.align(Alignment.TopEnd)
-        )
-        MapboxDomeToggle(
+        MapboxScene3DTopControls(
+            basemapStyle = basemapStyle,
+            onToggleBasemapStyle = onToggleBasemapStyle,
             showDome = showDome,
-            onClick = onToggleDome,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = Scene3DControlLayout.DOME_CONTROL_OFFSET)
-        )
-        MapboxBuildingSourceToggle(
             useMapboxBuildings = useMapboxBuildings,
-            onClick = onToggleBuildingSource,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = Scene3DControlLayout.BUILDING_CONTROL_OFFSET)
+            onToggleBuildingSource = onToggleBuildingSource,
+            onToggleDome = onToggleDome,
+            onBackToMap = onBackToMap
         )
-        SceneViewSwitchButton(
-            label = stringResource(
-                if (isTopDown) R.string.view_3d_button else R.string.top_down_view
-            ),
-            icon = if (isTopDown) Icons.Outlined.ViewInAr else Icons.Outlined.Map,
-            onClick = {
-                mapViewportState.setCameraOptions {
-                    pitch(if (isTopDown) Scene3DCamera.ORBIT_PITCH_DEGREES else Scene3DCamera.TOP_DOWN_PITCH_DEGREES)
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(
-                    end = ShadowMapDesign.dimensions.screenPadding,
-                    bottom = Scene3DControlLayout.BOTTOM_CONTROL_CLEARANCE
-                )
-        )
-        PitchSlider(
-            pitch = currentPitch.toFloat(),
-            onPitchChange = { pitch ->
-                mapViewportState.setCameraOptions {
-                    pitch(pitch.toDouble())
-                }
-            },
-            modifier = Modifier.align(Alignment.CenterEnd)
-        )
-        DateTimeSpinner(
+        MapboxScene3DBottomControls(
+            mapViewportState = mapViewportState,
+            currentPitch = currentPitch,
+            isTopDown = isTopDown,
             selectedEpochMillis = selectedEpochMillis,
             timeZoneId = timeZoneId,
             onDateTimeChanged = onDateTimeChanged,
-            onNowSelected = onNowSelected,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            onNowSelected = onNowSelected
         )
     }
+}
+
+@Composable
+private fun BoxScope.MapboxScene3DTopControls(
+    basemapStyle: MapboxBasemapStyle,
+    onToggleBasemapStyle: () -> Unit,
+    showDome: Boolean,
+    useMapboxBuildings: Boolean,
+    onToggleBuildingSource: () -> Unit,
+    onToggleDome: () -> Unit,
+    onBackToMap: () -> Unit
+) {
+    SceneViewSwitchButton(
+        label = stringResource(R.string.map_view),
+        icon = Icons.Outlined.Map,
+        onClick = onBackToMap,
+        modifier = Modifier.align(Alignment.TopStart)
+    )
+    SceneViewSwitchButton(
+        label = stringResource(
+            if (basemapStyle == MapboxBasemapStyle.SATELLITE) {
+                R.string.standard_map_style
+            } else {
+                R.string.satellite_map_style
+            }
+        ),
+        icon = if (basemapStyle == MapboxBasemapStyle.SATELLITE) {
+            Icons.Outlined.Map
+        } else {
+            Icons.Outlined.SatelliteAlt
+        },
+        onClick = onToggleBasemapStyle,
+        modifier = Modifier.align(Alignment.TopEnd)
+    )
+    MapboxDomeToggle(
+        showDome = showDome,
+        onClick = onToggleDome,
+        modifier = Modifier
+            .align(Alignment.TopEnd)
+            .padding(top = Scene3DControlLayout.DOME_CONTROL_OFFSET)
+    )
+    MapboxBuildingSourceToggle(
+        useMapboxBuildings = useMapboxBuildings,
+        onClick = onToggleBuildingSource,
+        modifier = Modifier
+            .align(Alignment.TopEnd)
+            .padding(top = Scene3DControlLayout.BUILDING_CONTROL_OFFSET)
+    )
+}
+
+@Composable
+private fun BoxScope.MapboxScene3DBottomControls(
+    mapViewportState: MapViewportState,
+    currentPitch: Double,
+    isTopDown: Boolean,
+    selectedEpochMillis: Long,
+    timeZoneId: String,
+    onDateTimeChanged: (Long) -> Unit,
+    onNowSelected: () -> Unit
+) {
+    SceneViewSwitchButton(
+        label = stringResource(
+            if (isTopDown) R.string.view_3d_button else R.string.top_down_view
+        ),
+        icon = if (isTopDown) Icons.Outlined.ViewInAr else Icons.Outlined.Map,
+        onClick = {
+            mapViewportState.setCameraOptions {
+                pitch(
+                    if (isTopDown) {
+                        Scene3DCamera.ORBIT_PITCH_DEGREES
+                    } else {
+                        Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+                    }
+                )
+            }
+        },
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(
+                end = ShadowMapDesign.dimensions.screenPadding,
+                bottom = Scene3DControlLayout.BOTTOM_CONTROL_CLEARANCE
+            )
+    )
+    PitchSlider(
+        pitch = currentPitch.toFloat(),
+        onPitchChange = { pitch ->
+            mapViewportState.setCameraOptions {
+                pitch(pitch.toDouble())
+            }
+        },
+        modifier = Modifier.align(Alignment.CenterEnd)
+    )
+    DateTimeSpinner(
+        selectedEpochMillis = selectedEpochMillis,
+        timeZoneId = timeZoneId,
+        onDateTimeChanged = onDateTimeChanged,
+        onNowSelected = onNowSelected,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
 }
 
 @Preview(name = "Mapbox 3D controls - light", showBackground = true)
