@@ -4,11 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.SatelliteAlt
-import androidx.compose.material.icons.outlined.ViewInAr
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.Building
 import com.gooludou.shadowplanner.domain.DrawnTree
@@ -31,7 +25,6 @@ import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.domain.SolarPosition
 import com.gooludou.shadowplanner.scene.SceneViewport
-import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.mapbox.bindgen.Value
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.LineString
@@ -69,13 +62,9 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlinx.coroutines.flow.first
 
-private enum class MapboxBasemapStyle {
-    STANDARD,
-    SATELLITE
-}
-
 @Composable
 @OptIn(MapboxDelicateApi::class, MapboxExperimental::class)
+/** Hosts the Mapbox 3D scene, drawing layers, sky dome, and scene controls. */
 fun MapboxScene3DView(
     buildings: List<Building>,
     walls: List<DrawnWall>,
@@ -100,17 +89,17 @@ fun MapboxScene3DView(
     val wallFeatures = remember(walls) { walls.mapNotNull(DrawnWall::toMapboxFeature) }
     val treeTrunkFeatures = remember(trees) { trees.map(DrawnTree::toTrunkFeature) }
     val treeCanopyFeatures = remember(trees) { trees.map(DrawnTree::toCanopyFeature) }
-    val buildingSource = rememberFeatureSource(BUILDING_SOURCE_ID, buildingFeatures)
-    val wallSource = rememberFeatureSource(WALL_SOURCE_ID, wallFeatures)
-    val treeTrunkSource = rememberFeatureSource(TREE_TRUNK_SOURCE_ID, treeTrunkFeatures)
-    val treeCanopySource = rememberFeatureSource(TREE_CANOPY_SOURCE_ID, treeCanopyFeatures)
+    val buildingSource = rememberFeatureSource(Scene3DDrawingLayers.BUILDING_SOURCE, buildingFeatures)
+    val wallSource = rememberFeatureSource(Scene3DDrawingLayers.WALL_SOURCE, wallFeatures)
+    val treeTrunkSource = rememberFeatureSource(Scene3DDrawingLayers.TREE_TRUNK_SOURCE, treeTrunkFeatures)
+    val treeCanopySource = rememberFeatureSource(Scene3DDrawingLayers.TREE_CANOPY_SOURCE, treeCanopyFeatures)
 
     val mapViewportState = rememberMapViewportState {
         setCameraOptions {
             center(Point.fromLngLat(viewport.center.longitude, viewport.center.latitude))
             zoom(viewport.zoom)
             bearing(viewport.bearing)
-            pitch(MAPBOX_3D_PITCH_DEGREES)
+            pitch(Scene3DCamera.ORBIT_PITCH_DEGREES)
         }
     }
     val buildingColor = MaterialTheme.colorScheme.surfaceVariant
@@ -175,102 +164,8 @@ fun MapboxScene3DView(
 }
 
 @Composable
-private fun MapboxScene3DControls(
-    mapViewportState: MapViewportState,
-    selectedEpochMillis: Long,
-    timeZoneId: String,
-    onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit,
-    basemapStyle: MapboxBasemapStyle,
-    onToggleBasemapStyle: () -> Unit,
-    showDome: Boolean,
-    useMapboxBuildings: Boolean,
-    onToggleBuildingSource: () -> Unit,
-    onToggleDome: () -> Unit,
-    onBackToMap: () -> Unit
-) {
-    val currentPitch = mapViewportState.cameraState?.pitch ?: MAPBOX_3D_PITCH_DEGREES
-    val isTopDown = currentPitch <=
-        TOP_DOWN_PITCH_THRESHOLD_DEGREES
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-    ) {
-        SceneViewSwitchButton(
-            label = stringResource(R.string.map_view),
-            icon = Icons.Outlined.Map,
-            onClick = onBackToMap,
-            modifier = Modifier.align(Alignment.TopStart)
-        )
-        SceneViewSwitchButton(
-            label = stringResource(
-                if (basemapStyle == MapboxBasemapStyle.SATELLITE) {
-                    R.string.standard_map_style
-                } else {
-                    R.string.satellite_map_style
-                }
-            ),
-            icon = if (basemapStyle == MapboxBasemapStyle.SATELLITE) {
-                Icons.Outlined.Map
-            } else {
-                Icons.Outlined.SatelliteAlt
-            },
-            onClick = onToggleBasemapStyle,
-            modifier = Modifier.align(Alignment.TopEnd)
-        )
-        MapboxDomeToggle(
-            showDome = showDome,
-            onClick = onToggleDome,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = MAPBOX_DOME_CONTROL_OFFSET)
-        )
-        MapboxBuildingSourceToggle(
-            useMapboxBuildings = useMapboxBuildings,
-            onClick = onToggleBuildingSource,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = MAPBOX_BUILDING_CONTROL_OFFSET)
-        )
-        SceneViewSwitchButton(
-            label = stringResource(
-                if (isTopDown) R.string.view_3d_button else R.string.top_down_view
-            ),
-            icon = if (isTopDown) Icons.Outlined.ViewInAr else Icons.Outlined.Map,
-            onClick = {
-                mapViewportState.setCameraOptions {
-                    pitch(if (isTopDown) MAPBOX_3D_PITCH_DEGREES else TOP_DOWN_PITCH_DEGREES)
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(
-                    end = ShadowMapDesign.dimensions.screenPadding,
-                    bottom = MAPBOX_BOTTOM_CONTROL_CLEARANCE
-                )
-        )
-        PitchSlider(
-            pitch = currentPitch.toFloat(),
-            onPitchChange = { pitch ->
-                mapViewportState.setCameraOptions {
-                    pitch(pitch.toDouble())
-                }
-            },
-            modifier = Modifier.align(Alignment.CenterEnd)
-        )
-        DateTimeSpinner(
-            selectedEpochMillis = selectedEpochMillis,
-            timeZoneId = timeZoneId,
-            onDateTimeChanged = onDateTimeChanged,
-            onNowSelected = onNowSelected,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
-    }
-}
-
-@Composable
 @OptIn(MapboxExperimental::class)
+/** Creates the Mapbox map, applies the selected style, and installs scene layers. */
 private fun MapboxScene3DMap(
     mapViewportState: MapViewportState,
     buildingSource: GeoJsonSourceState,
@@ -287,6 +182,7 @@ private fun MapboxScene3DMap(
     onMapViewReady: (MapView) -> Unit,
     domeContent: @Composable () -> Unit
 ) {
+    // Compose Preview cannot initialize Mapbox's native renderer, so show a safe placeholder.
     if (LocalInspectionMode.current) {
         Box(
             modifier = Modifier
@@ -304,10 +200,10 @@ private fun MapboxScene3DMap(
         }
     }
     val sunVisible = solarPosition?.isAboveHorizon == true
-    val sunAzimuth = solarPosition?.azimuthDegrees ?: DEFAULT_LIGHT_AZIMUTH_DEGREES
+    val sunAzimuth = solarPosition?.azimuthDegrees ?: Scene3DLighting.DEFAULT_AZIMUTH_DEGREES
     val sunZenith = solarPosition?.zenithDegrees
-        ?.coerceIn(MIN_LIGHT_POLAR_ANGLE_DEGREES, MAX_LIGHT_POLAR_ANGLE_DEGREES)
-        ?: DEFAULT_LIGHT_POLAR_ANGLE_DEGREES
+        ?.coerceIn(Scene3DLighting.MIN_POLAR_ANGLE_DEGREES, Scene3DLighting.MAX_POLAR_ANGLE_DEGREES)
+        ?: Scene3DLighting.DEFAULT_POLAR_ANGLE_DEGREES
     val standardSatelliteStyleState = rememberStandardSatelliteStyleState {
         terrainState = TerrainState.DISABLED
     }
@@ -341,14 +237,14 @@ private fun MapboxScene3DMap(
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
-            val ambientLight = ambientLight(AMBIENT_LIGHT_ID) {
-                intensity(AMBIENT_LIGHT_INTENSITY)
+            val ambientLight = ambientLight(Scene3DMapIds.AMBIENT_LIGHT) {
+                intensity(Scene3DLighting.AMBIENT_INTENSITY)
             }
-            val directionalLight = directionalLight(SUN_LIGHT_ID) {
+            val directionalLight = directionalLight(Scene3DMapIds.SUN_LIGHT) {
                 castShadows(sunVisible)
                 direction(listOf(sunAzimuth, sunZenith))
-                intensity(if (sunVisible) SUN_LIGHT_INTENSITY else 0.0)
-                shadowIntensity(SHADOW_INTENSITY)
+                intensity(if (sunVisible) Scene3DLighting.SUN_INTENSITY else 0.0)
+                shadowIntensity(Scene3DLighting.SHADOW_INTENSITY)
             }
             mapView.mapboxMap.setLight(ambientLight, directionalLight)
         }
@@ -359,7 +255,7 @@ private fun MapboxScene3DMap(
             }
             mapboxNative3dConfig(useMapboxBuildings).forEach { (key, enabled) ->
                 mapView.mapboxMap.setStyleImportConfigProperty(
-                    STANDARD_STYLE_IMPORT_ID,
+                    Scene3DMapIds.STANDARD_STYLE_IMPORT,
                     key,
                     Value(enabled)
                 )
@@ -369,17 +265,18 @@ private fun MapboxScene3DMap(
 }
 
 @Composable
+/** Renders user-drawn building polygons as height-aware Mapbox extrusions. */
 private fun BuildingExtrusionLayer(
     source: GeoJsonSourceState,
     color: Color,
     visible: Boolean
 ) {
-    FillExtrusionLayer(sourceState = source, layerId = BUILDING_LAYER_ID) {
-        fillExtrusionBase = DoubleValue(Expression.get(PROPERTY_BASE_HEIGHT))
-        fillExtrusionHeight = DoubleValue(Expression.get(PROPERTY_HEIGHT))
+    FillExtrusionLayer(sourceState = source, layerId = Scene3DDrawingLayers.BUILDING_LAYER) {
+        fillExtrusionBase = DoubleValue(Expression.get(Scene3DFeatureProperties.BASE_HEIGHT))
+        fillExtrusionHeight = DoubleValue(Expression.get(Scene3DFeatureProperties.HEIGHT))
         fillExtrusionColor = ColorValue(color)
-        fillExtrusionOpacity = DoubleValue(OBJECT_OPACITY)
-        fillExtrusionAmbientOcclusionIntensity = DoubleValue(AMBIENT_OCCLUSION)
+        fillExtrusionOpacity = DoubleValue(Scene3DObjectStyle.OBJECT_OPACITY)
+        fillExtrusionAmbientOcclusionIntensity = DoubleValue(Scene3DObjectStyle.AMBIENT_OCCLUSION)
         fillExtrusionCastShadows = BooleanValue(true)
         visibility = if (visible) VisibilityValue.VISIBLE else VisibilityValue.NONE
     }
@@ -387,70 +284,85 @@ private fun BuildingExtrusionLayer(
 
 @Composable
 @OptIn(MapboxExperimental::class)
+/** Renders user-drawn walls as shadow-casting extruded lines. */
 private fun WallExtrusionLayer(source: GeoJsonSourceState, color: Color) {
-    FillExtrusionLayer(sourceState = source, layerId = WALL_LAYER_ID) {
-        fillExtrusionHeight = DoubleValue(Expression.get(PROPERTY_HEIGHT))
-        fillExtrusionLineWidth = DoubleValue(WALL_WIDTH_METERS)
+    FillExtrusionLayer(sourceState = source, layerId = Scene3DDrawingLayers.WALL_LAYER) {
+        fillExtrusionHeight = DoubleValue(Expression.get(Scene3DFeatureProperties.HEIGHT))
+        fillExtrusionLineWidth = DoubleValue(Scene3DObjectStyle.WALL_WIDTH_METERS)
         fillExtrusionColor = ColorValue(color)
-        fillExtrusionOpacity = DoubleValue(OBJECT_OPACITY)
+        fillExtrusionOpacity = DoubleValue(Scene3DObjectStyle.OBJECT_OPACITY)
         fillExtrusionCastShadows = BooleanValue(true)
     }
 }
 
 @Composable
 @OptIn(MapboxExperimental::class)
+/** Renders the trunk and canopy extrusions for user-drawn trees. */
 private fun TreeExtrusionLayers(
     trunkSource: GeoJsonSourceState,
     canopySource: GeoJsonSourceState,
     trunkColor: Color,
     canopyColor: Color
 ) {
-    FillExtrusionLayer(sourceState = trunkSource, layerId = TREE_TRUNK_LAYER_ID) {
-        fillExtrusionHeight = DoubleValue(Expression.get(PROPERTY_HEIGHT))
+    FillExtrusionLayer(sourceState = trunkSource, layerId = Scene3DDrawingLayers.TREE_TRUNK_LAYER) {
+        fillExtrusionHeight = DoubleValue(Expression.get(Scene3DFeatureProperties.HEIGHT))
         fillExtrusionColor = ColorValue(trunkColor)
-        fillExtrusionOpacity = DoubleValue(OBJECT_OPACITY)
+        fillExtrusionOpacity = DoubleValue(Scene3DObjectStyle.OBJECT_OPACITY)
         fillExtrusionCastShadows = BooleanValue(true)
     }
-    FillExtrusionLayer(sourceState = canopySource, layerId = TREE_CANOPY_LAYER_ID) {
-        fillExtrusionBase = DoubleValue(Expression.get(PROPERTY_BASE_HEIGHT))
-        fillExtrusionHeight = DoubleValue(Expression.get(PROPERTY_HEIGHT))
+    FillExtrusionLayer(sourceState = canopySource, layerId = Scene3DDrawingLayers.TREE_CANOPY_LAYER) {
+        fillExtrusionBase = DoubleValue(Expression.get(Scene3DFeatureProperties.BASE_HEIGHT))
+        fillExtrusionHeight = DoubleValue(Expression.get(Scene3DFeatureProperties.HEIGHT))
         fillExtrusionColor = ColorValue(canopyColor)
-        fillExtrusionOpacity = DoubleValue(OBJECT_OPACITY)
-        fillExtrusionEdgeRadius = DoubleValue(TREE_EDGE_RADIUS_METERS)
+        fillExtrusionOpacity = DoubleValue(Scene3DObjectStyle.OBJECT_OPACITY)
+        fillExtrusionEdgeRadius = DoubleValue(Scene3DTreeGeometry.EDGE_RADIUS_METERS)
         fillExtrusionRoundedRoof = BooleanValue(true)
         fillExtrusionCastShadows = BooleanValue(true)
     }
 }
 
+/** Converts a domain building into a Mapbox polygon feature with height properties. */
 private fun Building.toMapboxFeature(): Feature? {
     if (polygon.rings.firstOrNull().orEmpty().distinct().size < 3) return null
     return Feature.fromGeometry(polygon.toMapboxPolygon()).apply {
-        addNumberProperty(PROPERTY_BASE_HEIGHT, minHeightMeters.coerceAtLeast(0.0))
-        addNumberProperty(PROPERTY_HEIGHT, heightMeters.coerceAtLeast(minHeightMeters))
+        addNumberProperty(Scene3DFeatureProperties.BASE_HEIGHT, minHeightMeters.coerceAtLeast(0.0))
+        addNumberProperty(Scene3DFeatureProperties.HEIGHT, heightMeters.coerceAtLeast(minHeightMeters))
     }
 }
 
+/** Converts a domain wall into a Mapbox line feature with a height property. */
 private fun DrawnWall.toMapboxFeature(): Feature? {
     if (points.size < 2) return null
     return Feature.fromGeometry(LineString.fromLngLats(points.map(GeoPoint::toMapboxPoint))).apply {
-        addNumberProperty(PROPERTY_HEIGHT, heightMeters.coerceAtLeast(0.0))
+        addNumberProperty(Scene3DFeatureProperties.HEIGHT, heightMeters.coerceAtLeast(0.0))
     }
 }
 
+/** Converts a drawn tree into its circular trunk footprint feature. */
 private fun DrawnTree.toTrunkFeature(): Feature = Feature.fromGeometry(
-    circlePolygon(center, (radiusMeters * TREE_TRUNK_RADIUS_RATIO).coerceAtLeast(MIN_TRUNK_RADIUS_METERS))
+    circlePolygon(
+        center,
+        (radiusMeters * Scene3DTreeGeometry.TRUNK_RADIUS_RATIO)
+            .coerceAtLeast(Scene3DTreeGeometry.MIN_TRUNK_RADIUS_METERS)
+    )
 ).apply {
-    addNumberProperty(PROPERTY_HEIGHT, heightMeters.coerceAtLeast(MIN_TREE_HEIGHT_METERS) * TREE_TRUNK_HEIGHT_RATIO)
+    addNumberProperty(
+        Scene3DFeatureProperties.HEIGHT,
+        heightMeters.coerceAtLeast(Scene3DTreeGeometry.MIN_TREE_HEIGHT_METERS) *
+            Scene3DTreeGeometry.TRUNK_HEIGHT_RATIO
+    )
 }
 
+/** Converts a drawn tree into its circular canopy footprint feature. */
 private fun DrawnTree.toCanopyFeature(): Feature = Feature.fromGeometry(
-    circlePolygon(center, radiusMeters.coerceAtLeast(MIN_CANOPY_RADIUS_METERS))
+    circlePolygon(center, radiusMeters.coerceAtLeast(Scene3DTreeGeometry.MIN_CANOPY_RADIUS_METERS))
 ).apply {
-    val height = heightMeters.coerceAtLeast(MIN_TREE_HEIGHT_METERS)
-    addNumberProperty(PROPERTY_BASE_HEIGHT, height * TREE_CANOPY_BASE_RATIO)
-    addNumberProperty(PROPERTY_HEIGHT, height)
+    val height = heightMeters.coerceAtLeast(Scene3DTreeGeometry.MIN_TREE_HEIGHT_METERS)
+    addNumberProperty(Scene3DFeatureProperties.BASE_HEIGHT, height * Scene3DTreeGeometry.CANOPY_BASE_RATIO)
+    addNumberProperty(Scene3DFeatureProperties.HEIGHT, height)
 }
 
+/** Converts polygon rings into a Mapbox polygon, closing open rings when necessary. */
 private fun GeoPolygon.toMapboxPolygon(): Polygon = Polygon.fromLngLats(
     rings.map { ring ->
         val closedRing = when {
@@ -462,12 +374,13 @@ private fun GeoPolygon.toMapboxPolygon(): Polygon = Polygon.fromLngLats(
     }
 )
 
+/** Builds a geodesic-enough local circle polygon around a geographic point. */
 private fun circlePolygon(center: GeoPoint, radiusMeters: Double): Polygon {
     val latitudeRadians = center.latitude * PI / 180.0
-    val latitudeDegreesPerMeter = 180.0 / (PI * EARTH_RADIUS_METERS)
+    val latitudeDegreesPerMeter = 180.0 / (PI * Scene3DGeography.EARTH_RADIUS_METERS)
     val longitudeDegreesPerMeter = latitudeDegreesPerMeter / cos(latitudeRadians)
-    val ring = (0..TREE_SEGMENTS).map { index ->
-        val angle = index.toDouble() / TREE_SEGMENTS * 2.0 * PI
+    val ring = (0..Scene3DTreeGeometry.SEGMENTS).map { index ->
+        val angle = index.toDouble() / Scene3DTreeGeometry.SEGMENTS * 2.0 * PI
         Point.fromLngLat(
             center.longitude + sin(angle) * radiusMeters * longitudeDegreesPerMeter,
             center.latitude + cos(angle) * radiusMeters * latitudeDegreesPerMeter
@@ -476,8 +389,10 @@ private fun circlePolygon(center: GeoPoint, radiusMeters: Double): Polygon {
     return Polygon.fromLngLats(listOf(ring))
 }
 
+/** Converts the app's geographic point type to a Mapbox point. */
 private fun GeoPoint.toMapboxPoint(): Point = Point.fromLngLat(longitude, latitude)
 
+/** Reads the current Mapbox camera and screen footprint for dome sizing. */
 private fun MapView.currentScene3DViewport(
     fallback: MapboxScene3DViewport
 ): MapboxScene3DViewport? {
@@ -519,6 +434,7 @@ private fun MapView.currentScene3DViewport(
 }
 
 @Composable
+/** Remembers a GeoJSON source and refreshes its data when features change. */
 private fun rememberFeatureSource(id: String, features: List<Feature>): GeoJsonSourceState {
     val source = remember(id) {
         GeoJsonSourceState(id).apply { data = GeoJSONData(features) }
@@ -528,42 +444,3 @@ private fun rememberFeatureSource(id: String, features: List<Feature>): GeoJsonS
     }
     return source
 }
-
-private const val STANDARD_STYLE_IMPORT_ID = "basemap"
-private const val SUN_LIGHT_ID = "shadow-planner-sun"
-private const val AMBIENT_LIGHT_ID = "shadow-planner-ambient"
-private const val BUILDING_SOURCE_ID = "custom-3d-buildings-source"
-private const val WALL_SOURCE_ID = "custom-3d-walls-source"
-private const val TREE_TRUNK_SOURCE_ID = "custom-3d-tree-trunks-source"
-private const val TREE_CANOPY_SOURCE_ID = "custom-3d-tree-canopies-source"
-private const val BUILDING_LAYER_ID = "custom-3d-buildings-layer"
-private const val WALL_LAYER_ID = "custom-3d-walls-layer"
-private const val TREE_TRUNK_LAYER_ID = "custom-3d-tree-trunks-layer"
-private const val TREE_CANOPY_LAYER_ID = "custom-3d-tree-canopies-layer"
-private const val PROPERTY_HEIGHT = "height"
-private const val PROPERTY_BASE_HEIGHT = "base_height"
-private const val MAPBOX_3D_PITCH_DEGREES = 60.0
-private const val TOP_DOWN_PITCH_DEGREES = 0.0
-private const val TOP_DOWN_PITCH_THRESHOLD_DEGREES = 1.0
-private const val DEFAULT_LIGHT_AZIMUTH_DEGREES = 210.0
-private const val DEFAULT_LIGHT_POLAR_ANGLE_DEGREES = 30.0
-private const val MIN_LIGHT_POLAR_ANGLE_DEGREES = 0.0
-private const val MAX_LIGHT_POLAR_ANGLE_DEGREES = 90.0
-private const val SUN_LIGHT_INTENSITY = 0.8
-private const val AMBIENT_LIGHT_INTENSITY = 0.35
-private const val SHADOW_INTENSITY = 0.85
-private const val WALL_WIDTH_METERS = 0.2
-private const val OBJECT_OPACITY = 1.0
-private const val AMBIENT_OCCLUSION = 0.3
-private const val TREE_TRUNK_HEIGHT_RATIO = 0.45
-private const val TREE_CANOPY_BASE_RATIO = 0.35
-private const val TREE_TRUNK_RADIUS_RATIO = 0.18
-private const val TREE_EDGE_RADIUS_METERS = 0.5
-private const val MIN_TREE_HEIGHT_METERS = 0.1
-private const val MIN_TRUNK_RADIUS_METERS = 0.15
-private const val MIN_CANOPY_RADIUS_METERS = 0.5
-private const val TREE_SEGMENTS = 12
-private const val EARTH_RADIUS_METERS = 6_378_137.0
-private val MAPBOX_BOTTOM_CONTROL_CLEARANCE = 156.dp
-private val MAPBOX_DOME_CONTROL_OFFSET = 52.dp
-private val MAPBOX_BUILDING_CONTROL_OFFSET = 104.dp
