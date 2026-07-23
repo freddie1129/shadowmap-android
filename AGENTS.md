@@ -20,6 +20,8 @@ For theme-sensitive Compose UI, add explicit light-mode and dark-mode previews. 
 ## Testing Guidelines
 Local tests use JUnit in `app/src/test`, and Android tests use `AndroidJUnit4` in `app/src/androidTest`. Name tests clearly after behavior, for example `MapScreen_showsControlsByDefault`. Prefer adding regression tests alongside feature changes when the behavior can be exercised without Mapbox or device-only dependencies.
 
+Do not automatically install or launch the app on an emulator or physical device, and do not interact with emulator/device UI for verification. The developer performs runtime testing manually and will report the results. Use builds, local unit tests, lint, and static analysis for automated verification unless the developer explicitly requests an emulator or device test.
+
 ## Commit & Pull Request Guidelines
 The current history uses short, descriptive imperative commits, such as `Initial commit: Compose app with Mapbox map + interactive shadow controls`. Keep commit subjects focused on one change. Pull requests should include a concise summary, the commands used to verify the change, and screenshots or screen recordings for UI work.
 
