@@ -23,24 +23,33 @@ import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
+private val ThreeDActionBlue = Color(0xFF005FCC)
+
 @Composable
 fun SceneViewSwitchButton(
     label: String,
     icon: ImageVector,
     onClick: () -> Unit,
+    emphasized: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Button(
         onClick = onClick,
         modifier = modifier,
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-            contentColor = MaterialTheme.colorScheme.onSurface
+            containerColor = if (emphasized) {
+                ThreeDActionBlue
+            } else {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+            },
+            contentColor = if (emphasized) Color.White else MaterialTheme.colorScheme.onSurface
         ),
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
-        )
+        border = if (emphasized) null else {
+            BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
+            )
+        }
     ) {
         Icon(icon, contentDescription = null)
         Spacer(modifier = Modifier.width(ShadowMapDesign.dimensions.spacingSmall))

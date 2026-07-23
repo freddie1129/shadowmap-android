@@ -1,5 +1,10 @@
 package com.gooludou.shadowplanner.presentation.drawview
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -93,11 +98,20 @@ fun Map2DTopControls(
                 Icon(Icons.Outlined.Save, contentDescription = null)
             }
             Spacer(modifier = Modifier.weight(1f))
-            if (uiState.hasSceneObjects) {
+            AnimatedVisibility(
+                visible = uiState.hasSceneObjects,
+                enter = fadeIn(animationSpec = tween(220)) +
+                    scaleIn(initialScale = 0.92f, animationSpec = tween(220)) +
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth / 2 },
+                        animationSpec = tween(220)
+                    )
+            ) {
                 SceneViewSwitchButton(
-                    label = stringResource(R.string.mapbox_3d_button),
+                    label = stringResource(R.string.open_3d_button),
                     icon = Icons.Outlined.ViewInAr,
-                    onClick = onOpenMapbox3D
+                    onClick = onOpenMapbox3D,
+                    emphasized = true
                 )
             }
         }
