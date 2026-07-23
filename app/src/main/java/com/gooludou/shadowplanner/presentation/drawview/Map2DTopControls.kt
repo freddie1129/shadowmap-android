@@ -1,10 +1,5 @@
 package com.gooludou.shadowplanner.presentation.drawview
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,9 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Save
-import androidx.compose.material.icons.outlined.ViewInAr
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,7 +27,6 @@ import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
-import com.gooludou.shadowplanner.presentation.components.SceneViewSwitchButton
 import com.gooludou.shadowplanner.presentation.locationsearch.LocationSearchEntry
 import com.gooludou.shadowplanner.presentation.settings.SettingsIconButton
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
@@ -47,7 +39,6 @@ fun Map2DTopControls(
     onOpenLocationSearch: () -> Unit,
     onShowLocationInfo: () -> Unit,
     onOpen3D: () -> Unit,
-    onOpenMapbox3D: () -> Unit,
     onOpenProjects: () -> Unit,
     onSaveProject: () -> Unit,
     modifier: Modifier = Modifier
@@ -83,7 +74,7 @@ fun Map2DTopControls(
                 ),
             verticalAlignment = Alignment.Companion.CenterVertically
         ) {
-
+            Spacer(modifier = Modifier.weight(1f))
             MapRoundIconButton(
                 onClick = onOpenProjects,
                 contentDescription = stringResource(R.string.open_projects)
@@ -96,23 +87,6 @@ fun Map2DTopControls(
                 contentDescription = stringResource(R.string.save_project)
             ) {
                 Icon(Icons.Outlined.Save, contentDescription = null)
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            AnimatedVisibility(
-                visible = uiState.hasSceneObjects,
-                enter = fadeIn(animationSpec = tween(220)) +
-                    scaleIn(initialScale = 0.92f, animationSpec = tween(220)) +
-                    slideInHorizontally(
-                        initialOffsetX = { fullWidth -> fullWidth / 2 },
-                        animationSpec = tween(220)
-                    )
-            ) {
-                SceneViewSwitchButton(
-                    label = stringResource(R.string.open_3d_button),
-                    icon = Icons.Outlined.ViewInAr,
-                    onClick = onOpenMapbox3D,
-                    emphasized = true
-                )
             }
         }
     }
@@ -168,7 +142,6 @@ private fun Map2DTopControlsPreview() {
             onOpenLocationSearch = {},
             onShowLocationInfo = {},
             onOpen3D = {},
-            onOpenMapbox3D = {},
             onOpenProjects = {},
             onSaveProject = {}
         )

@@ -48,7 +48,6 @@ fun Map2DView(
             onOpenLocationSearch = onOpenLocationSearch,
             onShowLocationInfo = onShowLocationInfo,
             onOpen3D = onOpen3D,
-            onOpenMapbox3D = onOpenMapbox3D,
             onOpenProjects = onOpenProjects,
             onSaveProject = onSaveProject,
             modifier = Modifier.align(Alignment.TopCenter)
