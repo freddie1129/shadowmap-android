@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.mapbox3D
 
 internal enum class MapboxBasemapStyle {
     STANDARD,

@@ -1,5 +1,6 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.drawview
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
@@ -19,82 +19,33 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.Building
 import com.gooludou.shadowplanner.domain.BuildingSource
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
+import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
+import com.gooludou.shadowplanner.presentation.components.SceneViewSwitchButton
+import com.gooludou.shadowplanner.presentation.locationsearch.LocationSearchEntry
+import com.gooludou.shadowplanner.presentation.settings.SettingsIconButton
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
 @Composable
-fun Map2DView(
+fun Map2DTopControls(
     uiState: ShadowMapUiState,
-    autoToolState: AutoToolState,
-    isTimeVisible: Boolean,
-    onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit,
-    onToggleTime: () -> Unit,
-    onOpenShadowColor: () -> Unit,
-    onDrawMode: (com.gooludou.shadowplanner.domain.DrawMode) -> Unit,
-    onAutoLoad: () -> Unit,
-    onClear: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenLocationSearch: () -> Unit,
+    onShowLocationInfo: () -> Unit,
     onOpen3D: () -> Unit,
     onOpenMapbox3D: () -> Unit,
     onOpenProjects: () -> Unit,
     onSaveProject: () -> Unit,
-    onOpenLocationSearch: () -> Unit,
-    onShowLocationInfo: () -> Unit,
     modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-    ) {
-        Map2DTopControls(
-            uiState = uiState,
-            onOpenSettings = onOpenSettings,
-            onOpenLocationSearch = onOpenLocationSearch,
-            onShowLocationInfo = onShowLocationInfo,
-            onOpen3D = onOpen3D,
-            onOpenMapbox3D = onOpenMapbox3D,
-            onOpenProjects = onOpenProjects,
-            onSaveProject = onSaveProject,
-            modifier = Modifier.align(Alignment.TopCenter)
-        )
-        Map2DBottomControls(
-            uiState = uiState,
-            autoToolState = autoToolState,
-            isTimeVisible = isTimeVisible,
-            onDateTimeChanged = onDateTimeChanged,
-            onNowSelected = onNowSelected,
-            onToggleTime = onToggleTime,
-            onOpenShadowColor = onOpenShadowColor,
-            onDrawMode = onDrawMode,
-            onAutoLoad = onAutoLoad,
-            onClear = onClear,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
-    }
-}
-
-@Composable
-private fun Map2DTopControls(
-    uiState: ShadowMapUiState,
-    onOpenSettings: () -> Unit,
-    onOpenLocationSearch: () -> Unit,
-    onShowLocationInfo: () -> Unit,
-    onOpen3D: () -> Unit,
-    onOpenMapbox3D: () -> Unit,
-    onOpenProjects: () -> Unit,
-    onSaveProject: () -> Unit,
-    modifier: Modifier
 ) {
     val dimensions = ShadowMapDesign.dimensions
     Column(
@@ -103,29 +54,29 @@ private fun Map2DTopControls(
             .padding(top = dimensions.spacingSmall)
     ) {
         Row(
-            modifier = Modifier
+            modifier = Modifier.Companion
                 .fillMaxWidth()
                 .padding(horizontal = dimensions.spacingLarge),
             horizontalArrangement = Arrangement.spacedBy(dimensions.spacingSmall),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Companion.CenterVertically
         ) {
             SettingsIconButton(onClick = onOpenSettings)
             LocationSearchEntry(
                 label = uiState.selectedLocationLabel,
                 onClick = onOpenLocationSearch,
                 onInfoClick = onShowLocationInfo,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.Companion.weight(1f)
             )
         }
         Row(
-            modifier = Modifier
+            modifier = Modifier.Companion
                 .fillMaxWidth()
                 .padding(
                     top = dimensions.spacingSmall,
                     start = dimensions.spacingLarge,
                     end = dimensions.spacingLarge
                 ),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Companion.CenterVertically
         ) {
             if (uiState.hasSceneObjects) {
                 SceneViewSwitchButton(
@@ -133,14 +84,14 @@ private fun Map2DTopControls(
                     icon = Icons.Outlined.ViewInAr,
                     onClick = onOpen3D
                 )
-                Spacer(modifier = Modifier.width(dimensions.spacingSmall))
+                Spacer(modifier = Modifier.Companion.width(dimensions.spacingSmall))
                 SceneViewSwitchButton(
                     label = stringResource(R.string.mapbox_3d_button),
                     icon = Icons.Outlined.Map,
                     onClick = onOpenMapbox3D
                 )
             }
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.Companion.weight(1f))
             MapRoundIconButton(
                 onClick = onOpenProjects,
                 contentDescription = stringResource(R.string.open_projects)
@@ -157,57 +108,34 @@ private fun Map2DTopControls(
     }
 }
 
+@Preview(name = "Map top controls", showBackground = true, backgroundColor = 0xFF6B8064)
 @Composable
-private fun Map2DBottomControls(
-    uiState: ShadowMapUiState,
-    autoToolState: AutoToolState,
-    isTimeVisible: Boolean,
-    onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit,
-    onToggleTime: () -> Unit,
-    onOpenShadowColor: () -> Unit,
-    onDrawMode: (com.gooludou.shadowplanner.domain.DrawMode) -> Unit,
-    onAutoLoad: () -> Unit,
-    onClear: () -> Unit,
-    modifier: Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        MapToolBar(
-            autoState = autoToolState,
-            hasSceneObjects = uiState.hasSceneObjects,
-            isTimeVisible = isTimeVisible,
-            shadowAppearance = uiState.shadowAppearance,
-            onDrawMode = onDrawMode,
-            onAutoLoad = onAutoLoad,
-            onClear = onClear,
-            onToggleTime = onToggleTime,
-            onOpenShadowColor = onOpenShadowColor,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-        androidx.compose.animation.AnimatedVisibility(visible = isTimeVisible) {
-            DateTimeSpinner(
-                selectedEpochMillis = uiState.selectedEpochMillis,
-                timeZoneId = uiState.displayTimeZoneId,
-                onDateTimeChanged = onDateTimeChanged,
-                onNowSelected = onNowSelected
-            )
-        }
+private fun Map2DTopControlsLightPreview() {
+    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
+        Map2DTopControlsPreview()
     }
 }
 
-@Preview(name = "2D map view", showBackground = true, backgroundColor = 0xFF6B8064)
+@Preview(name = "Map top controls (dark)", showBackground = true, backgroundColor = 0xFF263238)
 @Composable
-private fun Map2DViewPreview() {
-    ShadowMapTheme(dynamicColor = false) {
-        Map2DView(
+private fun Map2DTopControlsDarkPreview() {
+    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
+        Map2DTopControlsPreview()
+    }
+}
+
+@Composable
+private fun Map2DTopControlsPreview() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF6B8064)),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Map2DTopControls(
             uiState = ShadowMapUiState(
                 selectedEpochMillis = 1_752_640_000_000L,
                 displayTimeZoneId = "Australia/Brisbane",
-                calculationLocation = GeoPoint(153.0251, -27.4698),
                 selectedLocationLabel = "Brisbane, Queensland",
                 drawnBuildings = listOf(
                     Building(
@@ -217,8 +145,7 @@ private fun Map2DViewPreview() {
                                 listOf(
                                     GeoPoint(153.025, -27.469),
                                     GeoPoint(153.026, -27.469),
-                                    GeoPoint(153.026, -27.470),
-                                    GeoPoint(153.025, -27.470)
+                                    GeoPoint(153.026, -27.470)
                                 )
                             )
                         ),
@@ -227,22 +154,13 @@ private fun Map2DViewPreview() {
                     )
                 )
             ),
-            autoToolState = AutoToolState.READY,
-            isTimeVisible = false,
-            onDateTimeChanged = {},
-            onNowSelected = {},
-            onToggleTime = {},
-            onOpenShadowColor = {},
-            onDrawMode = {},
-            onAutoLoad = {},
-            onClear = {},
             onOpenSettings = {},
+            onOpenLocationSearch = {},
+            onShowLocationInfo = {},
             onOpen3D = {},
             onOpenMapbox3D = {},
             onOpenProjects = {},
-            onSaveProject = {},
-            onOpenLocationSearch = {},
-            onShowLocationInfo = {}
+            onSaveProject = {}
         )
     }
 }

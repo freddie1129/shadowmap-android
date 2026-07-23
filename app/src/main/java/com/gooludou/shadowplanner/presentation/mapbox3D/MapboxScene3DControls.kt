@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -74,13 +74,13 @@ private fun BoxScope.MapboxScene3DTopControls(
     onToggleDome: () -> Unit,
     onBackToMap: () -> Unit
 ) {
-    SceneViewSwitchButton(
+    _root_ide_package_.com.gooludou.shadowplanner.presentation.components.SceneViewSwitchButton(
         label = stringResource(R.string.map_view),
         icon = Icons.Outlined.Map,
         onClick = onBackToMap,
         modifier = Modifier.align(Alignment.TopStart)
     )
-    SceneViewSwitchButton(
+    _root_ide_package_.com.gooludou.shadowplanner.presentation.components.SceneViewSwitchButton(
         label = stringResource(
             if (basemapStyle == MapboxBasemapStyle.SATELLITE) {
                 R.string.standard_map_style
@@ -96,14 +96,14 @@ private fun BoxScope.MapboxScene3DTopControls(
         onClick = onToggleBasemapStyle,
         modifier = Modifier.align(Alignment.TopEnd)
     )
-    MapboxDomeToggle(
+    _root_ide_package_.com.gooludou.shadowplanner.presentation.components.MapboxDomeToggle(
         showDome = showDome,
         onClick = onToggleDome,
         modifier = Modifier
             .align(Alignment.TopEnd)
             .padding(top = Scene3DControlLayout.DOME_CONTROL_OFFSET)
     )
-    MapboxBuildingSourceToggle(
+    _root_ide_package_.com.gooludou.shadowplanner.presentation.components.MapboxBuildingSourceToggle(
         useMapboxBuildings = useMapboxBuildings,
         onClick = onToggleBuildingSource,
         modifier = Modifier
@@ -122,7 +122,7 @@ private fun BoxScope.MapboxScene3DBottomControls(
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit
 ) {
-    SceneViewSwitchButton(
+    _root_ide_package_.com.gooludou.shadowplanner.presentation.components.SceneViewSwitchButton(
         label = stringResource(
             if (isTopDown) R.string.view_3d_button else R.string.top_down_view
         ),
@@ -145,7 +145,7 @@ private fun BoxScope.MapboxScene3DBottomControls(
                 bottom = Scene3DControlLayout.BOTTOM_CONTROL_CLEARANCE
             )
     )
-    PitchSlider(
+    _root_ide_package_.com.gooludou.shadowplanner.presentation.components.PitchSlider(
         pitch = currentPitch.toFloat(),
         onPitchChange = { pitch ->
             mapViewportState.setCameraOptions {
@@ -154,7 +154,7 @@ private fun BoxScope.MapboxScene3DBottomControls(
         },
         modifier = Modifier.align(Alignment.CenterEnd)
     )
-    DateTimeSpinner(
+    _root_ide_package_.com.gooludou.shadowplanner.presentation.components.DateTimeSpinner(
         selectedEpochMillis = selectedEpochMillis,
         timeZoneId = timeZoneId,
         onDateTimeChanged = onDateTimeChanged,

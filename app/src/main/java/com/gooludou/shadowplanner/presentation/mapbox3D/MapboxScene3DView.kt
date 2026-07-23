@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -253,7 +253,9 @@ private fun MapboxScene3DMap(
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
-            mapboxNative3dConfig(useMapboxBuildings).forEach { (key, enabled) ->
+            _root_ide_package_.com.gooludou.shadowplanner.presentation.components.mapboxNative3dConfig(
+                useMapboxBuildings
+            ).forEach { (key, enabled) ->
                 mapView.mapboxMap.setStyleImportConfigProperty(
                     Scene3DMapIds.STANDARD_STYLE_IMPORT,
                     key,

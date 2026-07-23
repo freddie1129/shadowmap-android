@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.DrawMode
 import com.gooludou.shadowplanner.domain.ShadowAppearance
@@ -103,7 +104,9 @@ private fun PrimaryToolBar(
             ToolIconButton({ onDrawMode(DrawMode.TREE) }, stringResource(R.string.place_tree)) {
                 Icon(Icons.Outlined.Park, contentDescription = null)
             }
-            AutoToolButton(autoState, onAutoLoad)
+            if (Config.ALLOW_LOAD_BUILDING) {
+                AutoToolButton(autoState, onAutoLoad)
+            }
             ToolIconButton(
                 onClear,
                 stringResource(R.string.clear_scene),
@@ -195,18 +198,31 @@ private fun ToolIconButton(
 
 @Preview(name = "Map toolbar", showBackground = true, backgroundColor = 0xFF52654B)
 @Composable
-private fun MapToolBarPreview() {
+private fun MapToolBarLightPreview() {
     ShadowMapTheme(darkTheme = false, dynamicColor = false) {
-        MapToolBar(
-            autoState = AutoToolState.READY,
-            hasSceneObjects = true,
-            isTimeVisible = false,
-            shadowAppearance = ShadowAppearance.DEFAULT,
-            onDrawMode = {},
-            onAutoLoad = {},
-            onClear = {},
-            onToggleTime = {},
-            onOpenShadowColor = {}
-        )
+        MapToolBarPreview()
     }
+}
+
+@Preview(name = "Map toolbar (dark)", showBackground = true, backgroundColor = 0xFF263238)
+@Composable
+private fun MapToolBarDarkPreview() {
+    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
+        MapToolBarPreview()
+    }
+}
+
+@Composable
+private fun MapToolBarPreview() {
+    MapToolBar(
+        autoState = AutoToolState.READY,
+        hasSceneObjects = true,
+        isTimeVisible = false,
+        shadowAppearance = ShadowAppearance.DEFAULT,
+        onDrawMode = {},
+        onAutoLoad = {},
+        onClear = {},
+        onToggleTime = {},
+        onOpenShadowColor = {}
+    )
 }

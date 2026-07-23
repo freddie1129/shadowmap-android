@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.drawview
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

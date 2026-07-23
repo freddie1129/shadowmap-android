@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.settings
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column

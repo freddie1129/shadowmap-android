@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.settings
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.R
+import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
 @Composable
