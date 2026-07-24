@@ -45,6 +45,7 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
             showDome = true,
             selectedEpochMillis = 1_752_640_000_000L,
             timeZoneId = "Australia/Brisbane",
+            calculationLocation = GeoPoint(longitude = 153.0251, latitude = -27.4698),
             onDateTimeChanged = {},
             onNowSelected = {},
             onToggleDome = {},

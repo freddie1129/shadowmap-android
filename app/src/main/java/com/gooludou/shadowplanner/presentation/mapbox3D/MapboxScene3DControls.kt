@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
+import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
 import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
 import com.gooludou.shadowplanner.presentation.components.PitchSlider
@@ -54,6 +55,7 @@ internal fun MapboxScene3DControls(
     mapViewportState: MapViewportState,
     selectedEpochMillis: Long,
     timeZoneId: String,
+    location: GeoPoint,
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
     basemapStyle: MapboxBasemapStyle,
@@ -87,6 +89,7 @@ internal fun MapboxScene3DControls(
             onToggleDome = onToggleDome,
             selectedEpochMillis = selectedEpochMillis,
             timeZoneId = timeZoneId,
+            location = location,
             onDateTimeChanged = onDateTimeChanged,
             onNowSelected = onNowSelected,
             isDateTimeVisible = isDateTimeVisible,
@@ -121,6 +124,7 @@ private fun BoxScope.MapboxScene3DBottomControls(
     onToggleDome: () -> Unit,
     selectedEpochMillis: Long,
     timeZoneId: String,
+    location: GeoPoint,
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
     isDateTimeVisible: Boolean,
@@ -223,6 +227,7 @@ private fun BoxScope.MapboxScene3DBottomControls(
             DateTimeSpinner(
                 selectedEpochMillis = selectedEpochMillis,
                 timeZoneId = timeZoneId,
+                location = location,
                 onDateTimeChanged = onDateTimeChanged,
                 onNowSelected = onNowSelected
             )
@@ -297,6 +302,7 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean) {
                 mapViewportState = mapViewportState,
                 selectedEpochMillis = 1_752_640_000_000L,
                 timeZoneId = "Australia/Brisbane",
+                location = GeoPoint(longitude = 153.0251, latitude = -27.4698),
                 onDateTimeChanged = {},
                 onNowSelected = {},
                 basemapStyle = MapboxBasemapStyle.SATELLITE,

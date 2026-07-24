@@ -829,6 +829,7 @@ private fun ShadowMapScreen(
                                 showDome = showDomeIn3d,
                                 selectedEpochMillis = currentUiState.selectedEpochMillis,
                                 timeZoneId = currentUiState.displayTimeZoneId,
+                                calculationLocation = currentUiState.calculationLocation,
                                 onDateTimeChanged = onDateTimeChanged,
                                 onNowSelected = onNowSelected,
                                 onToggleDome = { showDomeIn3d = !showDomeIn3d },
