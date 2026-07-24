@@ -883,7 +883,8 @@ private fun ShadowMapScreen(
                 },
                 onUndo = onUndo,
                 onDone = {
-                    if (mode == DrawMode.BUILDING) onFinishBuilding() else onFinishWall()
+                    val point = crosshairPoint ?: return@ActiveDrawingControls
+                    if (mode == DrawMode.BUILDING) onFinishBuilding(point) else onFinishWall(point)
                 },
                 onCancel = ::requestDrawingExit,
                 error = uiState.drawingError,

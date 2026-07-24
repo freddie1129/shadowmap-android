@@ -108,13 +108,14 @@ class ShadowMapViewModelTest {
         viewModel.selectDrawMode(DrawMode.BUILDING)
         buildingVertices().forEach(viewModel::addVertex)
 
-        assertTrue(viewModel.finishBuilding())
-        assertTrue(viewModel.uiState.value.pendingDrawing is PendingDrawing.Building)
+        assertTrue(viewModel.finishBuilding(BUILDING_FINISH_POINT))
+        val pendingBuilding = viewModel.uiState.value.pendingDrawing as PendingDrawing.Building
+        assertEquals(BUILDING_FINISH_POINT, pendingBuilding.vertices.last())
 
         viewModel.returnPendingToDrawing()
-        assertEquals(4, viewModel.uiState.value.inProgressVertices.size)
+        assertEquals(5, viewModel.uiState.value.inProgressVertices.size)
 
-        assertTrue(viewModel.finishBuilding())
+        assertTrue(viewModel.finishBuilding(BUILDING_FINISH_POINT))
         viewModel.commitPendingDrawing(heightMeters = 7.5)
         advanceUntilIdle()
 
@@ -130,7 +131,7 @@ class ShadowMapViewModelTest {
         viewModel.selectDrawMode(DrawMode.BUILDING)
         buildingVertices().forEach(viewModel::addVertex)
 
-        assertTrue(viewModel.finishBuilding())
+        assertTrue(viewModel.finishBuilding(BUILDING_FINISH_POINT))
         viewModel.commitPendingDrawing(heightMeters = 7.5)
         advanceUntilIdle()
 
@@ -145,7 +146,7 @@ class ShadowMapViewModelTest {
         viewModel.onMapCenterChanged(TEST_LOCATION)
         viewModel.selectDrawMode(DrawMode.BUILDING)
         buildingVertices().forEach(viewModel::addVertex)
-        viewModel.finishBuilding()
+        viewModel.finishBuilding(BUILDING_FINISH_POINT)
         viewModel.commitPendingDrawing(heightMeters = 6.0)
 
         viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
@@ -192,7 +193,7 @@ class ShadowMapViewModelTest {
         viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
         viewModel.selectDrawMode(DrawMode.BUILDING)
         buildingVertices().forEach(viewModel::addVertex)
-        viewModel.finishBuilding()
+        viewModel.finishBuilding(BUILDING_FINISH_POINT)
         viewModel.commitPendingDrawing(6.0)
 
         viewModel.clearDrawings()
@@ -284,9 +285,10 @@ class ShadowMapViewModelTest {
             GeoPoint(153.0, -28.0),
             GeoPoint(153.0001, -28.0001)
         ).forEach(viewModel::addVertex)
-        viewModel.finishWall()
+        viewModel.finishWall(WALL_FINISH_POINT)
         viewModel.commitPendingDrawing(heightMeters = 2.5)
         val wall = viewModel.uiState.value.drawnWalls.single()
+        assertEquals(WALL_FINISH_POINT, wall.points.last())
         val selection = DrawnObjectSelection(
             id = wall.id,
             type = DrawnObjectType.WALL,
@@ -512,5 +514,7 @@ class ShadowMapViewModelTest {
     private companion object {
         val DEFAULT_TIME: Instant = Instant.parse("2026-07-14T02:00:00Z")
         val TEST_LOCATION = GeoPoint(153.0251, -27.4698)
+        val BUILDING_FINISH_POINT = GeoPoint(153.00005, -28.000075)
+        val WALL_FINISH_POINT = GeoPoint(153.0002, -28.0002)
     }
 }

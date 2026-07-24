@@ -372,8 +372,8 @@ constructor(
         _uiState.value = _uiState.value.copy(drawingError = message)
     }
 
-    fun finishBuilding(): Boolean {
-        val vertices = _uiState.value.inProgressVertices
+    fun finishBuilding(finalPoint: GeoPoint): Boolean {
+        val vertices = _uiState.value.inProgressVertices + finalPoint
         val error = DrawingGeometryValidator.validateBuilding(vertices)
         if (error != null) {
             _uiState.value = _uiState.value.copy(drawingError = error)
@@ -387,8 +387,8 @@ constructor(
         return true
     }
 
-    fun finishWall(): Boolean {
-        val points = _uiState.value.inProgressVertices
+    fun finishWall(finalPoint: GeoPoint): Boolean {
+        val points = _uiState.value.inProgressVertices + finalPoint
         val error = DrawingGeometryValidator.validateWall(points)
         if (error != null) {
             _uiState.value = _uiState.value.copy(drawingError = error)
