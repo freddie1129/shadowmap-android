@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

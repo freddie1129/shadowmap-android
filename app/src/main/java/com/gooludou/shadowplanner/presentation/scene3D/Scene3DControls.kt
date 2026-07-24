@@ -1,6 +1,7 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.scene3D
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -129,7 +130,7 @@ private fun SceneControlButton(
                 contentColor = MaterialTheme.colorScheme.onSurface
             )
         ) {
-            androidx.compose.foundation.layout.Box(
+            Box(
                 modifier = Modifier.size(dimensions.iconSize),
                 contentAlignment = Alignment.Center
             ) {

@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +45,7 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
             showDome = true,
             selectedEpochMillis = 1_752_640_000_000L,
             timeZoneId = "Australia/Brisbane",
+            calculationLocation = GeoPoint(longitude = 153.0251, latitude = -27.4698),
             onDateTimeChanged = {},
             onNowSelected = {},
             onToggleDome = {},

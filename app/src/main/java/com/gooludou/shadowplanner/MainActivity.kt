@@ -83,16 +83,17 @@ import com.gooludou.shadowplanner.presentation.ShadowMapActions
 import com.gooludou.shadowplanner.presentation.ShadowMapNavigation
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.ShadowMapViewModel
-import com.gooludou.shadowplanner.presentation.components.ActiveDrawingControls
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
-import com.gooludou.shadowplanner.presentation.components.DrawingCrosshair
-import com.gooludou.shadowplanner.presentation.components.DrawingPropertiesSheet
-import com.gooludou.shadowplanner.presentation.components.Map2DView
-import com.gooludou.shadowplanner.presentation.components.MapboxScene3DView
-import com.gooludou.shadowplanner.presentation.components.MapboxScene3DViewport
-import com.gooludou.shadowplanner.presentation.components.Scene3DView
-import com.gooludou.shadowplanner.presentation.components.SelectedLocationSheet
-import com.gooludou.shadowplanner.presentation.components.ShadowColorSheet
+import com.gooludou.shadowplanner.presentation.drawview.ActiveDrawingControls
+import com.gooludou.shadowplanner.presentation.drawview.DrawingCrosshair
+import com.gooludou.shadowplanner.presentation.drawview.DrawingPropertiesSheet
+import com.gooludou.shadowplanner.presentation.drawview.Map2DView
+import com.gooludou.shadowplanner.presentation.drawview.ShadowColorSheet
+import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSheet
+import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DView
+import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DViewport
+import com.gooludou.shadowplanner.presentation.projectview.SaveProjectDialog
+import com.gooludou.shadowplanner.presentation.scene3D.Scene3DView
 import com.gooludou.shadowplanner.project.ProjectViewport
 import com.gooludou.shadowplanner.scene.Scene3DAppearance
 import com.gooludou.shadowplanner.scene.SceneCameraView
@@ -106,6 +107,7 @@ import com.mapbox.maps.extension.compose.MapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
+import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.mapbox.maps.plugin.locationcomponent.location
 import dagger.hilt.android.AndroidEntryPoint
@@ -190,7 +192,8 @@ internal fun ShadowMapRoute(
                 onBuildingsLoaded = viewModel::onBuildingsLoaded,
                 onLoadFailed = viewModel::onBuildingLoadFailed,
                 onViewportChanged = viewModel::onViewportChanged,
-                onShadowAppearanceChanged = viewModel::onShadowAppearanceChanged
+                onShadowAppearanceChanged = viewModel::onShadowAppearanceChanged,
+                onCurrentLocationReceived = viewModel::onCurrentLocationReceived
             ),
             drawing = DrawingActions(
                 onSelectDrawMode = viewModel::selectDrawMode,
@@ -216,7 +219,10 @@ internal fun ShadowMapRoute(
                 onClearScene = viewModel::clearScene,
                 onRestoreClearedScene = viewModel::restoreClearedScene
             ),
-            project = ProjectActions(onSaveProject = viewModel::saveProject)
+            project = ProjectActions(
+                onSaveProject = viewModel::saveProject,
+                onSaveProjectAsNew = viewModel::saveProjectAsNew
+            )
         ),
         navigation = ShadowMapNavigation(
             pendingLocation = pendingLocation,
@@ -254,6 +260,7 @@ private fun ShadowMapScreen(
     val onLoadFailed = actions.map.onLoadFailed
     val onViewportChanged = actions.map.onViewportChanged
     val onShadowAppearanceChanged = actions.map.onShadowAppearanceChanged
+    val onCurrentLocationReceived = actions.map.onCurrentLocationReceived
     val onSelectDrawMode = actions.drawing.onSelectDrawMode
     val onStopDrawing = actions.drawing.onStopDrawing
     val onAddVertex = actions.drawing.onAddVertex
@@ -275,6 +282,7 @@ private fun ShadowMapScreen(
     val onClearScene = actions.scene.onClearScene
     val onRestoreClearedScene = actions.scene.onRestoreClearedScene
     val onSaveProject = actions.project.onSaveProject
+    val onSaveProjectAsNew = actions.project.onSaveProjectAsNew
     val mapControllerFactory = dependencies.mapControllerFactory
     val pendingLocation = navigation.pendingLocation
     val onLocationApplied = navigation.onLocationApplied
@@ -347,10 +355,11 @@ private fun ShadowMapScreen(
     var mapboxSceneViewport by remember { mutableStateOf<MapboxScene3DViewport?>(null) }
     var buildingLoadArea by remember { mutableStateOf<BuildingLoadArea?>(null) }
     var crosshairPoint by remember { mutableStateOf<GeoPoint?>(null) }
-    var showDateTime by remember { mutableStateOf(false) }
+    var showDateTime by remember { mutableStateOf(true) }
     var autoLoadAfterZoom by remember { mutableStateOf(false) }
     var showClearConfirmation by remember { mutableStateOf(false) }
     var showDiscardDraftConfirmation by remember { mutableStateOf(false) }
+    var currentLocationPoint by remember { mutableStateOf<Point?>(null) }
     var draft3dTarget by remember { mutableStateOf<Scene3DTarget?>(null) }
     var showSelectedLocationSheet by remember { mutableStateOf(false) }
     var showShadowColorSheet by remember { mutableStateOf(false) }
@@ -358,6 +367,7 @@ private fun ShadowMapScreen(
     var projectNameDraft by remember(uiState.activeProjectName) {
         mutableStateOf(uiState.activeProjectName.orEmpty())
     }
+    val currentLocationLabel = stringResource(R.string.current_location)
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -402,17 +412,24 @@ private fun ShadowMapScreen(
             val locationComponent = currentMapView.location
             var firstLocationReceived = false
             val positionListener = OnIndicatorPositionChangedListener { point ->
+                currentLocationPoint = point
                 if (!firstLocationReceived) {
                     firstLocationReceived = true
                     mapViewportState.setCameraOptions {
                         center(point)
                         zoom(17.0)
                     }
+                    onCurrentLocationReceived(
+                        GeoPoint(point.longitude(), point.latitude()),
+                        currentLocationLabel
+                    )
                 }
             }
             locationComponent.updateSettings {
                 enabled = true
-                pulsingEnabled = true
+                locationPuck = LocationPuck2D(opacity = 0f)
+                pulsingEnabled = false
+                showAccuracyRing = false
             }
             locationComponent.addOnIndicatorPositionChangedListener(positionListener)
             onDispose {
@@ -739,13 +756,6 @@ private fun ShadowMapScreen(
                                 onAutoLoad = ::requestAutoLoad,
                                 onClear = { showClearConfirmation = true },
                                 onOpenSettings = onOpenSettings,
-                                onOpen3D = {
-                                    if (currentUiState.hasDraft) {
-                                        draft3dTarget = Scene3DTarget.FILAMENT
-                                    } else {
-                                        enter3d()
-                                    }
-                                },
                                 onOpenMapbox3D = {
                                     if (currentUiState.hasDraft) {
                                         draft3dTarget = Scene3DTarget.MAPBOX
@@ -753,6 +763,14 @@ private fun ShadowMapScreen(
                                         enterMapbox3d()
                                     }
                                 },
+                                onRecenterCurrentLocation = {
+                                    currentLocationPoint?.let { point ->
+                                        mapViewportState.setCameraOptions {
+                                            center(point)
+                                        }
+                                    }
+                                },
+                                canRecenterCurrentLocation = currentLocationPoint != null,
                                 onOpenProjects = onOpenProjects,
                                 onSaveProject = {
                                     projectNameDraft = currentUiState.activeProjectName.orEmpty()
@@ -804,6 +822,7 @@ private fun ShadowMapScreen(
                                 showDome = showDomeIn3d,
                                 selectedEpochMillis = currentUiState.selectedEpochMillis,
                                 timeZoneId = currentUiState.displayTimeZoneId,
+                                calculationLocation = currentUiState.calculationLocation,
                                 onDateTimeChanged = onDateTimeChanged,
                                 onNowSelected = onNowSelected,
                                 onToggleDome = { showDomeIn3d = !showDomeIn3d },
@@ -858,7 +877,8 @@ private fun ShadowMapScreen(
                 },
                 onUndo = onUndo,
                 onDone = {
-                    if (mode == DrawMode.BUILDING) onFinishBuilding() else onFinishWall()
+                    val point = crosshairPoint ?: return@ActiveDrawingControls
+                    if (mode == DrawMode.BUILDING) onFinishBuilding(point) else onFinishWall(point)
                 },
                 onCancel = ::requestDrawingExit,
                 error = uiState.drawingError,
@@ -878,7 +898,6 @@ private fun ShadowMapScreen(
                     },
                 isCreating = pendingType != null,
                 objectSource = uiState.selectedDrawing?.source ?: SceneObjectSource.MANUAL,
-                isEditedAutomaticObject = selectionId?.let(uiState::isLoadedBuildingEdited) == true,
                 loadedHeightMeters = selectedOriginalLoadedBuilding?.heightMeters,
                 onBack = {
                     if (pendingType != null) onReturnPendingToDrawing() else onSelectDrawing(null)
@@ -915,17 +934,7 @@ private fun ShadowMapScreen(
         AlertDialog(
             onDismissRequest = { showClearConfirmation = false },
             title = { Text(stringResource(R.string.clear_scene_question)) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.clear_scene_details,
-                        uiState.visibleLoadedBuildings.size,
-                        uiState.drawnBuildings.size,
-                        uiState.drawnWalls.size,
-                        uiState.drawnTrees.size
-                    )
-                )
-            },
+            text = { Text(stringResource(R.string.clear_scene_details)) },
             confirmButton = {
                 Button(onClick = {
                     onClearScene()
@@ -1015,30 +1024,19 @@ private fun ShadowMapScreen(
     }
 
     if (showSaveProjectDialog) {
-        AlertDialog(
+        SaveProjectDialog(
+            projectName = projectNameDraft,
+            activeProjectName = uiState.activeProjectName,
+            hasActiveProject = uiState.activeProjectId != null,
+            onProjectNameChanged = { projectNameDraft = it },
             onDismissRequest = { showSaveProjectDialog = false },
-            title = { Text(stringResource(R.string.save_project)) },
-            text = {
-                androidx.compose.material3.OutlinedTextField(
-                    value = projectNameDraft,
-                    onValueChange = { projectNameDraft = it },
-                    label = { Text(stringResource(R.string.project_name)) },
-                    singleLine = true
-                )
+            onSaveUpdate = { name ->
+                showSaveProjectDialog = false
+                onSaveProject(name)
             },
-            confirmButton = {
-                Button(
-                    enabled = projectNameDraft.isNotBlank(),
-                    onClick = {
-                        showSaveProjectDialog = false
-                        onSaveProject(projectNameDraft.trim())
-                    }
-                ) { Text(stringResource(R.string.save)) }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { showSaveProjectDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
+            onSaveAsNew = { name ->
+                showSaveProjectDialog = false
+                onSaveProjectAsNew(name)
             }
         )
     }
@@ -1050,6 +1048,7 @@ private fun MoveModeOverlay(
     onDone: () -> Unit,
     onCancel: () -> Unit
 ) {
+    val dimensions = ShadowMapDesign.dimensions
     var dragStart by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
     Box(
         modifier = Modifier
@@ -1069,7 +1068,11 @@ private fun MoveModeOverlay(
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 96.dp),
+                .padding(
+                    start = dimensions.spacingLarge,
+                    end = dimensions.spacingLarge,
+                    bottom = 96.dp
+                ),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
             contentColor = MaterialTheme.colorScheme.onSurface,
             shape = MaterialTheme.shapes.large,
@@ -1085,7 +1088,7 @@ private fun MoveModeOverlay(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 8.dp),
+                        .padding(horizontal = dimensions.spacingMedium),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

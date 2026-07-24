@@ -40,6 +40,7 @@ data class ProjectSnapshot(
 data class ProjectSummary(
     val id: String,
     val name: String,
+    val locationLabel: String?,
     val updatedAt: Long,
     val fileName: String
 )

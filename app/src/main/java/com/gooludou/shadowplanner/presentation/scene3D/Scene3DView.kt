@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.scene3D
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize

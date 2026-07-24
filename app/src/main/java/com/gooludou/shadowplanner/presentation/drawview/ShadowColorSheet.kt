@@ -1,10 +1,11 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.drawview
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -41,7 +44,7 @@ import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 import kotlin.math.roundToInt
 
 @Composable
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 fun ShadowColorSheet(
     initialAppearance: ShadowAppearance,
     onDismissRequest: () -> Unit,
@@ -73,7 +76,7 @@ private fun ShadowColorSheetContent(
     ) {
         Text(
             stringResource(R.string.shadow_colour),
-            style = androidx.compose.material3.MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge
         )
         Row(
             modifier = Modifier
@@ -84,7 +87,7 @@ private fun ShadowColorSheetContent(
         ) {
             ShadowAppearance.PRESET_COLORS.forEach { color ->
                 val isSelected = selectedColor == color
-                androidx.compose.foundation.layout.Box(
+                Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .size(42.dp)
@@ -104,7 +107,7 @@ private fun ShadowColorSheetContent(
                         .clickable { selectedColor = color }
                 ) {
                     if (isSelected) {
-                        androidx.compose.material3.Icon(
+                        Icon(
                             imageVector = Icons.Filled.Check,
                             contentDescription = stringResource(R.string.selected),
                             tint = Color.White

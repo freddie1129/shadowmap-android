@@ -27,6 +27,7 @@ import com.gooludou.shadowplanner.domain.SolarPosition
 import com.gooludou.shadowplanner.domain.SolarPositionCalculator
 import com.gooludou.shadowplanner.domain.UserObjectShadowCalculator
 import com.gooludou.shadowplanner.domain.translatedBy
+import com.gooludou.shadowplanner.location.CurrentLocationResolver
 import com.gooludou.shadowplanner.project.ProjectRepository
 import com.gooludou.shadowplanner.project.ProjectSnapshot
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,6 +59,7 @@ constructor(
     private val clock: Clock,
     systemZoneId: ZoneId,
     private val projectRepository: ProjectRepository,
+    private val currentLocationResolver: CurrentLocationResolver,
     @param:DefaultDispatcher
     private val computationDispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -65,6 +67,7 @@ constructor(
     private var lastDeletedObject: DeletedSceneObject? = null
     private var lastClearedScene: ClearedSceneSnapshot? = null
     private var moveSnapshot: ShadowMapUiState? = null
+    private var hasResolvedCurrentLocation = false
 
     private val _uiState =
         MutableStateFlow(
@@ -103,12 +106,34 @@ constructor(
 
     fun saveProject(name: String? = null) {
         val state = _uiState.value
-        val projectId = state.activeProjectId ?: java.util.UUID.randomUUID().toString()
-        val now = clock.millis()
+        saveProject(
+            state = state,
+            projectId = state.activeProjectId ?: UUID.randomUUID().toString(),
+            name = name ?: state.activeProjectName ?: "Untitled project",
+            createdAt = state.activeProjectCreatedAt ?: clock.millis()
+        )
+    }
+
+    fun saveProjectAsNew(name: String) {
+        val state = _uiState.value
+        saveProject(
+            state = state,
+            projectId = UUID.randomUUID().toString(),
+            name = name,
+            createdAt = clock.millis()
+        )
+    }
+
+    private fun saveProject(
+        state: ShadowMapUiState,
+        projectId: String,
+        name: String,
+        createdAt: Long
+    ) {
         val snapshot = state.toProjectSnapshot(
             id = projectId,
-            name = name ?: state.activeProjectName ?: "Untitled project",
-            createdAt = state.activeProjectCreatedAt ?: now
+            name = name,
+            createdAt = createdAt
         )
         viewModelScope.launch(computationDispatcher) {
             runCatching { projectRepository.saveProject(snapshot) }
@@ -239,6 +264,30 @@ constructor(
         recalculateSunAndShadows()
     }
 
+    fun onCurrentLocationReceived(location: GeoPoint, fallbackLabel: String) {
+        if (hasResolvedCurrentLocation) return
+        hasResolvedCurrentLocation = true
+        viewModelScope.launch(computationDispatcher) {
+            val resolvedLocation = currentLocationResolver.resolve(location)
+                .getOrElse {
+                    com.gooludou.shadowplanner.location.LocationSearchResult(
+                        id = "current:${location.longitude},${location.latitude}",
+                        name = fallbackLabel,
+                        address = fallbackLabel,
+                        latitude = location.latitude,
+                        longitude = location.longitude
+                    )
+                }
+            onLocationSelected(
+                location = GeoPoint(
+                    longitude = resolvedLocation.longitude ?: location.longitude,
+                    latitude = resolvedLocation.latitude ?: location.latitude
+                ),
+                label = resolvedLocation.address.ifBlank { resolvedLocation.name }
+            )
+        }
+    }
+
     fun onBuildingsLoaded(buildings: List<Building>, location: GeoPoint) {
         savedStateHandle[LOCATION_LATITUDE_KEY] = location.latitude
         savedStateHandle[LOCATION_LONGITUDE_KEY] = location.longitude
@@ -323,8 +372,8 @@ constructor(
         _uiState.value = _uiState.value.copy(drawingError = message)
     }
 
-    fun finishBuilding(): Boolean {
-        val vertices = _uiState.value.inProgressVertices
+    fun finishBuilding(finalPoint: GeoPoint): Boolean {
+        val vertices = _uiState.value.inProgressVertices + finalPoint
         val error = DrawingGeometryValidator.validateBuilding(vertices)
         if (error != null) {
             _uiState.value = _uiState.value.copy(drawingError = error)
@@ -338,8 +387,8 @@ constructor(
         return true
     }
 
-    fun finishWall(): Boolean {
-        val points = _uiState.value.inProgressVertices
+    fun finishWall(finalPoint: GeoPoint): Boolean {
+        val points = _uiState.value.inProgressVertices + finalPoint
         val error = DrawingGeometryValidator.validateWall(points)
         if (error != null) {
             _uiState.value = _uiState.value.copy(drawingError = error)

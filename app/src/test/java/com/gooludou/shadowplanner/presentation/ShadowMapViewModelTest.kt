@@ -13,6 +13,8 @@ import com.gooludou.shadowplanner.domain.PendingDrawing
 import com.gooludou.shadowplanner.domain.SceneObjectSource
 import com.gooludou.shadowplanner.domain.SolarPositionCalculator
 import com.gooludou.shadowplanner.domain.UserObjectShadowCalculator
+import com.gooludou.shadowplanner.location.CurrentLocationResolver
+import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.project.ProjectRepository
 import java.time.Clock
 import java.time.Instant
@@ -27,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -105,13 +108,14 @@ class ShadowMapViewModelTest {
         viewModel.selectDrawMode(DrawMode.BUILDING)
         buildingVertices().forEach(viewModel::addVertex)
 
-        assertTrue(viewModel.finishBuilding())
-        assertTrue(viewModel.uiState.value.pendingDrawing is PendingDrawing.Building)
+        assertTrue(viewModel.finishBuilding(BUILDING_FINISH_POINT))
+        val pendingBuilding = viewModel.uiState.value.pendingDrawing as PendingDrawing.Building
+        assertEquals(BUILDING_FINISH_POINT, pendingBuilding.vertices.last())
 
         viewModel.returnPendingToDrawing()
-        assertEquals(4, viewModel.uiState.value.inProgressVertices.size)
+        assertEquals(5, viewModel.uiState.value.inProgressVertices.size)
 
-        assertTrue(viewModel.finishBuilding())
+        assertTrue(viewModel.finishBuilding(BUILDING_FINISH_POINT))
         viewModel.commitPendingDrawing(heightMeters = 7.5)
         advanceUntilIdle()
 
@@ -127,7 +131,7 @@ class ShadowMapViewModelTest {
         viewModel.selectDrawMode(DrawMode.BUILDING)
         buildingVertices().forEach(viewModel::addVertex)
 
-        assertTrue(viewModel.finishBuilding())
+        assertTrue(viewModel.finishBuilding(BUILDING_FINISH_POINT))
         viewModel.commitPendingDrawing(heightMeters = 7.5)
         advanceUntilIdle()
 
@@ -142,7 +146,7 @@ class ShadowMapViewModelTest {
         viewModel.onMapCenterChanged(TEST_LOCATION)
         viewModel.selectDrawMode(DrawMode.BUILDING)
         buildingVertices().forEach(viewModel::addVertex)
-        viewModel.finishBuilding()
+        viewModel.finishBuilding(BUILDING_FINISH_POINT)
         viewModel.commitPendingDrawing(heightMeters = 6.0)
 
         viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
@@ -189,7 +193,7 @@ class ShadowMapViewModelTest {
         viewModel.onBuildingsLoaded(listOf(testBuilding()), TEST_LOCATION)
         viewModel.selectDrawMode(DrawMode.BUILDING)
         buildingVertices().forEach(viewModel::addVertex)
-        viewModel.finishBuilding()
+        viewModel.finishBuilding(BUILDING_FINISH_POINT)
         viewModel.commitPendingDrawing(6.0)
 
         viewModel.clearDrawings()
@@ -281,9 +285,10 @@ class ShadowMapViewModelTest {
             GeoPoint(153.0, -28.0),
             GeoPoint(153.0001, -28.0001)
         ).forEach(viewModel::addVertex)
-        viewModel.finishWall()
+        viewModel.finishWall(WALL_FINISH_POINT)
         viewModel.commitPendingDrawing(heightMeters = 2.5)
         val wall = viewModel.uiState.value.drawnWalls.single()
+        assertEquals(WALL_FINISH_POINT, wall.points.last())
         val selection = DrawnObjectSelection(
             id = wall.id,
             type = DrawnObjectType.WALL,
@@ -395,6 +400,67 @@ class ShadowMapViewModelTest {
         assertEquals(1, viewModel.uiState.value.drawnTrees.size)
     }
 
+    @Test
+    fun saveProjectAsNew_createsANewActiveProject() = runTest(dispatcher) {
+        val savedProjects = mutableListOf<com.gooludou.shadowplanner.project.ProjectSnapshot>()
+        val viewModel = createViewModel(
+            projectRepository = object : ProjectRepository {
+                override fun listProjects() =
+                    emptyList<com.gooludou.shadowplanner.project.ProjectSummary>()
+
+                override fun loadProject(id: String) = error("Not used in this test")
+
+                override fun saveProject(
+                    project: com.gooludou.shadowplanner.project.ProjectSnapshot
+                ) {
+                    savedProjects += project
+                }
+
+                override fun deleteProject(id: String) = Unit
+            }
+        )
+
+        viewModel.saveProject("Original")
+        advanceUntilIdle()
+        val originalProjectId = viewModel.uiState.value.activeProjectId
+
+        viewModel.saveProjectAsNew("Copy")
+        advanceUntilIdle()
+
+        assertEquals(2, savedProjects.size)
+        assertNotEquals(originalProjectId, viewModel.uiState.value.activeProjectId)
+        assertEquals("Copy", viewModel.uiState.value.activeProjectName)
+    }
+
+    @Test
+    fun currentLocationReceived_resolvesAndStoresLocationLabel() = runTest(dispatcher) {
+        var resolveCalls = 0
+        val viewModel = createViewModel(
+            currentLocationResolver = object : CurrentLocationResolver {
+                override suspend fun resolve(location: GeoPoint): Result<LocationSearchResult> {
+                    resolveCalls += 1
+                    return Result.success(
+                        LocationSearchResult(
+                            id = "current-location",
+                            name = "Brisbane",
+                            address = "Brisbane QLD, Australia",
+                            latitude = location.latitude,
+                            longitude = location.longitude
+                        )
+                    )
+                }
+            }
+        )
+
+        viewModel.onCurrentLocationReceived(TEST_LOCATION, "Current location")
+        viewModel.onCurrentLocationReceived(TEST_LOCATION, "Current location")
+        advanceUntilIdle()
+
+        assertEquals(1, resolveCalls)
+        assertEquals(TEST_LOCATION, viewModel.uiState.value.calculationLocation)
+        assertEquals("Brisbane QLD, Australia", viewModel.uiState.value.selectedLocationLabel)
+    }
+
     private fun testBuilding(): Building {
         val ring =
             listOf(
@@ -419,28 +485,36 @@ class ShadowMapViewModelTest {
         GeoPoint(153.0, -28.0001)
     )
 
-    private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()) =
-        ShadowMapViewModel(
-            savedStateHandle = savedStateHandle,
-            shadowCalculator = BuildingShadowCalculator(),
-            userObjectShadowCalculator = UserObjectShadowCalculator(),
-            solarPositionCalculator = SolarPositionCalculator(),
-            clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
-            systemZoneId = ZoneId.of("Australia/Brisbane"),
-            projectRepository = object : ProjectRepository {
-                override fun listProjects() =
-                    emptyList<com.gooludou.shadowplanner.project.ProjectSummary>()
-                override fun loadProject(id: String) = error("Not used in this test")
-                override fun saveProject(
-                    project: com.gooludou.shadowplanner.project.ProjectSnapshot
-                ) = Unit
-                override fun deleteProject(id: String) = Unit
-            },
-            computationDispatcher = dispatcher
-        )
+    private fun createViewModel(
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        projectRepository: ProjectRepository = object : ProjectRepository {
+            override fun listProjects() =
+                emptyList<com.gooludou.shadowplanner.project.ProjectSummary>()
+            override fun loadProject(id: String) = error("Not used in this test")
+            override fun saveProject(project: com.gooludou.shadowplanner.project.ProjectSnapshot) =
+                Unit
+            override fun deleteProject(id: String) = Unit
+        },
+        currentLocationResolver: CurrentLocationResolver = object : CurrentLocationResolver {
+            override suspend fun resolve(location: GeoPoint): Result<LocationSearchResult> =
+                Result.failure(IllegalStateException("Not used in this test"))
+        }
+    ) = ShadowMapViewModel(
+        savedStateHandle = savedStateHandle,
+        shadowCalculator = BuildingShadowCalculator(),
+        userObjectShadowCalculator = UserObjectShadowCalculator(),
+        solarPositionCalculator = SolarPositionCalculator(),
+        clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
+        systemZoneId = ZoneId.of("Australia/Brisbane"),
+        projectRepository = projectRepository,
+        currentLocationResolver = currentLocationResolver,
+        computationDispatcher = dispatcher
+    )
 
     private companion object {
         val DEFAULT_TIME: Instant = Instant.parse("2026-07-14T02:00:00Z")
         val TEST_LOCATION = GeoPoint(153.0251, -27.4698)
+        val BUILDING_FINISH_POINT = GeoPoint(153.00005, -28.000075)
+        val WALL_FINISH_POINT = GeoPoint(153.0002, -28.0002)
     }
 }

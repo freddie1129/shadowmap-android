@@ -1,8 +1,11 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.locationsearch
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Search
@@ -12,11 +15,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
@@ -34,20 +40,23 @@ fun LocationSearchEntry(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = dimensions.spacingLarge)
             .semantics { contentDescription = searchLabel },
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
+        ),
         shadowElevation = dimensions.floatingControlElevation
     ) {
-        androidx.compose.foundation.layout.Row(
+        Row(
             modifier = Modifier.padding(
                 horizontal = dimensions.spacingSmall,
                 vertical = dimensions.spacingXs
             ),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            androidx.compose.foundation.layout.Row(
+            Row(
                 modifier = Modifier
                     .weight(1f)
                     .clickable(onClick = onClick)
@@ -55,14 +64,14 @@ fun LocationSearchEntry(
                         horizontal = dimensions.spacingSmall,
                         vertical = dimensions.spacingSmall
                     ),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Outlined.Search, contentDescription = null)
                 Text(
                     text = searchLabel,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(start = dimensions.spacingMedium)
                 )
             }

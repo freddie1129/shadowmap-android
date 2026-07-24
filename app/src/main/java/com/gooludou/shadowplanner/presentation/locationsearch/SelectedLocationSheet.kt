@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.locationsearch
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

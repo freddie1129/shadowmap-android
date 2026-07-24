@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp

@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -24,6 +24,7 @@ import com.gooludou.shadowplanner.domain.DrawnWall
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.presentation.components.mapboxNative3dConfig
 import com.gooludou.shadowplanner.scene.SceneViewport
 import com.mapbox.bindgen.Value
 import com.mapbox.geojson.Feature
@@ -65,6 +66,7 @@ import kotlinx.coroutines.flow.first
 /** Hosts the Mapbox 3D scene, drawing layers, sky dome, and scene controls. */
 @Composable
 @OptIn(MapboxDelicateApi::class, MapboxExperimental::class)
+@Suppress("LongMethod")
 fun MapboxScene3DView(
     buildings: List<Building>,
     walls: List<DrawnWall>,
@@ -75,6 +77,7 @@ fun MapboxScene3DView(
     showDome: Boolean,
     selectedEpochMillis: Long,
     timeZoneId: String,
+    calculationLocation: GeoPoint?,
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
     onToggleDome: () -> Unit,
@@ -124,6 +127,7 @@ fun MapboxScene3DView(
             mapViewportState = mapViewportState,
             selectedEpochMillis = selectedEpochMillis,
             timeZoneId = timeZoneId,
+            location = calculationLocation ?: viewport.center,
             onDateTimeChanged = onDateTimeChanged,
             onNowSelected = onNowSelected,
             basemapStyle = basemapStyle,
@@ -166,6 +170,7 @@ fun MapboxScene3DView(
 /** Creates the Mapbox map, applies the selected style, and installs scene layers. */
 @Composable
 @OptIn(MapboxExperimental::class)
+@Suppress("LongMethod")
 private fun MapboxScene3DMap(
     mapViewportState: MapViewportState,
     buildingSource: GeoJsonSourceState,
@@ -253,7 +258,9 @@ private fun MapboxScene3DMap(
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
-            mapboxNative3dConfig(useMapboxBuildings).forEach { (key, enabled) ->
+            mapboxNative3dConfig(
+                useMapboxBuildings
+            ).forEach { (key, enabled) ->
                 mapView.mapboxMap.setStyleImportConfigProperty(
                     Scene3DMapIds.STANDARD_STYLE_IMPORT,
                     key,

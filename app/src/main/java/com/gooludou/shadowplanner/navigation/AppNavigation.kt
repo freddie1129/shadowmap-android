@@ -17,9 +17,9 @@ import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.map.MapboxShadowMapController
 import com.gooludou.shadowplanner.presentation.LocationSearchViewModel
 import com.gooludou.shadowplanner.presentation.ProjectListViewModel
-import com.gooludou.shadowplanner.presentation.components.LocationSearchScreen
-import com.gooludou.shadowplanner.presentation.components.ProjectListScreen
-import com.gooludou.shadowplanner.presentation.components.SettingsScreen
+import com.gooludou.shadowplanner.presentation.locationsearch.LocationSearchScreen
+import com.gooludou.shadowplanner.presentation.projectview.ProjectListScreen
+import com.gooludou.shadowplanner.presentation.settings.SettingsScreen
 
 private data object MapDestination
 private data object SettingsDestination
@@ -86,6 +86,7 @@ fun AppNavigation(
                             pendingProjectId = id
                             backStack.removeLastOrNull()
                         },
+                        onDeleteProject = viewModel::deleteProject,
                         onBack = { backStack.removeLastOrNull() }
                     )
                 }

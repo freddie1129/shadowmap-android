@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.components
+package com.gooludou.shadowplanner.presentation.drawview
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -17,8 +17,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Undo
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -158,7 +157,7 @@ private fun DrawingPanelHeader(
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onCancel) {
             Icon(
-                Icons.AutoMirrored.Outlined.ArrowBack,
+                Icons.Outlined.Close,
                 contentDescription = stringResource(R.string.cancel_drawing)
             )
         }
@@ -180,18 +179,21 @@ private fun DrawingPanelHeader(
 
 @Composable
 private fun DrawingPanelActions(config: DrawingPanelConfig, onAdd: () -> Unit, onDone: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = onAdd, modifier = Modifier.weight(1f)) {
-            Text(config.addText)
-        }
-        if (config.canFinish != null) {
-            OutlinedButton(
-                onClick = onDone,
-                enabled = config.canFinish,
-                modifier = Modifier.weight(1f)
-            ) {
+    if (config.canFinish == true) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(onClick = onAdd, modifier = Modifier.weight(1f)) {
+                Text(config.addText)
+            }
+            Button(onClick = onDone, modifier = Modifier.weight(1f)) {
                 Text(stringResource(R.string.finish))
             }
+        }
+    } else {
+        Button(onClick = onAdd, modifier = Modifier.fillMaxWidth()) {
+            Text(config.addText)
         }
     }
 }
@@ -199,10 +201,12 @@ private fun DrawingPanelActions(config: DrawingPanelConfig, onAdd: () -> Unit, o
 @Composable
 private fun DrawMode.toDrawingPanelConfig(vertexCount: Int): DrawingPanelConfig = when (this) {
     DrawMode.BUILDING -> DrawingPanelConfig(
-        title = stringResource(R.string.draw_building),
+        title = stringResource(R.string.outline_building),
         hint = stringResource(R.string.building_drawing_hint),
-        addText = stringResource(R.string.add_corner),
-        progress = pluralStringResource(R.plurals.corners_count, vertexCount, vertexCount),
+        addText = stringResource(
+            if (vertexCount == 0) R.string.add_first_corner else R.string.add_corner
+        ),
+        progress = stringResource(R.string.minimum_corners_progress, vertexCount),
         canUndo = vertexCount > 0,
         canFinish = vertexCount >= 3
     )
@@ -210,8 +214,10 @@ private fun DrawMode.toDrawingPanelConfig(vertexCount: Int): DrawingPanelConfig 
     DrawMode.WALL -> DrawingPanelConfig(
         title = stringResource(R.string.draw_wall),
         hint = stringResource(R.string.wall_drawing_hint),
-        addText = stringResource(R.string.add_point),
-        progress = pluralStringResource(R.plurals.points_count, vertexCount, vertexCount),
+        addText = stringResource(
+            if (vertexCount == 0) R.string.add_first_point else R.string.add_point
+        ),
+        progress = stringResource(R.string.minimum_points_progress, vertexCount),
         canUndo = vertexCount > 0,
         canFinish = vertexCount >= 2
     )
@@ -284,6 +290,28 @@ private fun ActiveDrawingControlsPreview() {
         ActiveDrawingControls(
             mode = DrawMode.BUILDING,
             vertexCount = 3,
+            onAdd = {},
+            onUndo = {},
+            onDone = {},
+            onCancel = {},
+            error = null,
+            modifier = Modifier.padding(12.dp)
+        )
+    }
+}
+
+@Preview(
+    name = "Active building controls \u00b7 dark",
+    widthDp = 540,
+    showBackground = true,
+    backgroundColor = 0xFF263238
+)
+@Composable
+private fun ActiveDrawingControlsDarkPreview() {
+    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
+        ActiveDrawingControls(
+            mode = DrawMode.BUILDING,
+            vertexCount = 0,
             onAdd = {},
             onUndo = {},
             onDone = {},

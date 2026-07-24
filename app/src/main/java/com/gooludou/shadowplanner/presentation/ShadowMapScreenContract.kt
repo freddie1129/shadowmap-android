@@ -26,7 +26,8 @@ data class MapActions(
     val onBuildingsLoaded: (List<Building>, GeoPoint) -> Unit,
     val onLoadFailed: (Throwable) -> Unit,
     val onViewportChanged: (ProjectViewport) -> Unit,
-    val onShadowAppearanceChanged: (ShadowAppearance) -> Unit
+    val onShadowAppearanceChanged: (ShadowAppearance) -> Unit,
+    val onCurrentLocationReceived: (GeoPoint, String) -> Unit
 )
 
 data class DrawingActions(
@@ -35,8 +36,8 @@ data class DrawingActions(
     val onAddVertex: (GeoPoint) -> Unit,
     val onUndo: () -> Unit,
     val onDrawingError: (String) -> Unit,
-    val onFinishBuilding: () -> Boolean,
-    val onFinishWall: () -> Boolean,
+    val onFinishBuilding: (GeoPoint) -> Boolean,
+    val onFinishWall: (GeoPoint) -> Boolean,
     val onStartTree: (GeoPoint) -> Unit,
     val onReturnPendingToDrawing: () -> Unit,
     val onCommitPendingDrawing: (Double, Double?) -> Unit,
@@ -52,7 +53,10 @@ data class DrawingActions(
 
 data class SceneActions(val onClearScene: () -> Unit, val onRestoreClearedScene: () -> Unit)
 
-data class ProjectActions(val onSaveProject: (String?) -> Unit)
+data class ProjectActions(
+    val onSaveProject: (String?) -> Unit,
+    val onSaveProjectAsNew: (String) -> Unit
+)
 
 data class ShadowMapActions(
     val map: MapActions,

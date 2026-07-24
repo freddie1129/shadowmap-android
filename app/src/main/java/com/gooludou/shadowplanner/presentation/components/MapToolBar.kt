@@ -1,20 +1,23 @@
 package com.gooludou.shadowplanner.presentation.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.DeleteSweep
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Park
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timeline
+import androidx.compose.material.icons.outlined.ViewInAr
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,14 +28,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.DrawMode
 import com.gooludou.shadowplanner.domain.ShadowAppearance
+import com.gooludou.shadowplanner.ui.theme.Map3DActionBlue
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
 @Composable
@@ -46,6 +52,7 @@ fun MapToolBar(
     onClear: () -> Unit,
     onToggleTime: () -> Unit,
     onOpenShadowColor: () -> Unit,
+    onOpenMapbox3D: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -56,6 +63,8 @@ fun MapToolBar(
         ShadowColorButton(shadowAppearance, onOpenShadowColor)
         PrimaryToolBar(autoState, hasSceneObjects, onDrawMode, onAutoLoad, onClear)
         TimeToolButton(isTimeVisible, onToggleTime)
+        Spacer(modifier = Modifier.weight(1f))
+        Open3DToolButton(onOpenMapbox3D)
     }
 }
 
@@ -71,7 +80,7 @@ private fun ShadowColorButton(appearance: ShadowAppearance, onClick: () -> Unit)
                 .background(Color(appearance.colorArgb), CircleShape)
                 .border(
                     width = 2.dp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = appearance.opacity),
+                    color = MaterialTheme.colorScheme.outline,
                     shape = CircleShape
                 )
         )
@@ -89,13 +98,20 @@ private fun PrimaryToolBar(
     Surface(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+        ),
         shadowElevation = 6.dp
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             ToolIconButton({
                 onDrawMode(DrawMode.BUILDING)
-            }, stringResource(R.string.draw_building)) {
-                Icon(Icons.Outlined.Business, contentDescription = null)
+            }, stringResource(R.string.outline_a_building)) {
+                Icon(
+                    painter = painterResource(R.drawable.square_polygon),
+                    contentDescription = null
+                )
             }
             ToolIconButton({ onDrawMode(DrawMode.WALL) }, stringResource(R.string.draw_wall)) {
                 Icon(Icons.Outlined.Timeline, contentDescription = null)
@@ -103,7 +119,9 @@ private fun PrimaryToolBar(
             ToolIconButton({ onDrawMode(DrawMode.TREE) }, stringResource(R.string.place_tree)) {
                 Icon(Icons.Outlined.Park, contentDescription = null)
             }
-            AutoToolButton(autoState, onAutoLoad)
+            if (Config.ALLOW_LOAD_BUILDING) {
+                AutoToolButton(autoState, onAutoLoad)
+            }
             ToolIconButton(
                 onClear,
                 stringResource(R.string.clear_scene),
@@ -153,19 +171,30 @@ private fun TimeToolButton(isTimeVisible: Boolean, onClick: () -> Unit) {
         contentDescription = stringResource(
             if (isTimeVisible) R.string.hide_date_time else R.string.show_date_time
         ),
-        size = 48.dp,
-        containerColor = if (isTimeVisible) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-        },
-        contentColor = if (isTimeVisible) {
-            MaterialTheme.colorScheme.onPrimary
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        }
+        size = 48.dp
     ) {
-        Icon(Icons.Outlined.Schedule, contentDescription = null)
+        Icon(
+            imageVector = if (isTimeVisible) {
+                Icons.Outlined.ExpandMore
+            } else {
+                Icons.Outlined.ExpandLess
+            },
+            contentDescription = null
+        )
+    }
+}
+
+@Composable
+private fun Open3DToolButton(onClick: () -> Unit) {
+    MapRoundIconButton(
+        onClick = onClick,
+        contentDescription = stringResource(R.string.open_3d_button),
+        size = 48.dp,
+        containerColor = Map3DActionBlue,
+        contentColor = Color.White,
+        border = null
+    ) {
+        Icon(Icons.Outlined.ViewInAr, contentDescription = null)
     }
 }
 
@@ -195,18 +224,32 @@ private fun ToolIconButton(
 
 @Preview(name = "Map toolbar", showBackground = true, backgroundColor = 0xFF52654B)
 @Composable
-private fun MapToolBarPreview() {
+private fun MapToolBarLightPreview() {
     ShadowMapTheme(darkTheme = false, dynamicColor = false) {
-        MapToolBar(
-            autoState = AutoToolState.READY,
-            hasSceneObjects = true,
-            isTimeVisible = false,
-            shadowAppearance = ShadowAppearance.DEFAULT,
-            onDrawMode = {},
-            onAutoLoad = {},
-            onClear = {},
-            onToggleTime = {},
-            onOpenShadowColor = {}
-        )
+        MapToolBarPreview()
     }
+}
+
+@Preview(name = "Map toolbar (dark)", showBackground = true, backgroundColor = 0xFF263238)
+@Composable
+private fun MapToolBarDarkPreview() {
+    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
+        MapToolBarPreview()
+    }
+}
+
+@Composable
+private fun MapToolBarPreview() {
+    MapToolBar(
+        autoState = AutoToolState.READY,
+        hasSceneObjects = true,
+        isTimeVisible = false,
+        shadowAppearance = ShadowAppearance.DEFAULT,
+        onDrawMode = {},
+        onAutoLoad = {},
+        onClear = {},
+        onToggleTime = {},
+        onOpenShadowColor = {},
+        onOpenMapbox3D = {}
+    )
 }
