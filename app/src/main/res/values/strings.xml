@@ -19,7 +19,8 @@
     <string name="wall">Wall</string>
     <string name="tree">Tree</string>
     <string name="add_object">Add object</string>
-    <string name="draw_building">Draw building</string>
+    <string name="outline_a_building">Outline a building</string>
+    <string name="outline_building">Outline building</string>
     <string name="draw_wall">Draw wall</string>
     <string name="place_tree">Place tree</string>
     <string name="clear_scene">Clear scene</string>

@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -29,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -109,8 +109,11 @@ private fun PrimaryToolBar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             ToolIconButton({
                 onDrawMode(DrawMode.BUILDING)
-            }, stringResource(R.string.draw_building)) {
-                Icon(Icons.Outlined.Business, contentDescription = null)
+            }, stringResource(R.string.outline_a_building)) {
+                Icon(
+                    painter = painterResource(R.drawable.square_polygon),
+                    contentDescription = null
+                )
             }
             ToolIconButton({ onDrawMode(DrawMode.WALL) }, stringResource(R.string.draw_wall)) {
                 Icon(Icons.Outlined.Timeline, contentDescription = null)

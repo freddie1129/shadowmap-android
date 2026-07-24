@@ -198,7 +198,7 @@ private fun DrawingPanelActions(config: DrawingPanelConfig, onAdd: () -> Unit, o
 @Composable
 private fun DrawMode.toDrawingPanelConfig(vertexCount: Int): DrawingPanelConfig = when (this) {
     DrawMode.BUILDING -> DrawingPanelConfig(
-        title = stringResource(R.string.draw_building),
+        title = stringResource(R.string.outline_building),
         hint = stringResource(R.string.building_drawing_hint),
         addText = stringResource(
             if (vertexCount == 0) R.string.add_first_corner else R.string.add_corner
