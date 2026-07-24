@@ -299,11 +299,7 @@ fun DateTimeSpinner(
 }
 
 @Composable
-private fun DaylightSummary(
-    sunriseSunset: SunriseSunset,
-    zoneId: ZoneId,
-    colors: SpinnerColors
-) {
+private fun DaylightSummary(sunriseSunset: SunriseSunset, zoneId: ZoneId, colors: SpinnerColors) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

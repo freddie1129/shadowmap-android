@@ -1,8 +1,8 @@
 package com.gooludou.shadowplanner.presentation.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -174,7 +174,11 @@ private fun TimeToolButton(isTimeVisible: Boolean, onClick: () -> Unit) {
         size = 48.dp
     ) {
         Icon(
-            imageVector = if (isTimeVisible) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
+            imageVector = if (isTimeVisible) {
+                Icons.Outlined.ExpandMore
+            } else {
+                Icons.Outlined.ExpandLess
+            },
             contentDescription = null
         )
     }

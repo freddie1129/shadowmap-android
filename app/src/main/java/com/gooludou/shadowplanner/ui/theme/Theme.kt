@@ -79,6 +79,7 @@ fun ShadowMapTheme(
         }
 
         darkTheme -> DarkColorScheme
+
         else -> LightColorScheme
     }
 

@@ -180,7 +180,10 @@ private fun DrawingPanelHeader(
 @Composable
 private fun DrawingPanelActions(config: DrawingPanelConfig, onAdd: () -> Unit, onDone: () -> Unit) {
     if (config.canFinish == true) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             OutlinedButton(onClick = onAdd, modifier = Modifier.weight(1f)) {
                 Text(config.addText)
             }

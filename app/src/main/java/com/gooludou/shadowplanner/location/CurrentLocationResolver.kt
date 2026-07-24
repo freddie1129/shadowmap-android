@@ -44,7 +44,9 @@ class MapboxCurrentLocationResolver @Inject constructor() : CurrentLocationResol
                         if (result == null) {
                             continuation.resume(
                                 Result.failure(
-                                    IllegalStateException("Mapbox returned no result for current location")
+                                    IllegalStateException(
+                                        "Mapbox returned no result for current location"
+                                    )
                                 )
                             )
                             return

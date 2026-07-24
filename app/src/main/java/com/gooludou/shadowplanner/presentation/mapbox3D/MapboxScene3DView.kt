@@ -24,6 +24,7 @@ import com.gooludou.shadowplanner.domain.DrawnWall
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.presentation.components.mapboxNative3dConfig
 import com.gooludou.shadowplanner.scene.SceneViewport
 import com.mapbox.bindgen.Value
 import com.mapbox.geojson.Feature
@@ -255,7 +256,7 @@ private fun MapboxScene3DMap(
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
-            _root_ide_package_.com.gooludou.shadowplanner.presentation.components.mapboxNative3dConfig(
+            mapboxNative3dConfig(
                 useMapboxBuildings
             ).forEach { (key, enabled) ->
                 mapView.mapboxMap.setStyleImportConfigProperty(

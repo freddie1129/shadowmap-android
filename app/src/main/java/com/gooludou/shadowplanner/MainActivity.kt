@@ -83,17 +83,17 @@ import com.gooludou.shadowplanner.presentation.ShadowMapActions
 import com.gooludou.shadowplanner.presentation.ShadowMapNavigation
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.ShadowMapViewModel
-import com.gooludou.shadowplanner.presentation.drawview.ActiveDrawingControls
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
+import com.gooludou.shadowplanner.presentation.drawview.ActiveDrawingControls
 import com.gooludou.shadowplanner.presentation.drawview.DrawingCrosshair
 import com.gooludou.shadowplanner.presentation.drawview.DrawingPropertiesSheet
 import com.gooludou.shadowplanner.presentation.drawview.Map2DView
-import com.gooludou.shadowplanner.presentation.scene3D.Scene3DView
-import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSheet
 import com.gooludou.shadowplanner.presentation.drawview.ShadowColorSheet
+import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSheet
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DView
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DViewport
 import com.gooludou.shadowplanner.presentation.projectview.SaveProjectDialog
+import com.gooludou.shadowplanner.presentation.scene3D.Scene3DView
 import com.gooludou.shadowplanner.project.ProjectViewport
 import com.gooludou.shadowplanner.scene.Scene3DAppearance
 import com.gooludou.shadowplanner.scene.SceneCameraView
@@ -902,7 +902,7 @@ private fun ShadowMapScreen(
                         DEFAULT_DRAWN_TREE_RADIUS_METERS
                     } else {
                         null
-                },
+                    },
                 isCreating = pendingType != null,
                 objectSource = uiState.selectedDrawing?.source ?: SceneObjectSource.MANUAL,
                 loadedHeightMeters = selectedOriginalLoadedBuilding?.heightMeters,

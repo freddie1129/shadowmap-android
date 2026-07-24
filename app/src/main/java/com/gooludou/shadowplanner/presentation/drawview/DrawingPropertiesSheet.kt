@@ -45,8 +45,8 @@ import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.DrawnObjectType
 import com.gooludou.shadowplanner.domain.SceneObjectSource
-import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 import java.util.Locale
 import kotlin.math.abs
 
@@ -265,7 +265,9 @@ private fun PropertyPanelActions(
         if (!isCreating) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)
+                horizontalArrangement = Arrangement.spacedBy(
+                    ShadowMapDesign.dimensions.spacingSmall
+                )
             ) {
                 OutlinedButton(onClick = onMove, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.move_object))

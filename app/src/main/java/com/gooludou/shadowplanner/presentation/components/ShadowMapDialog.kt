@@ -46,7 +46,7 @@ private fun ShadowMapDialogSurface(
     ) {
         Column(
             modifier = Modifier.padding(ShadowMapDesign.dimensions.spacingExtraLarge),
-            verticalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingMedium),
+            verticalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingMedium)
         ) {
             content()
             positiveAction?.invoke()

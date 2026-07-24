@@ -43,7 +43,9 @@ fun SceneViewSwitchButton(
             },
             contentColor = if (emphasized) Color.White else MaterialTheme.colorScheme.onSurface
         ),
-        border = if (emphasized) null else {
+        border = if (emphasized) {
+            null
+        } else {
             BorderStroke(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)

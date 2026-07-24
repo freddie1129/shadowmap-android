@@ -2,11 +2,11 @@ package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -44,9 +44,9 @@ import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
 import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
 import com.gooludou.shadowplanner.presentation.components.PitchSlider
+import com.gooludou.shadowplanner.ui.theme.Map3DActionBlue
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
-import com.gooludou.shadowplanner.ui.theme.Map3DActionBlue
 import com.mapbox.maps.extension.compose.animation.viewport.MapViewportState
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 
@@ -246,9 +246,13 @@ private fun MapboxScene3DToggleButton(
         MapRoundIconButton(
             onClick = onClick,
             contentDescription = contentDescription,
-            containerColor = if (isSelected) Map3DActionBlue else MaterialTheme.colorScheme.surface.copy(
-                alpha = 0.96f
-            ),
+            containerColor = if (isSelected) {
+                Map3DActionBlue
+            } else {
+                MaterialTheme.colorScheme.surface.copy(
+                    alpha = 0.96f
+                )
+            },
             contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
             border = if (isSelected) {
                 null
@@ -266,10 +270,7 @@ private fun MapboxScene3DToggleButton(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MapboxScene3DTooltip(
-    tooltip: String,
-    content: @Composable () -> Unit
-) {
+private fun MapboxScene3DTooltip(tooltip: String, content: @Composable () -> Unit) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
             TooltipAnchorPosition.Above

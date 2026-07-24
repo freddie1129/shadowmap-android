@@ -410,7 +410,9 @@ class ShadowMapViewModelTest {
 
                 override fun loadProject(id: String) = error("Not used in this test")
 
-                override fun saveProject(project: com.gooludou.shadowplanner.project.ProjectSnapshot) {
+                override fun saveProject(
+                    project: com.gooludou.shadowplanner.project.ProjectSnapshot
+                ) {
                     savedProjects += project
                 }
 
@@ -489,27 +491,25 @@ class ShadowMapViewModelTest {
             override fun listProjects() =
                 emptyList<com.gooludou.shadowplanner.project.ProjectSummary>()
             override fun loadProject(id: String) = error("Not used in this test")
-            override fun saveProject(
-                project: com.gooludou.shadowplanner.project.ProjectSnapshot
-            ) = Unit
+            override fun saveProject(project: com.gooludou.shadowplanner.project.ProjectSnapshot) =
+                Unit
             override fun deleteProject(id: String) = Unit
         },
         currentLocationResolver: CurrentLocationResolver = object : CurrentLocationResolver {
             override suspend fun resolve(location: GeoPoint): Result<LocationSearchResult> =
                 Result.failure(IllegalStateException("Not used in this test"))
         }
-    ) =
-        ShadowMapViewModel(
-            savedStateHandle = savedStateHandle,
-            shadowCalculator = BuildingShadowCalculator(),
-            userObjectShadowCalculator = UserObjectShadowCalculator(),
-            solarPositionCalculator = SolarPositionCalculator(),
-            clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
-            systemZoneId = ZoneId.of("Australia/Brisbane"),
-            projectRepository = projectRepository,
-            currentLocationResolver = currentLocationResolver,
-            computationDispatcher = dispatcher
-        )
+    ) = ShadowMapViewModel(
+        savedStateHandle = savedStateHandle,
+        shadowCalculator = BuildingShadowCalculator(),
+        userObjectShadowCalculator = UserObjectShadowCalculator(),
+        solarPositionCalculator = SolarPositionCalculator(),
+        clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
+        systemZoneId = ZoneId.of("Australia/Brisbane"),
+        projectRepository = projectRepository,
+        currentLocationResolver = currentLocationResolver,
+        computationDispatcher = dispatcher
+    )
 
     private companion object {
         val DEFAULT_TIME: Instant = Instant.parse("2026-07-14T02:00:00Z")
