@@ -77,6 +77,8 @@
     <string name="show_top_down_view">Show top-down view</string>
     <string name="hide_date_time">Hide date and time</string>
     <string name="show_date_time">Show date and time</string>
+    <string name="sunrise">Sunrise</string>
+    <string name="sunset">Sunset</string>
     <string name="add_corner">Add corner</string>
     <string name="add_first_corner">Add first corner</string>
     <string name="add_point">Add point</string>

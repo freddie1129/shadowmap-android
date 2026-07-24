@@ -4,6 +4,7 @@ package com.gooludou.shadowplanner.presentation.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -54,6 +55,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gooludou.shadowplanner.R
+import com.gooludou.shadowplanner.domain.GeoPoint
+import com.gooludou.shadowplanner.domain.SunriseSunset
+import com.gooludou.shadowplanner.domain.SunriseSunsetCalculator
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 import java.time.Instant
@@ -72,6 +76,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private const val DATE_RANGE_YEARS = 20L
+private val DAYLIGHT_TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm a")
 
 private data class SpinnerColors(
     val surface: Color,
@@ -106,6 +111,7 @@ private object DateTimeSpinnerDefaults {
 fun DateTimeSpinner(
     selectedEpochMillis: Long,
     timeZoneId: String,
+    location: GeoPoint? = null,
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
     modifier: Modifier = Modifier
@@ -154,6 +160,11 @@ fun DateTimeSpinner(
     }
     val selectedTime by remember(timeListState, timeRange, minuteWidthPx) {
         derivedStateOf { timeListState.timeAtViewportCentre(timeRange, minuteWidthPx) }
+    }
+    val displayedDate = selectedDate ?: initialDateTime.toLocalDate()
+    val sunriseSunsetCalculator = remember { SunriseSunsetCalculator() }
+    val sunriseSunset = remember(displayedDate, location, zoneId) {
+        location?.let { sunriseSunsetCalculator.calculate(displayedDate, zoneId, it) }
     }
 
     var suppressDateCallback by remember { mutableStateOf(true) }
@@ -252,8 +263,9 @@ fun DateTimeSpinner(
             tonalElevation = DateTimeSpinnerDefaults.tonalElevation
         ) {
             Column {
+                sunriseSunset?.let { DaylightSummary(it, zoneId, spinnerColors) }
                 SpinnerHeader(
-                    selectedDate = selectedDate ?: initialDateTime.toLocalDate(),
+                    selectedDate = displayedDate,
                     selectedTime = selectedTime ?: initialDateTime.toLocalTime(),
                     onReset = {
                         suppressDateCallback = true
@@ -284,6 +296,51 @@ fun DateTimeSpinner(
             }
         }
     }
+}
+
+@Composable
+private fun DaylightSummary(
+    sunriseSunset: SunriseSunset,
+    zoneId: ZoneId,
+    colors: SpinnerColors
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = ShadowMapDesign.dimensions.spacingMedium),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        DaylightTime(
+            symbol = "↑",
+            label = stringResource(R.string.sunrise),
+            instant = sunriseSunset.sunrise,
+            zoneId = zoneId,
+            colors = colors
+        )
+        DaylightTime(
+            symbol = "↓",
+            label = stringResource(R.string.sunset),
+            instant = sunriseSunset.sunset,
+            zoneId = zoneId,
+            colors = colors
+        )
+    }
+}
+
+@Composable
+private fun DaylightTime(
+    symbol: String,
+    label: String,
+    instant: Instant,
+    zoneId: ZoneId,
+    colors: SpinnerColors
+) {
+    Text(
+        text = "$symbol $label ${instant.atZone(zoneId).format(DAYLIGHT_TIME_FORMATTER)}",
+        color = colors.content.copy(alpha = 0.78f),
+        style = MaterialTheme.typography.labelLarge
+    )
 }
 
 private fun buildDateRange(referenceDate: LocalDate): List<LocalDate> {
@@ -571,6 +628,7 @@ private fun DateTimeSpinnerPreviewContent(darkTheme: Boolean) {
         DateTimeSpinner(
             selectedEpochMillis = dateTime.atZone(zoneId).toInstant().toEpochMilli(),
             timeZoneId = zoneId.id,
+            location = GeoPoint(longitude = 153.0251, latitude = -27.4698),
             onDateTimeChanged = {},
             onNowSelected = {}
         )

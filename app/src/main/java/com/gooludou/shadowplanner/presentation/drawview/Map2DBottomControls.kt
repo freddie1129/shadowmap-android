@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.domain.DrawMode
+import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
@@ -59,6 +60,7 @@ fun Map2DBottomControls(
             DateTimeSpinner(
                 selectedEpochMillis = uiState.selectedEpochMillis,
                 timeZoneId = uiState.displayTimeZoneId,
+                location = uiState.calculationLocation,
                 onDateTimeChanged = onDateTimeChanged,
                 onNowSelected = onNowSelected
             )
@@ -93,7 +95,8 @@ private fun Map2DBottomControlsPreview() {
         Map2DBottomControls(
             uiState = ShadowMapUiState(
                 selectedEpochMillis = 1_752_640_000_000L,
-                displayTimeZoneId = "Australia/Brisbane"
+                displayTimeZoneId = "Australia/Brisbane",
+                calculationLocation = GeoPoint(longitude = 153.0251, latitude = -27.4698)
             ),
             autoToolState = AutoToolState.READY,
             isTimeVisible = true,
