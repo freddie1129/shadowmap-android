@@ -10,6 +10,8 @@
 .kotlin
 *.swp
 local.properties
+/keystore.properties
+/release.jks
 
 # Mapbox public access token - keep out of version control
 /app/src/main/res/values/mapbox_access_token.xml
