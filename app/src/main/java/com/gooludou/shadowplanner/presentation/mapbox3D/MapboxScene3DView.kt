@@ -66,6 +66,7 @@ import kotlinx.coroutines.flow.first
 /** Hosts the Mapbox 3D scene, drawing layers, sky dome, and scene controls. */
 @Composable
 @OptIn(MapboxDelicateApi::class, MapboxExperimental::class)
+@Suppress("LongMethod")
 fun MapboxScene3DView(
     buildings: List<Building>,
     walls: List<DrawnWall>,
@@ -169,6 +170,7 @@ fun MapboxScene3DView(
 /** Creates the Mapbox map, applies the selected style, and installs scene layers. */
 @Composable
 @OptIn(MapboxExperimental::class)
+@Suppress("LongMethod")
 private fun MapboxScene3DMap(
     mapViewportState: MapViewportState,
     buildingSource: GeoJsonSourceState,

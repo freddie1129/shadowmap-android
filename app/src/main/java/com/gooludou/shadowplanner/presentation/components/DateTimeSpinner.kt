@@ -106,7 +106,7 @@ private object DateTimeSpinnerDefaults {
  * display time zone.
  */
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongMethod")
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 fun DateTimeSpinner(
     selectedEpochMillis: Long,

@@ -56,6 +56,7 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongMethod")
 fun ProjectListScreen(
     projects: List<ProjectSummary>,
     onProjectSelected: (String) -> Unit,

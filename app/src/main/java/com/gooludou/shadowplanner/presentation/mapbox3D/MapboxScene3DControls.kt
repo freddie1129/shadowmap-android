@@ -112,6 +112,7 @@ private fun BoxScope.MapboxScene3DBackControl(onBackToMap: () -> Unit) {
 }
 
 @Composable
+@Suppress("LongMethod")
 private fun BoxScope.MapboxScene3DBottomControls(
     mapViewportState: MapViewportState,
     currentPitch: Double,

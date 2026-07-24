@@ -756,13 +756,6 @@ private fun ShadowMapScreen(
                                 onAutoLoad = ::requestAutoLoad,
                                 onClear = { showClearConfirmation = true },
                                 onOpenSettings = onOpenSettings,
-                                onOpen3D = {
-                                    if (currentUiState.hasDraft) {
-                                        draft3dTarget = Scene3DTarget.FILAMENT
-                                    } else {
-                                        enter3d()
-                                    }
-                                },
                                 onOpenMapbox3D = {
                                     if (currentUiState.hasDraft) {
                                         draft3dTarget = Scene3DTarget.MAPBOX
