@@ -9,6 +9,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -21,7 +23,22 @@ class ProjectListViewModel @Inject constructor(private val repository: ProjectRe
         viewModelScope.launch { _projects.value = repository.listProjects() }
     }
 
+    fun deleteProject(id: String) {
+        viewModelScope.launch {
+            runCatching {
+                repository.deleteProject(id)
+                repository.listProjects()
+            }.onSuccess { projects ->
+                _projects.value = projects
+            }
+        }
+    }
+
     init {
-        refresh()
+        viewModelScope.launch {
+            repository.projectChanges()
+                .onStart { emit(Unit) }
+                .collect { _projects.value = repository.listProjects() }
+        }
     }
 }

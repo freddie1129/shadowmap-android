@@ -7,6 +7,10 @@
     <string name="save_update">Save update</string>
     <string name="save_as_new">Save as new</string>
     <string name="delete">Delete</string>
+    <string name="delete_project">Delete project</string>
+    <string name="delete_project_message">This permanently deletes “%1$s”.</string>
+    <string name="more_options">More options</string>
+    <string name="updated">Updated %1$s</string>
     <string name="finish">Finish</string>
     <string name="done">Done</string>
     <string name="move_object">Move</string>

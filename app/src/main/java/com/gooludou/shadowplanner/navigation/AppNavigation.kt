@@ -86,6 +86,7 @@ fun AppNavigation(
                             pendingProjectId = id
                             backStack.removeLastOrNull()
                         },
+                        onDeleteProject = viewModel::deleteProject,
                         onBack = { backStack.removeLastOrNull() }
                     )
                 }
