@@ -77,12 +77,16 @@
     <string name="hide_date_time">Hide date and time</string>
     <string name="show_date_time">Show date and time</string>
     <string name="add_corner">Add corner</string>
+    <string name="add_first_corner">Add first corner</string>
     <string name="add_point">Add point</string>
+    <string name="add_first_point">Add first point</string>
     <string name="cancel_drawing">Cancel drawing</string>
     <string name="undo_last_point">Undo last point</string>
-    <string name="building_drawing_hint">Move the map under the crosshair, then add each building corner.</string>
-    <string name="wall_drawing_hint">Move the map under the crosshair, then add each wall point.</string>
+    <string name="building_drawing_hint">Move the map under the crosshair, then add corners.</string>
+    <string name="wall_drawing_hint">Move the map under the crosshair, then add points.</string>
     <string name="tree_drawing_hint">Move the map under the crosshair, then add the tree.</string>
+    <string name="minimum_corners_progress">%1$d of 3 minimum corners</string>
+    <string name="minimum_points_progress">%1$d of 2 minimum points</string>
     <plurals name="corners_count"><item quantity="one">%d corner</item><item quantity="other">%d corners</item></plurals>
     <plurals name="points_count"><item quantity="one">%d point</item><item quantity="other">%d points</item></plurals>
     <string name="height">Height</string>
