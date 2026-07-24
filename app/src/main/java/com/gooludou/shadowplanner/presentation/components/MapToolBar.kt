@@ -63,10 +63,8 @@ fun MapToolBar(
         ShadowColorButton(shadowAppearance, onOpenShadowColor)
         PrimaryToolBar(autoState, hasSceneObjects, onDrawMode, onAutoLoad, onClear)
         TimeToolButton(isTimeVisible, onToggleTime)
-        if (hasSceneObjects) {
-            Spacer(modifier = Modifier.weight(1f))
-            Open3DToolButton(onOpenMapbox3D)
-        }
+        Spacer(modifier = Modifier.weight(1f))
+        Open3DToolButton(onOpenMapbox3D)
     }
 }
 
