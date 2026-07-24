@@ -111,10 +111,10 @@ private object DateTimeSpinnerDefaults {
 fun DateTimeSpinner(
     selectedEpochMillis: Long,
     timeZoneId: String,
+    modifier: Modifier = Modifier,
     location: GeoPoint? = null,
     onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit,
-    modifier: Modifier = Modifier
+    onNowSelected: () -> Unit
 ) {
     val dimensions = ShadowMapDesign.dimensions
     val themeSurface = MaterialTheme.colorScheme.surface

@@ -50,11 +50,8 @@
     <string name="center_on_current_location">Center on current location</string>
     <string name="current_location">Current location</string>
     <string name="view_3d_button">3D view</string>
-    <string name="mapbox_3d_button">Mapbox 3D</string>
     <string name="open_3d_button">Open 3D</string>
     <string name="mapbox_3d_view">Mapbox 3D view</string>
-    <string name="top_down_view">Top-down</string>
-    <string name="pitch_degrees">Pitch %1$d°</string>
     <string name="standard_map_style">Standard</string>
     <string name="satellite_map_style">Satellite</string>
     <string name="change_shadow_colour">Change shadow colour</string>
@@ -90,8 +87,6 @@
     <string name="tree_drawing_hint">Move the map under the crosshair, then add the tree.</string>
     <string name="minimum_corners_progress">%1$d of 3 minimum corners</string>
     <string name="minimum_points_progress">%1$d of 2 minimum points</string>
-    <plurals name="corners_count"><item quantity="one">%d corner</item><item quantity="other">%d corners</item></plurals>
-    <plurals name="points_count"><item quantity="one">%d point</item><item quantity="other">%d points</item></plurals>
     <string name="height">Height</string>
     <string name="crown_width">Crown width</string>
     <string name="enter_range_meters">Enter %1$s–%2$s m</string>

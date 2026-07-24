@@ -29,8 +29,8 @@ fun SceneViewSwitchButton(
     label: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    emphasized: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    emphasized: Boolean = false
 ) {
     Button(
         onClick = onClick,
