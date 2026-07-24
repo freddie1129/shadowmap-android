@@ -98,11 +98,8 @@
     <string name="decrease">−</string>
     <string name="increase">+</string>
     <string name="save_changes">Save</string>
-    <string name="new_manual_object">New manual object</string>
-    <string name="automatically_loaded_edited">Automatically loaded · Edited</string>
-    <string name="automatically_loaded">Automatically loaded</string>
-    <string name="manually_drawn">Manually drawn</string>
     <string name="reset_loaded_height">Reset to loaded height · %s m</string>
+    <string name="quick_heights">Quick heights</string>
     <string name="building_details">Building details</string>
     <string name="wall_details">Wall details</string>
     <string name="tree_details">Tree details</string>

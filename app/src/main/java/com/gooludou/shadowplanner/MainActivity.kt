@@ -901,10 +901,9 @@ private fun ShadowMapScreen(
                         DEFAULT_DRAWN_TREE_RADIUS_METERS
                     } else {
                         null
-                    },
+                },
                 isCreating = pendingType != null,
                 objectSource = uiState.selectedDrawing?.source ?: SceneObjectSource.MANUAL,
-                isEditedAutomaticObject = selectionId?.let(uiState::isLoadedBuildingEdited) == true,
                 loadedHeightMeters = selectedOriginalLoadedBuilding?.heightMeters,
                 onBack = {
                     if (pendingType != null) onReturnPendingToDrawing() else onSelectDrawing(null)
@@ -1065,6 +1064,7 @@ private fun MoveModeOverlay(
     onDone: () -> Unit,
     onCancel: () -> Unit
 ) {
+    val dimensions = ShadowMapDesign.dimensions
     var dragStart by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
     Box(
         modifier = Modifier
@@ -1084,7 +1084,11 @@ private fun MoveModeOverlay(
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 96.dp),
+                .padding(
+                    start = dimensions.spacingLarge,
+                    end = dimensions.spacingLarge,
+                    bottom = 96.dp
+                ),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
             contentColor = MaterialTheme.colorScheme.onSurface,
             shape = MaterialTheme.shapes.large,
@@ -1100,7 +1104,7 @@ private fun MoveModeOverlay(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 8.dp),
+                        .padding(horizontal = dimensions.spacingMedium),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

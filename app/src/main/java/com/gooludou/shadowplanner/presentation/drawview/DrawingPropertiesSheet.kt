@@ -1,15 +1,19 @@
 package com.gooludou.shadowplanner.presentation.drawview
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,6 +46,7 @@ import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.DrawnObjectType
 import com.gooludou.shadowplanner.domain.SceneObjectSource
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import java.util.Locale
 import kotlin.math.abs
 
@@ -56,7 +63,6 @@ fun DrawingPropertiesSheet(
     modifier: Modifier = Modifier,
     onMove: () -> Unit = {},
     objectSource: SceneObjectSource? = null,
-    isEditedAutomaticObject: Boolean = false,
     loadedHeightMeters: Double? = null
 ) {
     val config = type.propertyPanelConfig()
@@ -88,18 +94,21 @@ fun DrawingPropertiesSheet(
                     )
                 )
                 .imePadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            PropertyPanelHeader(
-                title = config.title,
-                sourceLabel = propertySourceLabel(
-                    isCreating,
-                    objectSource,
-                    isEditedAutomaticObject
+                .padding(
+                    horizontal = ShadowMapDesign.dimensions.spacingLarge,
+                    vertical = ShadowMapDesign.dimensions.spacingMedium
                 ),
-                onBack = onBack
+            verticalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingMedium)
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .width(32.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f))
             )
+            PropertyPanelHeader(title = config.title, onBack = onBack)
             MeasurementEditor(
                 label = stringResource(R.string.height),
                 value = heightText,
@@ -160,29 +169,13 @@ fun DrawingPropertiesSheet(
 }
 
 @Composable
-private fun propertySourceLabel(
-    isCreating: Boolean,
-    objectSource: SceneObjectSource?,
-    isEditedAutomaticObject: Boolean
-): String = when {
-    isCreating -> stringResource(R.string.new_manual_object)
-
-    objectSource == SceneObjectSource.AUTOMATIC && isEditedAutomaticObject ->
-        stringResource(R.string.automatically_loaded_edited)
-
-    objectSource == SceneObjectSource.AUTOMATIC -> stringResource(R.string.automatically_loaded)
-
-    else -> stringResource(R.string.manually_drawn)
-}
-
-@Composable
 private fun BuildingHeightControls(
     objectSource: SceneObjectSource?,
     loadedHeightMeters: Double?,
     currentHeightMeters: Double?,
     onSelected: (Double) -> Unit
 ) {
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)) {
         if (objectSource == SceneObjectSource.AUTOMATIC && loadedHeightMeters != null) {
             TextButton(
                 onClick = { onSelected(loadedHeightMeters) },
@@ -198,18 +191,26 @@ private fun BuildingHeightControls(
                 )
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.quick_heights),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)) {
             listOf(3.0, 6.0, 10.0).forEach { preset ->
-                OutlinedButton(onClick = { onSelected(preset) }) {
-                    Text(stringResource(R.string.preset_meters, preset.toInt()))
-                }
+                FilterChip(
+                    selected = currentHeightMeters != null &&
+                        abs(currentHeightMeters - preset) < HEIGHT_EQUALITY_TOLERANCE_METERS,
+                    onClick = { onSelected(preset) },
+                    label = { Text(stringResource(R.string.preset_meters, preset.toInt())) }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun PropertyPanelHeader(title: String, sourceLabel: String, onBack: () -> Unit) {
+private fun PropertyPanelHeader(title: String, onBack: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onBack) {
             Icon(
@@ -217,14 +218,7 @@ private fun PropertyPanelHeader(title: String, sourceLabel: String, onBack: () -
                 contentDescription = stringResource(R.string.back)
             )
         }
-        Column {
-            Text(text = title, style = MaterialTheme.typography.titleLarge)
-            Text(
-                text = sourceLabel,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Text(text = title, style = MaterialTheme.typography.titleLarge)
     }
 }
 
@@ -264,21 +258,27 @@ private fun PropertyPanelActions(
     onMove: () -> Unit,
     onSave: () -> Unit
 ) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)
+    ) {
         if (!isCreating) {
-            OutlinedButton(onClick = onMove, modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.move_object))
-            }
-        }
-        if (!isCreating) {
-            OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)
+            ) {
+                OutlinedButton(onClick = onMove, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.move_object))
+                }
+                OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
             }
         }
         Button(
             onClick = onSave,
             enabled = isSaveEnabled,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text(saveLabel)
         }
@@ -296,10 +296,13 @@ private fun MeasurementEditor(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        OutlinedButton(onClick = { onStep(-MEASUREMENT_STEP_METERS) }) {
+        OutlinedButton(
+            onClick = { onStep(-MEASUREMENT_STEP_METERS) },
+            modifier = Modifier.widthIn(min = ShadowMapDesign.dimensions.minimumTouchTarget)
+        ) {
             Text(stringResource(R.string.decrease))
         }
         OutlinedTextField(
@@ -317,7 +320,10 @@ private fun MeasurementEditor(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.weight(1f)
         )
-        OutlinedButton(onClick = { onStep(MEASUREMENT_STEP_METERS) }) {
+        OutlinedButton(
+            onClick = { onStep(MEASUREMENT_STEP_METERS) },
+            modifier = Modifier.widthIn(min = ShadowMapDesign.dimensions.minimumTouchTarget)
+        ) {
             Text(stringResource(R.string.increase))
         }
     }
@@ -369,7 +375,23 @@ private data class PropertyPanelConfig(
 @Preview(name = "Building details", widthDp = 420, showBackground = true)
 @Composable
 private fun BuildingPropertiesSheetPreview() {
-    DrawingPropertiesPreview(type = DrawnObjectType.BUILDING)
+    DrawingPropertiesPreview(type = DrawnObjectType.BUILDING, isCreating = false)
+}
+
+@Preview(name = "Building details · dark", widthDp = 420, showBackground = true)
+@Composable
+private fun DarkBuildingPropertiesSheetPreview() {
+    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
+        DrawingPropertiesSheet(
+            type = DrawnObjectType.BUILDING,
+            initialHeightMeters = 6.0,
+            initialRadiusMeters = null,
+            isCreating = false,
+            onBack = {},
+            onApply = { _, _ -> },
+            onDelete = {}
+        )
+    }
 }
 
 @Preview(name = "Wall details", widthDp = 420, showBackground = true)
@@ -394,7 +416,6 @@ private fun EditedLoadedBuildingPropertiesSheetPreview() {
             initialRadiusMeters = null,
             isCreating = false,
             objectSource = SceneObjectSource.AUTOMATIC,
-            isEditedAutomaticObject = true,
             loadedHeightMeters = 18.0,
             onBack = {},
             onApply = { _, _ -> },
@@ -404,7 +425,7 @@ private fun EditedLoadedBuildingPropertiesSheetPreview() {
 }
 
 @Composable
-private fun DrawingPropertiesPreview(type: DrawnObjectType) {
+private fun DrawingPropertiesPreview(type: DrawnObjectType, isCreating: Boolean = true) {
     ShadowMapTheme(darkTheme = false, dynamicColor = false) {
         DrawingPropertiesSheet(
             type = type,
@@ -414,7 +435,7 @@ private fun DrawingPropertiesPreview(type: DrawnObjectType) {
                 DrawnObjectType.TREE -> 8.0
             },
             initialRadiusMeters = if (type == DrawnObjectType.TREE) 2.5 else null,
-            isCreating = true,
+            isCreating = isCreating,
             objectSource = SceneObjectSource.MANUAL,
             onBack = {},
             onApply = { _, _ -> },
