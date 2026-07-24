@@ -940,17 +940,7 @@ private fun ShadowMapScreen(
         AlertDialog(
             onDismissRequest = { showClearConfirmation = false },
             title = { Text(stringResource(R.string.clear_scene_question)) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.clear_scene_details,
-                        uiState.visibleLoadedBuildings.size,
-                        uiState.drawnBuildings.size,
-                        uiState.drawnWalls.size,
-                        uiState.drawnTrees.size
-                    )
-                )
-            },
+            text = { Text(stringResource(R.string.clear_scene_details)) },
             confirmButton = {
                 Button(onClick = {
                     onClearScene()
