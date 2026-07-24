@@ -5,12 +5,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
@@ -25,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,8 +40,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.R
@@ -70,17 +77,48 @@ fun ProjectListScreen(
     ) { padding ->
         if (projects.isEmpty()) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(
-                    padding
-                ).padding(ShadowMapDesign.dimensions.screenPadding),
-                verticalArrangement = Arrangement.Center
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(Icons.Outlined.FolderOpen, contentDescription = null)
+                val dimensions = ShadowMapDesign.dimensions
+                Surface(
+                    modifier = Modifier.size(
+                        dimensions.minimumTouchTarget + dimensions.spacingLarge
+                    ),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Outlined.FolderOpen,
+                            contentDescription = null,
+                            modifier = Modifier.size(dimensions.iconSize),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(dimensions.spacingExtraLarge))
                 Text(
                     stringResource(R.string.no_saved_projects),
                     style = MaterialTheme.typography.titleMedium
                 )
-                Text(stringResource(R.string.save_project_hint))
+                Spacer(modifier = Modifier.height(dimensions.spacingSmall))
+                Text(
+                    text = stringResource(R.string.save_project_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(dimensions.spacingExtraLarge))
+                OutlinedButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
+                    Spacer(modifier = Modifier.width(dimensions.spacingSmall))
+                    Text(stringResource(R.string.back_to_map))
+                }
             }
         } else {
             LazyColumn(
@@ -217,7 +255,15 @@ private fun DeleteProjectDialog(
 @Preview(showBackground = true)
 @Composable
 private fun ProjectListScreenPreview() {
-    ShadowMapTheme(dynamicColor = false) {
+    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
+        ProjectListScreen(emptyList(), onProjectSelected = {}, onDeleteProject = {}, onBack = {})
+    }
+}
+
+@Preview(name = "Empty project list · dark", showBackground = true)
+@Composable
+private fun ProjectListScreenEmptyDarkPreview() {
+    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
         ProjectListScreen(emptyList(), onProjectSelected = {}, onDeleteProject = {}, onBack = {})
     }
 }

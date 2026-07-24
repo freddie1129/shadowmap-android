@@ -39,8 +39,8 @@
     <string name="save_project">Save project</string>
     <string name="project_name">Project name</string>
     <string name="projects">Projects</string>
-    <string name="no_saved_projects">No saved projects yet</string>
-    <string name="save_project_hint">Save a project from the map to see it here.</string>
+    <string name="no_saved_projects">No saved projects</string>
+    <string name="save_project_hint">Save a map setup to keep its location, time, and drawn objects.</string>
     <string name="open_projects">Open projects</string>
     <string name="open_settings">Open settings</string>
     <string name="settings">Settings</string>
