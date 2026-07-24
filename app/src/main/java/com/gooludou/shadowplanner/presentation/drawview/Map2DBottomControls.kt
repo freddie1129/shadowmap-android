@@ -19,7 +19,6 @@ import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
 import com.gooludou.shadowplanner.presentation.components.MapToolBar
-import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
 @Composable

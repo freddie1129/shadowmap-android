@@ -351,6 +351,7 @@ private fun ShadowMapScreen(
     var autoLoadAfterZoom by remember { mutableStateOf(false) }
     var showClearConfirmation by remember { mutableStateOf(false) }
     var showDiscardDraftConfirmation by remember { mutableStateOf(false) }
+    var currentLocationPoint by remember { mutableStateOf<Point?>(null) }
     var draft3dTarget by remember { mutableStateOf<Scene3DTarget?>(null) }
     var showSelectedLocationSheet by remember { mutableStateOf(false) }
     var showShadowColorSheet by remember { mutableStateOf(false) }
@@ -402,6 +403,7 @@ private fun ShadowMapScreen(
             val locationComponent = currentMapView.location
             var firstLocationReceived = false
             val positionListener = OnIndicatorPositionChangedListener { point ->
+                currentLocationPoint = point
                 if (!firstLocationReceived) {
                     firstLocationReceived = true
                     mapViewportState.setCameraOptions {
@@ -753,6 +755,14 @@ private fun ShadowMapScreen(
                                         enterMapbox3d()
                                     }
                                 },
+                                onRecenterCurrentLocation = {
+                                    currentLocationPoint?.let { point ->
+                                        mapViewportState.setCameraOptions {
+                                            center(point)
+                                        }
+                                    }
+                                },
+                                canRecenterCurrentLocation = currentLocationPoint != null,
                                 onOpenProjects = onOpenProjects,
                                 onSaveProject = {
                                     projectNameDraft = currentUiState.activeProjectName.orEmpty()

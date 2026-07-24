@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -39,6 +40,8 @@ fun Map2DTopControls(
     onOpenLocationSearch: () -> Unit,
     onShowLocationInfo: () -> Unit,
     onOpen3D: () -> Unit,
+    onRecenterCurrentLocation: () -> Unit,
+    canRecenterCurrentLocation: Boolean,
     onOpenProjects: () -> Unit,
     onSaveProject: () -> Unit,
     modifier: Modifier = Modifier
@@ -74,6 +77,13 @@ fun Map2DTopControls(
                 ),
             verticalAlignment = Alignment.Companion.CenterVertically
         ) {
+            MapRoundIconButton(
+                onClick = onRecenterCurrentLocation,
+                contentDescription = stringResource(R.string.center_on_current_location),
+                enabled = canRecenterCurrentLocation
+            ) {
+                Icon(Icons.Outlined.MyLocation, contentDescription = null)
+            }
             Spacer(modifier = Modifier.weight(1f))
             MapRoundIconButton(
                 onClick = onOpenProjects,
@@ -142,6 +152,8 @@ private fun Map2DTopControlsPreview() {
             onOpenLocationSearch = {},
             onShowLocationInfo = {},
             onOpen3D = {},
+            onRecenterCurrentLocation = {},
+            canRecenterCurrentLocation = true,
             onOpenProjects = {},
             onSaveProject = {}
         )
