@@ -191,7 +191,8 @@ internal fun ShadowMapRoute(
                 onBuildingsLoaded = viewModel::onBuildingsLoaded,
                 onLoadFailed = viewModel::onBuildingLoadFailed,
                 onViewportChanged = viewModel::onViewportChanged,
-                onShadowAppearanceChanged = viewModel::onShadowAppearanceChanged
+                onShadowAppearanceChanged = viewModel::onShadowAppearanceChanged,
+                onCurrentLocationReceived = viewModel::onCurrentLocationReceived
             ),
             drawing = DrawingActions(
                 onSelectDrawMode = viewModel::selectDrawMode,
@@ -258,6 +259,7 @@ private fun ShadowMapScreen(
     val onLoadFailed = actions.map.onLoadFailed
     val onViewportChanged = actions.map.onViewportChanged
     val onShadowAppearanceChanged = actions.map.onShadowAppearanceChanged
+    val onCurrentLocationReceived = actions.map.onCurrentLocationReceived
     val onSelectDrawMode = actions.drawing.onSelectDrawMode
     val onStopDrawing = actions.drawing.onStopDrawing
     val onAddVertex = actions.drawing.onAddVertex
@@ -364,6 +366,7 @@ private fun ShadowMapScreen(
     var projectNameDraft by remember(uiState.activeProjectName) {
         mutableStateOf(uiState.activeProjectName.orEmpty())
     }
+    val currentLocationLabel = stringResource(R.string.current_location)
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -415,6 +418,10 @@ private fun ShadowMapScreen(
                         center(point)
                         zoom(17.0)
                     }
+                    onCurrentLocationReceived(
+                        GeoPoint(point.longitude(), point.latitude()),
+                        currentLocationLabel
+                    )
                 }
             }
             locationComponent.updateSettings {

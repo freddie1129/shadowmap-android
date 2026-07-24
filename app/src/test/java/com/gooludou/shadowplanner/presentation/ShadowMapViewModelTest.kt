@@ -13,6 +13,8 @@ import com.gooludou.shadowplanner.domain.PendingDrawing
 import com.gooludou.shadowplanner.domain.SceneObjectSource
 import com.gooludou.shadowplanner.domain.SolarPositionCalculator
 import com.gooludou.shadowplanner.domain.UserObjectShadowCalculator
+import com.gooludou.shadowplanner.location.CurrentLocationResolver
+import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.project.ProjectRepository
 import java.time.Clock
 import java.time.Instant
@@ -426,6 +428,35 @@ class ShadowMapViewModelTest {
         assertEquals("Copy", viewModel.uiState.value.activeProjectName)
     }
 
+    @Test
+    fun currentLocationReceived_resolvesAndStoresLocationLabel() = runTest(dispatcher) {
+        var resolveCalls = 0
+        val viewModel = createViewModel(
+            currentLocationResolver = object : CurrentLocationResolver {
+                override suspend fun resolve(location: GeoPoint): Result<LocationSearchResult> {
+                    resolveCalls += 1
+                    return Result.success(
+                        LocationSearchResult(
+                            id = "current-location",
+                            name = "Brisbane",
+                            address = "Brisbane QLD, Australia",
+                            latitude = location.latitude,
+                            longitude = location.longitude
+                        )
+                    )
+                }
+            }
+        )
+
+        viewModel.onCurrentLocationReceived(TEST_LOCATION, "Current location")
+        viewModel.onCurrentLocationReceived(TEST_LOCATION, "Current location")
+        advanceUntilIdle()
+
+        assertEquals(1, resolveCalls)
+        assertEquals(TEST_LOCATION, viewModel.uiState.value.calculationLocation)
+        assertEquals("Brisbane QLD, Australia", viewModel.uiState.value.selectedLocationLabel)
+    }
+
     private fun testBuilding(): Building {
         val ring =
             listOf(
@@ -460,6 +491,10 @@ class ShadowMapViewModelTest {
                 project: com.gooludou.shadowplanner.project.ProjectSnapshot
             ) = Unit
             override fun deleteProject(id: String) = Unit
+        },
+        currentLocationResolver: CurrentLocationResolver = object : CurrentLocationResolver {
+            override suspend fun resolve(location: GeoPoint): Result<LocationSearchResult> =
+                Result.failure(IllegalStateException("Not used in this test"))
         }
     ) =
         ShadowMapViewModel(
@@ -470,6 +505,7 @@ class ShadowMapViewModelTest {
             clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
             systemZoneId = ZoneId.of("Australia/Brisbane"),
             projectRepository = projectRepository,
+            currentLocationResolver = currentLocationResolver,
             computationDispatcher = dispatcher
         )
 

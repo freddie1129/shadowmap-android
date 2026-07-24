@@ -26,7 +26,8 @@ data class MapActions(
     val onBuildingsLoaded: (List<Building>, GeoPoint) -> Unit,
     val onLoadFailed: (Throwable) -> Unit,
     val onViewportChanged: (ProjectViewport) -> Unit,
-    val onShadowAppearanceChanged: (ShadowAppearance) -> Unit
+    val onShadowAppearanceChanged: (ShadowAppearance) -> Unit,
+    val onCurrentLocationReceived: (GeoPoint, String) -> Unit
 )
 
 data class DrawingActions(

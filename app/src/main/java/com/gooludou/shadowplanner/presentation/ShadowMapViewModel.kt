@@ -27,6 +27,7 @@ import com.gooludou.shadowplanner.domain.SolarPosition
 import com.gooludou.shadowplanner.domain.SolarPositionCalculator
 import com.gooludou.shadowplanner.domain.UserObjectShadowCalculator
 import com.gooludou.shadowplanner.domain.translatedBy
+import com.gooludou.shadowplanner.location.CurrentLocationResolver
 import com.gooludou.shadowplanner.project.ProjectRepository
 import com.gooludou.shadowplanner.project.ProjectSnapshot
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,6 +59,7 @@ constructor(
     private val clock: Clock,
     systemZoneId: ZoneId,
     private val projectRepository: ProjectRepository,
+    private val currentLocationResolver: CurrentLocationResolver,
     @param:DefaultDispatcher
     private val computationDispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -65,6 +67,7 @@ constructor(
     private var lastDeletedObject: DeletedSceneObject? = null
     private var lastClearedScene: ClearedSceneSnapshot? = null
     private var moveSnapshot: ShadowMapUiState? = null
+    private var hasResolvedCurrentLocation = false
 
     private val _uiState =
         MutableStateFlow(
@@ -259,6 +262,30 @@ constructor(
             selectedLocationLabel = label
         )
         recalculateSunAndShadows()
+    }
+
+    fun onCurrentLocationReceived(location: GeoPoint, fallbackLabel: String) {
+        if (hasResolvedCurrentLocation) return
+        hasResolvedCurrentLocation = true
+        viewModelScope.launch(computationDispatcher) {
+            val resolvedLocation = currentLocationResolver.resolve(location)
+                .getOrElse {
+                    com.gooludou.shadowplanner.location.LocationSearchResult(
+                        id = "current:${location.longitude},${location.latitude}",
+                        name = fallbackLabel,
+                        address = fallbackLabel,
+                        latitude = location.latitude,
+                        longitude = location.longitude
+                    )
+                }
+            onLocationSelected(
+                location = GeoPoint(
+                    longitude = resolvedLocation.longitude ?: location.longitude,
+                    latitude = resolvedLocation.latitude ?: location.latitude
+                ),
+                label = resolvedLocation.address.ifBlank { resolvedLocation.name }
+            )
+        }
     }
 
     fun onBuildingsLoaded(buildings: List<Building>, location: GeoPoint) {
