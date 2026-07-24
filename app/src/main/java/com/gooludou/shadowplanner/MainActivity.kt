@@ -93,6 +93,7 @@ import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSh
 import com.gooludou.shadowplanner.presentation.drawview.ShadowColorSheet
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DView
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DViewport
+import com.gooludou.shadowplanner.presentation.projectview.SaveProjectDialog
 import com.gooludou.shadowplanner.project.ProjectViewport
 import com.gooludou.shadowplanner.scene.Scene3DAppearance
 import com.gooludou.shadowplanner.scene.SceneCameraView
@@ -216,7 +217,10 @@ internal fun ShadowMapRoute(
                 onClearScene = viewModel::clearScene,
                 onRestoreClearedScene = viewModel::restoreClearedScene
             ),
-            project = ProjectActions(onSaveProject = viewModel::saveProject)
+            project = ProjectActions(
+                onSaveProject = viewModel::saveProject,
+                onSaveProjectAsNew = viewModel::saveProjectAsNew
+            )
         ),
         navigation = ShadowMapNavigation(
             pendingLocation = pendingLocation,
@@ -275,6 +279,7 @@ private fun ShadowMapScreen(
     val onClearScene = actions.scene.onClearScene
     val onRestoreClearedScene = actions.scene.onRestoreClearedScene
     val onSaveProject = actions.project.onSaveProject
+    val onSaveProjectAsNew = actions.project.onSaveProjectAsNew
     val mapControllerFactory = dependencies.mapControllerFactory
     val pendingLocation = navigation.pendingLocation
     val onLocationApplied = navigation.onLocationApplied
@@ -1025,30 +1030,19 @@ private fun ShadowMapScreen(
     }
 
     if (showSaveProjectDialog) {
-        AlertDialog(
+        SaveProjectDialog(
+            projectName = projectNameDraft,
+            activeProjectName = uiState.activeProjectName,
+            hasActiveProject = uiState.activeProjectId != null,
+            onProjectNameChanged = { projectNameDraft = it },
             onDismissRequest = { showSaveProjectDialog = false },
-            title = { Text(stringResource(R.string.save_project)) },
-            text = {
-                androidx.compose.material3.OutlinedTextField(
-                    value = projectNameDraft,
-                    onValueChange = { projectNameDraft = it },
-                    label = { Text(stringResource(R.string.project_name)) },
-                    singleLine = true
-                )
+            onSaveUpdate = { name ->
+                showSaveProjectDialog = false
+                onSaveProject(name)
             },
-            confirmButton = {
-                Button(
-                    enabled = projectNameDraft.isNotBlank(),
-                    onClick = {
-                        showSaveProjectDialog = false
-                        onSaveProject(projectNameDraft.trim())
-                    }
-                ) { Text(stringResource(R.string.save)) }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { showSaveProjectDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
+            onSaveAsNew = { name ->
+                showSaveProjectDialog = false
+                onSaveProjectAsNew(name)
             }
         )
     }

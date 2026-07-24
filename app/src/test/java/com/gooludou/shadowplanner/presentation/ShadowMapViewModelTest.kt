@@ -27,6 +27,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -395,6 +396,36 @@ class ShadowMapViewModelTest {
         assertEquals(1, viewModel.uiState.value.drawnTrees.size)
     }
 
+    @Test
+    fun saveProjectAsNew_createsANewActiveProject() = runTest(dispatcher) {
+        val savedProjects = mutableListOf<com.gooludou.shadowplanner.project.ProjectSnapshot>()
+        val viewModel = createViewModel(
+            projectRepository = object : ProjectRepository {
+                override fun listProjects() =
+                    emptyList<com.gooludou.shadowplanner.project.ProjectSummary>()
+
+                override fun loadProject(id: String) = error("Not used in this test")
+
+                override fun saveProject(project: com.gooludou.shadowplanner.project.ProjectSnapshot) {
+                    savedProjects += project
+                }
+
+                override fun deleteProject(id: String) = Unit
+            }
+        )
+
+        viewModel.saveProject("Original")
+        advanceUntilIdle()
+        val originalProjectId = viewModel.uiState.value.activeProjectId
+
+        viewModel.saveProjectAsNew("Copy")
+        advanceUntilIdle()
+
+        assertEquals(2, savedProjects.size)
+        assertNotEquals(originalProjectId, viewModel.uiState.value.activeProjectId)
+        assertEquals("Copy", viewModel.uiState.value.activeProjectName)
+    }
+
     private fun testBuilding(): Building {
         val ring =
             listOf(
@@ -419,7 +450,18 @@ class ShadowMapViewModelTest {
         GeoPoint(153.0, -28.0001)
     )
 
-    private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()) =
+    private fun createViewModel(
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        projectRepository: ProjectRepository = object : ProjectRepository {
+            override fun listProjects() =
+                emptyList<com.gooludou.shadowplanner.project.ProjectSummary>()
+            override fun loadProject(id: String) = error("Not used in this test")
+            override fun saveProject(
+                project: com.gooludou.shadowplanner.project.ProjectSnapshot
+            ) = Unit
+            override fun deleteProject(id: String) = Unit
+        }
+    ) =
         ShadowMapViewModel(
             savedStateHandle = savedStateHandle,
             shadowCalculator = BuildingShadowCalculator(),
@@ -427,15 +469,7 @@ class ShadowMapViewModelTest {
             solarPositionCalculator = SolarPositionCalculator(),
             clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
             systemZoneId = ZoneId.of("Australia/Brisbane"),
-            projectRepository = object : ProjectRepository {
-                override fun listProjects() =
-                    emptyList<com.gooludou.shadowplanner.project.ProjectSummary>()
-                override fun loadProject(id: String) = error("Not used in this test")
-                override fun saveProject(
-                    project: com.gooludou.shadowplanner.project.ProjectSnapshot
-                ) = Unit
-                override fun deleteProject(id: String) = Unit
-            },
+            projectRepository = projectRepository,
             computationDispatcher = dispatcher
         )
 

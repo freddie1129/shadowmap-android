@@ -4,6 +4,8 @@
     <string name="cancel">Cancel</string>
     <string name="apply">Apply</string>
     <string name="save">Save</string>
+    <string name="save_update">Save update</string>
+    <string name="save_as_new">Save as new</string>
     <string name="delete">Delete</string>
     <string name="finish">Finish</string>
     <string name="done">Done</string>

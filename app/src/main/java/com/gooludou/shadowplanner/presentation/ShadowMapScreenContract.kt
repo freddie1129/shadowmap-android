@@ -52,7 +52,10 @@ data class DrawingActions(
 
 data class SceneActions(val onClearScene: () -> Unit, val onRestoreClearedScene: () -> Unit)
 
-data class ProjectActions(val onSaveProject: (String?) -> Unit)
+data class ProjectActions(
+    val onSaveProject: (String?) -> Unit,
+    val onSaveProjectAsNew: (String) -> Unit
+)
 
 data class ShadowMapActions(
     val map: MapActions,

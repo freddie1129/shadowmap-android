@@ -103,12 +103,34 @@ constructor(
 
     fun saveProject(name: String? = null) {
         val state = _uiState.value
-        val projectId = state.activeProjectId ?: java.util.UUID.randomUUID().toString()
-        val now = clock.millis()
+        saveProject(
+            state = state,
+            projectId = state.activeProjectId ?: UUID.randomUUID().toString(),
+            name = name ?: state.activeProjectName ?: "Untitled project",
+            createdAt = state.activeProjectCreatedAt ?: clock.millis()
+        )
+    }
+
+    fun saveProjectAsNew(name: String) {
+        val state = _uiState.value
+        saveProject(
+            state = state,
+            projectId = UUID.randomUUID().toString(),
+            name = name,
+            createdAt = clock.millis()
+        )
+    }
+
+    private fun saveProject(
+        state: ShadowMapUiState,
+        projectId: String,
+        name: String,
+        createdAt: Long
+    ) {
         val snapshot = state.toProjectSnapshot(
             id = projectId,
-            name = name ?: state.activeProjectName ?: "Untitled project",
-            createdAt = state.activeProjectCreatedAt ?: now
+            name = name,
+            createdAt = createdAt
         )
         viewModelScope.launch(computationDispatcher) {
             runCatching { projectRepository.saveProject(snapshot) }
