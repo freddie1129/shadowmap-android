@@ -174,7 +174,7 @@ private fun TimeToolButton(isTimeVisible: Boolean, onClick: () -> Unit) {
         size = 48.dp
     ) {
         Icon(
-            imageVector = if (isTimeVisible) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+            imageVector = if (isTimeVisible) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
             contentDescription = null
         )
     }
