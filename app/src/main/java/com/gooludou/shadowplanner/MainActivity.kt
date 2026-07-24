@@ -107,6 +107,7 @@ import com.mapbox.maps.extension.compose.MapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
+import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.mapbox.maps.plugin.locationcomponent.location
 import dagger.hilt.android.AndroidEntryPoint
@@ -426,7 +427,9 @@ private fun ShadowMapScreen(
             }
             locationComponent.updateSettings {
                 enabled = true
-                pulsingEnabled = true
+                locationPuck = LocationPuck2D(opacity = 0f)
+                pulsingEnabled = false
+                showAccuracyRing = false
             }
             locationComponent.addOnIndicatorPositionChangedListener(positionListener)
             onDispose {
