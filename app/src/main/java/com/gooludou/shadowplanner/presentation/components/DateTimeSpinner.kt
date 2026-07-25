@@ -250,7 +250,8 @@ fun DateTimeSpinner(
 
     Column(
         modifier = modifier
-            .padding(dimensions.floatingControlMargin)
+            .padding(horizontal = dimensions.floatingControlMargin)
+            .padding(vertical = dimensions.spacingXs)
             .widthIn(max = dimensions.floatingControlMaxWidth)
             .fillMaxWidth()
             .padding(horizontal = dimensions.spacingXs)
