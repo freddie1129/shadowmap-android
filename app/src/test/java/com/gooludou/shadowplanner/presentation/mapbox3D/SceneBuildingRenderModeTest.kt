@@ -57,4 +57,20 @@ class SceneBuildingRenderModeTest {
         assertEquals(MapboxBasemapStyle.SATELLITE, selection.basemapStyle)
         assertNull(selection.pitchOnSelection)
     }
+
+    @Test
+    fun `satellite basemap replaces Mapbox buildings with regular drawn buildings`() {
+        assertEquals(
+            SceneBuildingSelection.DRAWN,
+            SceneBuildingSelection.MAPBOX.compatibleWith(MapboxBasemapStyle.SATELLITE)
+        )
+    }
+
+    @Test
+    fun `standard basemap preserves forced 3D drawn buildings`() {
+        assertEquals(
+            SceneBuildingSelection.DRAWN_FORCE_3D,
+            SceneBuildingSelection.DRAWN_FORCE_3D.compatibleWith(MapboxBasemapStyle.STANDARD)
+        )
+    }
 }

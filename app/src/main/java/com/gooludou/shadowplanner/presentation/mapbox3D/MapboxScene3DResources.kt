@@ -15,6 +15,15 @@ internal object Scene3DMapIds {
     const val AMBIENT_LIGHT = "shadow-planner-ambient"
 }
 
+/** Mapbox Standard import configuration used by the custom 3D scene. */
+internal object Scene3DMapConfig {
+    /** Standard configuration controlling both native 2D and 3D building colours. */
+    const val COLOR_BUILDINGS = "colorBuildings"
+
+    /** Fully transparent colour used to suppress Standard's native building footprints. */
+    const val TRANSPARENT_COLOR = "rgba(0, 0, 0, 0)"
+}
+
 /** Source and layer IDs for the user-drawn 3D objects. */
 internal object Scene3DDrawingLayers {
     /** GeoJSON source containing drawn building footprints. */
@@ -121,6 +130,17 @@ internal fun sceneBuildingRenderMode(
         SceneBuildingRenderMode.DRAWN_TOP_DOWN
     }
     else -> SceneBuildingRenderMode.DRAWN_3D
+}
+
+/** Prevents Mapbox building imports from being selected with the Satellite style. */
+internal fun SceneBuildingSelection.compatibleWith(
+    basemapStyle: MapboxBasemapStyle
+): SceneBuildingSelection = if (
+    basemapStyle == MapboxBasemapStyle.SATELLITE && this == SceneBuildingSelection.MAPBOX
+) {
+    SceneBuildingSelection.DRAWN
+} else {
+    this
 }
 
 /** Screen offsets used to keep the 3D controls clear of one another and system UI. */

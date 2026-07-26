@@ -195,6 +195,11 @@ fun MapboxScene3DView(
             location = calculationLocation ?: viewport.center,
             onDateTimeChanged = onDateTimeChanged,
             onNowSelected = onNowSelected,
+            basemapStyle = basemapStyle,
+            onBasemapStyleSelected = { selectedStyle ->
+                basemapStyle = selectedStyle
+                buildingSelection = buildingSelection.compatibleWith(selectedStyle)
+            },
             showDome = showDome,
             buildingSelection = buildingSelection,
             onBuildingSelectionChanged = { selectedBuildings ->
@@ -270,6 +275,7 @@ private fun MapboxScene3DMap(
     val standardStyleState = rememberStandardStyleState {
         terrainState = TerrainState.DISABLED
     }
+    val standardBuildingColorOverride = remember { StandardBuildingColorOverride() }
     MapboxMap(
         modifier = Modifier.fillMaxSize(),
         mapViewportState = mapViewportState,
@@ -324,6 +330,12 @@ private fun MapboxScene3DMap(
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
+            updateStandardBuildingFootprints(
+                mapView = mapView,
+                basemapStyle = basemapStyle,
+                buildingRenderMode = buildingRenderMode,
+                colorOverride = standardBuildingColorOverride
+            )
             mapboxNative3dConfig(
                 buildingRenderMode == SceneBuildingRenderMode.MAPBOX
             ).forEach { (key, enabled) ->
