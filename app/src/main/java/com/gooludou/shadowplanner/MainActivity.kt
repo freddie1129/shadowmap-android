@@ -861,6 +861,7 @@ private fun ShadowMapScreen(
                                 buildings = currentUiState.buildings,
                                 walls = currentUiState.drawnWalls,
                                 trees = currentUiState.drawnTrees,
+                                uiState = currentUiState,
                                 viewport = viewport,
                                 solarPosition = currentUiState.solarPosition,
                                 sunPath = currentUiState.sunPath,
@@ -870,6 +871,22 @@ private fun ShadowMapScreen(
                                 calculationLocation = currentUiState.calculationLocation,
                                 onDateTimeChanged = onDateTimeChanged,
                                 onNowSelected = onNowSelected,
+                                onOpenSettings = onOpenSettings,
+                                onOpenLocationSearch = onOpenLocationSearch,
+                                onShowLocationInfo = { showSelectedLocationSheet = true },
+                                onRecenterCurrentLocation = {
+                                    currentLocationPoint?.let { point ->
+                                        mapViewportState.setCameraOptions {
+                                            center(point)
+                                        }
+                                    }
+                                },
+                                canRecenterCurrentLocation = currentLocationPoint != null,
+                                onOpenProjects = onOpenProjects,
+                                onSaveProject = {
+                                    projectNameDraft = currentUiState.activeProjectName.orEmpty()
+                                    showSaveProjectDialog = true
+                                },
                                 onToggleDome = { showDomeIn3d = !showDomeIn3d },
                                 onBackToMap = ::exit3d
                             )

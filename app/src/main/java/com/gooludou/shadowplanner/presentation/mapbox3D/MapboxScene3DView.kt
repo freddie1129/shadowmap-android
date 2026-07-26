@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +26,8 @@ import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.domain.SolarPosition
 import com.gooludou.shadowplanner.presentation.components.mapboxNative3dConfig
+import com.gooludou.shadowplanner.presentation.ShadowMapUiState
+import com.gooludou.shadowplanner.presentation.drawview.Map2DTopControls
 import com.gooludou.shadowplanner.scene.SceneViewport
 import com.mapbox.bindgen.Value
 import com.mapbox.geojson.Feature
@@ -71,6 +74,7 @@ fun MapboxScene3DView(
     buildings: List<Building>,
     walls: List<DrawnWall>,
     trees: List<DrawnTree>,
+    uiState: ShadowMapUiState,
     viewport: MapboxScene3DViewport,
     solarPosition: SolarPosition?,
     sunPath: List<SolarPosition>,
@@ -80,6 +84,13 @@ fun MapboxScene3DView(
     calculationLocation: GeoPoint?,
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenLocationSearch: () -> Unit,
+    onShowLocationInfo: () -> Unit,
+    onRecenterCurrentLocation: () -> Unit,
+    canRecenterCurrentLocation: Boolean,
+    onOpenProjects: () -> Unit,
+    onSaveProject: () -> Unit,
     onToggleDome: () -> Unit,
     onBackToMap: () -> Unit,
     modifier: Modifier = Modifier
@@ -130,6 +141,20 @@ fun MapboxScene3DView(
                 SceneSkyModelLayers(skyState)
             }
         }
+
+        Map2DTopControls(
+            uiState = uiState,
+            onOpenSettings = onOpenSettings,
+            onOpenLocationSearch = onOpenLocationSearch,
+            onShowLocationInfo = onShowLocationInfo,
+            onRecenterCurrentLocation = onRecenterCurrentLocation,
+            canRecenterCurrentLocation = canRecenterCurrentLocation,
+            onOpenProjects = onOpenProjects,
+            onSaveProject = onSaveProject,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .safeDrawingPadding()
+        )
 
         MapboxScene3DControls(
             mapViewportState = mapViewportState,

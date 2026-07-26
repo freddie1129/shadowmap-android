@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
 @Preview(name = "Mapbox 3D view - light", showBackground = true)
@@ -25,6 +26,11 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
             buildings = emptyList(),
             walls = emptyList(),
             trees = emptyList(),
+            uiState = ShadowMapUiState(
+                selectedEpochMillis = 1_752_640_000_000L,
+                displayTimeZoneId = "Australia/Brisbane",
+                selectedLocationLabel = "Brisbane, Queensland"
+            ),
             viewport = MapboxScene3DViewport(
                 center = GeoPoint(153.0251, -27.4698),
                 zoom = 17.0,
@@ -48,6 +54,13 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
             calculationLocation = GeoPoint(longitude = 153.0251, latitude = -27.4698),
             onDateTimeChanged = {},
             onNowSelected = {},
+            onOpenSettings = {},
+            onOpenLocationSearch = {},
+            onShowLocationInfo = {},
+            onRecenterCurrentLocation = {},
+            canRecenterCurrentLocation = false,
+            onOpenProjects = {},
+            onSaveProject = {},
             onToggleDome = {},
             onBackToMap = {}
         )

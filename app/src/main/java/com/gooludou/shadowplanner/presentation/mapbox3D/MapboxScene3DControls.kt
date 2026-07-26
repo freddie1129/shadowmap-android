@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -74,9 +73,6 @@ internal fun MapboxScene3DControls(
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
-        MapboxScene3DBackControl(
-            onBackToMap = onBackToMap
-        )
         MapboxScene3DBottomControls(
             mapViewportState = mapViewportState,
             currentPitch = currentPitch,
@@ -93,21 +89,9 @@ internal fun MapboxScene3DControls(
             onDateTimeChanged = onDateTimeChanged,
             onNowSelected = onNowSelected,
             isDateTimeVisible = isDateTimeVisible,
-            onToggleDateTime = { isDateTimeVisible = !isDateTimeVisible }
+            onToggleDateTime = { isDateTimeVisible = !isDateTimeVisible },
+            onBackToMap = onBackToMap
         )
-    }
-}
-
-@Composable
-private fun BoxScope.MapboxScene3DBackControl(onBackToMap: () -> Unit) {
-    MapRoundIconButton(
-        onClick = onBackToMap,
-        contentDescription = stringResource(R.string.back_to_map),
-        modifier = Modifier
-            .align(Alignment.TopStart)
-            .padding(ShadowMapDesign.dimensions.screenPadding)
-    ) {
-        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
     }
 }
 
@@ -129,7 +113,8 @@ private fun BoxScope.MapboxScene3DBottomControls(
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
     isDateTimeVisible: Boolean,
-    onToggleDateTime: () -> Unit
+    onToggleDateTime: () -> Unit,
+    onBackToMap: () -> Unit
 ) {
     PitchSlider(
         pitch = currentPitch.toFloat(),
@@ -151,6 +136,13 @@ private fun BoxScope.MapboxScene3DBottomControls(
             modifier = Modifier.padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
             horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)
         ) {
+            MapboxScene3DToggleButton(
+                isSelected = false,
+                contentDescription = stringResource(R.string.back_to_map),
+                onClick = onBackToMap
+            ) {
+                Icon(Icons.Outlined.Map, contentDescription = null)
+            }
             MapboxScene3DToggleButton(
                 isSelected = basemapStyle == MapboxBasemapStyle.SATELLITE,
                 contentDescription = stringResource(
