@@ -11,14 +11,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apartment
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.SatelliteAlt
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
@@ -58,10 +64,10 @@ internal fun MapboxScene3DControls(
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
     basemapStyle: MapboxBasemapStyle,
-    onToggleBasemapStyle: () -> Unit,
+    onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit,
     showDome: Boolean,
     useMapboxBuildings: Boolean,
-    onToggleBuildingSource: () -> Unit,
+    onBuildingSourceSelected: (Boolean) -> Unit,
     onToggleDome: () -> Unit,
     onBackToMap: () -> Unit
 ) {
@@ -78,10 +84,10 @@ internal fun MapboxScene3DControls(
             currentPitch = currentPitch,
             isTopDown = isTopDown,
             basemapStyle = basemapStyle,
-            onToggleBasemapStyle = onToggleBasemapStyle,
+            onBasemapStyleSelected = onBasemapStyleSelected,
             showDome = showDome,
             useMapboxBuildings = useMapboxBuildings,
-            onToggleBuildingSource = onToggleBuildingSource,
+            onBuildingSourceSelected = onBuildingSourceSelected,
             onToggleDome = onToggleDome,
             selectedEpochMillis = selectedEpochMillis,
             timeZoneId = timeZoneId,
@@ -102,10 +108,10 @@ private fun BoxScope.MapboxScene3DBottomControls(
     currentPitch: Double,
     isTopDown: Boolean,
     basemapStyle: MapboxBasemapStyle,
-    onToggleBasemapStyle: () -> Unit,
+    onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit,
     showDome: Boolean,
     useMapboxBuildings: Boolean,
-    onToggleBuildingSource: () -> Unit,
+    onBuildingSourceSelected: (Boolean) -> Unit,
     onToggleDome: () -> Unit,
     selectedEpochMillis: Long,
     timeZoneId: String,
@@ -143,16 +149,29 @@ private fun BoxScope.MapboxScene3DBottomControls(
             ) {
                 Icon(Icons.Outlined.Map, contentDescription = null)
             }
-            MapboxScene3DToggleButton(
+            val basemapTitle = stringResource(R.string.basemap)
+            val standardLabel = stringResource(R.string.standard_map_style)
+            val satelliteLabel = stringResource(R.string.satellite_map_style)
+            val selectedBasemapIndex = if (basemapStyle == MapboxBasemapStyle.STANDARD) 0 else 1
+            MapboxScene3DSelectionButton(
                 isSelected = basemapStyle == MapboxBasemapStyle.SATELLITE,
                 contentDescription = stringResource(
-                    if (basemapStyle == MapboxBasemapStyle.SATELLITE) {
-                        R.string.standard_map_style
-                    } else {
-                        R.string.satellite_map_style
-                    }
+                    R.string.setting_current_value,
+                    basemapTitle,
+                    if (selectedBasemapIndex == 0) standardLabel else satelliteLabel
                 ),
-                onClick = onToggleBasemapStyle
+                menuTitle = basemapTitle,
+                options = listOf(standardLabel, satelliteLabel),
+                selectedOptionIndex = selectedBasemapIndex,
+                onOptionSelected = { index ->
+                    onBasemapStyleSelected(
+                        if (index == 0) {
+                            MapboxBasemapStyle.STANDARD
+                        } else {
+                            MapboxBasemapStyle.SATELLITE
+                        }
+                    )
+                }
             ) {
                 Icon(Icons.Outlined.SatelliteAlt, contentDescription = null)
             }
@@ -165,31 +184,45 @@ private fun BoxScope.MapboxScene3DBottomControls(
             ) {
                 Icon(Icons.Outlined.WbSunny, contentDescription = null)
             }
-            MapboxScene3DToggleButton(
+            val buildingsTitle = stringResource(R.string.buildings)
+            val drawingBuildingsLabel = stringResource(R.string.drawing_buildings)
+            val mapboxBuildingsLabel = stringResource(R.string.mapbox_buildings)
+            val selectedBuildingsIndex = if (useMapboxBuildings) 1 else 0
+            MapboxScene3DSelectionButton(
                 isSelected = useMapboxBuildings,
                 contentDescription = stringResource(
-                    if (useMapboxBuildings) {
-                        R.string.show_drawing_buildings
-                    } else {
-                        R.string.show_mapbox_buildings
-                    }
+                    R.string.setting_current_value,
+                    buildingsTitle,
+                    if (useMapboxBuildings) mapboxBuildingsLabel else drawingBuildingsLabel
                 ),
-                onClick = onToggleBuildingSource
+                menuTitle = buildingsTitle,
+                options = listOf(drawingBuildingsLabel, mapboxBuildingsLabel),
+                selectedOptionIndex = selectedBuildingsIndex,
+                onOptionSelected = { index -> onBuildingSourceSelected(index == 1) }
             ) {
                 Icon(Icons.Outlined.Apartment, contentDescription = null)
             }
-            MapboxScene3DToggleButton(
+            val cameraTitle = stringResource(R.string.camera_view)
+            val topDownLabel = stringResource(R.string.top_down_view)
+            val threeDimensionalLabel = stringResource(R.string.view_3d_button)
+            val selectedCameraIndex = if (isTopDown) 0 else 1
+            MapboxScene3DSelectionButton(
                 isSelected = isTopDown,
                 contentDescription = stringResource(
-                    if (isTopDown) R.string.view_3d_button else R.string.show_top_down_view
+                    R.string.setting_current_value,
+                    cameraTitle,
+                    if (isTopDown) topDownLabel else threeDimensionalLabel
                 ),
-                onClick = {
+                menuTitle = cameraTitle,
+                options = listOf(topDownLabel, threeDimensionalLabel),
+                selectedOptionIndex = selectedCameraIndex,
+                onOptionSelected = { index ->
                     mapViewportState.setCameraOptions {
                         pitch(
-                            if (isTopDown) {
-                                Scene3DCamera.ORBIT_PITCH_DEGREES
-                            } else {
+                            if (index == 0) {
                                 Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+                            } else {
+                                Scene3DCamera.ORBIT_PITCH_DEGREES
                             }
                         )
                     }
@@ -224,6 +257,65 @@ private fun BoxScope.MapboxScene3DBottomControls(
                 onDateTimeChanged = onDateTimeChanged,
                 onNowSelected = onNowSelected
             )
+        }
+    }
+}
+
+@Composable
+private fun MapboxScene3DSelectionButton(
+    isSelected: Boolean,
+    contentDescription: String,
+    menuTitle: String,
+    options: List<String>,
+    selectedOptionIndex: Int,
+    onOptionSelected: (Int) -> Unit,
+    icon: @Composable () -> Unit
+) {
+    var isMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    Box {
+        MapboxScene3DToggleButton(
+            isSelected = isSelected,
+            contentDescription = contentDescription,
+            onClick = { isMenuExpanded = true },
+            icon = icon
+        )
+        DropdownMenu(
+            expanded = isMenuExpanded,
+            onDismissRequest = { isMenuExpanded = false },
+            modifier = Modifier.widthIn(min = 208.dp)
+        ) {
+            Text(
+                text = menuTitle,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(
+                    horizontal = ShadowMapDesign.dimensions.screenPadding,
+                    vertical = ShadowMapDesign.dimensions.spacingSmall
+                )
+            )
+            HorizontalDivider()
+            options.forEachIndexed { index, label ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        isMenuExpanded = false
+                        onOptionSelected(index)
+                    },
+                    trailingIcon = {
+                        Box(
+                            modifier = Modifier.size(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (index == selectedOptionIndex) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Check,
+                                    contentDescription = stringResource(R.string.selected)
+                                )
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -300,10 +392,10 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean) {
                 onDateTimeChanged = {},
                 onNowSelected = {},
                 basemapStyle = MapboxBasemapStyle.SATELLITE,
-                onToggleBasemapStyle = {},
+                onBasemapStyleSelected = {},
                 showDome = true,
                 useMapboxBuildings = false,
-                onToggleBuildingSource = {},
+                onBuildingSourceSelected = {},
                 onToggleDome = {},
                 onBackToMap = {}
             )

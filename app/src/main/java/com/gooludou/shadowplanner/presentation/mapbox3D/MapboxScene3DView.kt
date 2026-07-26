@@ -189,19 +189,17 @@ fun MapboxScene3DView(
             onDateTimeChanged = onDateTimeChanged,
             onNowSelected = onNowSelected,
             basemapStyle = basemapStyle,
-            onToggleBasemapStyle = {
-                if (basemapStyle == MapboxBasemapStyle.STANDARD) useMapboxBuildings = false
-                basemapStyle = if (basemapStyle == MapboxBasemapStyle.STANDARD) {
-                    MapboxBasemapStyle.SATELLITE
-                } else {
-                    MapboxBasemapStyle.STANDARD
+            onBasemapStyleSelected = { selectedStyle ->
+                basemapStyle = selectedStyle
+                if (selectedStyle == MapboxBasemapStyle.SATELLITE) {
+                    useMapboxBuildings = false
                 }
             },
             showDome = showDome,
             useMapboxBuildings = useMapboxBuildings,
-            onToggleBuildingSource = {
-                useMapboxBuildings = !useMapboxBuildings
-                basemapStyle = if (useMapboxBuildings) {
+            onBuildingSourceSelected = { shouldUseMapboxBuildings ->
+                useMapboxBuildings = shouldUseMapboxBuildings
+                basemapStyle = if (shouldUseMapboxBuildings) {
                     MapboxBasemapStyle.STANDARD
                 } else {
                     MapboxBasemapStyle.SATELLITE
