@@ -98,7 +98,7 @@ fun MapboxScene3DView(
     modifier: Modifier = Modifier
 ) {
     var basemapStyle by remember { mutableStateOf(MapboxBasemapStyle.STANDARD) }
-    var useMapboxBuildings by remember { mutableStateOf(true) }
+    var buildingSelection by remember { mutableStateOf(SceneBuildingSelection.MAPBOX) }
     var sceneMapView by remember { mutableStateOf<MapView?>(null) }
     var isSkyViewportReady by remember { mutableStateOf(false) }
     val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, sunPath)
@@ -148,7 +148,7 @@ fun MapboxScene3DView(
     val trunkColor = Color(0xFF75543A)
     val canopyColor = Color(0xFF3F7D48)
     val buildingRenderMode = sceneBuildingRenderMode(
-        useMapboxBuildings = useMapboxBuildings,
+        buildingSelection = buildingSelection,
         cameraPitchDegrees = mapViewportState.cameraState?.pitch
             ?: Scene3DCamera.ORBIT_PITCH_DEGREES
     )
@@ -196,16 +196,13 @@ fun MapboxScene3DView(
             onDateTimeChanged = onDateTimeChanged,
             onNowSelected = onNowSelected,
             showDome = showDome,
-            useMapboxBuildings = useMapboxBuildings,
-            onBuildingSourceSelected = { shouldUseMapboxBuildings ->
-                useMapboxBuildings = shouldUseMapboxBuildings
-                if (shouldUseMapboxBuildings) {
-                    basemapStyle = MapboxBasemapStyle.STANDARD
-                } else {
-                    // An explicit Drawn buildings selection always enters its 2D overview.
-                    basemapStyle = MapboxBasemapStyle.SATELLITE
+            buildingSelection = buildingSelection,
+            onBuildingSelectionChanged = { selectedBuildings ->
+                buildingSelection = selectedBuildings
+                basemapStyle = selectedBuildings.basemapStyle
+                selectedBuildings.pitchOnSelection?.let { selectedPitch ->
                     mapViewportState.setCameraOptions {
-                        pitch(Scene3DCamera.TOP_DOWN_PITCH_DEGREES)
+                        pitch(selectedPitch)
                     }
                 }
             },

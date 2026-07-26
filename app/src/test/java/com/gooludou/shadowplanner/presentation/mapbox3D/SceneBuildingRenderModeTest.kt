@@ -1,6 +1,7 @@
 package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class SceneBuildingRenderModeTest {
@@ -9,7 +10,7 @@ class SceneBuildingRenderModeTest {
         assertEquals(
             SceneBuildingRenderMode.MAPBOX,
             sceneBuildingRenderMode(
-                useMapboxBuildings = true,
+                buildingSelection = SceneBuildingSelection.MAPBOX,
                 cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
             )
         )
@@ -20,7 +21,7 @@ class SceneBuildingRenderModeTest {
         assertEquals(
             SceneBuildingRenderMode.DRAWN_TOP_DOWN,
             sceneBuildingRenderMode(
-                useMapboxBuildings = false,
+                buildingSelection = SceneBuildingSelection.DRAWN,
                 cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
             )
         )
@@ -31,9 +32,29 @@ class SceneBuildingRenderModeTest {
         assertEquals(
             SceneBuildingRenderMode.DRAWN_3D,
             sceneBuildingRenderMode(
-                useMapboxBuildings = false,
+                buildingSelection = SceneBuildingSelection.DRAWN,
                 cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
             )
         )
+    }
+
+    @Test
+    fun `forced 3D drawn buildings use extrusion rendering in top-down view`() {
+        assertEquals(
+            SceneBuildingRenderMode.DRAWN_3D,
+            sceneBuildingRenderMode(
+                buildingSelection = SceneBuildingSelection.DRAWN_FORCE_3D,
+                cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+            )
+        )
+    }
+
+    @Test
+    fun `forced 3D menu option uses satellite without changing pitch`() {
+        val selection = SceneBuildingSelection.fromMenuIndex(1)
+
+        assertEquals(SceneBuildingSelection.DRAWN_FORCE_3D, selection)
+        assertEquals(MapboxBasemapStyle.SATELLITE, selection.basemapStyle)
+        assertNull(selection.pitchOnSelection)
     }
 }

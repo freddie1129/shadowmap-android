@@ -63,6 +63,39 @@ internal object Scene3DCamera {
     const val TOP_DOWN_THRESHOLD_DEGREES = 1.0
 }
 
+/** Building source behavior selected from the 3D controls. */
+internal enum class SceneBuildingSelection(
+    val menuIndex: Int,
+    val basemapStyle: MapboxBasemapStyle,
+    val pitchOnSelection: Double?
+) {
+    /** Mapbox Standard buildings supplied by the basemap. */
+    MAPBOX(
+        menuIndex = 2,
+        basemapStyle = MapboxBasemapStyle.STANDARD,
+        pitchOnSelection = null
+    ),
+
+    /** App buildings that follow the current top-down or 3D camera mode. */
+    DRAWN(
+        menuIndex = 0,
+        basemapStyle = MapboxBasemapStyle.SATELLITE,
+        pitchOnSelection = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+    ),
+
+    /** App buildings that remain extruded even when the camera is top-down. */
+    DRAWN_FORCE_3D(
+        menuIndex = 1,
+        basemapStyle = MapboxBasemapStyle.SATELLITE,
+        pitchOnSelection = null
+    );
+
+    companion object {
+        fun fromMenuIndex(index: Int): SceneBuildingSelection =
+            entries.firstOrNull { it.menuIndex == index } ?: MAPBOX
+    }
+}
+
 /** Rendering selected from the building source and current camera pitch. */
 internal enum class SceneBuildingRenderMode {
     /** Mapbox Standard buildings supplied by the basemap. */
@@ -77,10 +110,13 @@ internal enum class SceneBuildingRenderMode {
 
 /** Resolves the building renderer without storing a second camera-mode state. */
 internal fun sceneBuildingRenderMode(
-    useMapboxBuildings: Boolean,
+    buildingSelection: SceneBuildingSelection,
     cameraPitchDegrees: Double
 ): SceneBuildingRenderMode = when {
-    useMapboxBuildings -> SceneBuildingRenderMode.MAPBOX
+    buildingSelection == SceneBuildingSelection.MAPBOX -> SceneBuildingRenderMode.MAPBOX
+    buildingSelection == SceneBuildingSelection.DRAWN_FORCE_3D -> {
+        SceneBuildingRenderMode.DRAWN_3D
+    }
     cameraPitchDegrees <= Scene3DCamera.TOP_DOWN_THRESHOLD_DEGREES -> {
         SceneBuildingRenderMode.DRAWN_TOP_DOWN
     }

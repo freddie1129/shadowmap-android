@@ -65,8 +65,8 @@ internal fun MapboxScene3DControls(
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
     showDome: Boolean,
-    useMapboxBuildings: Boolean,
-    onBuildingSourceSelected: (Boolean) -> Unit,
+    buildingSelection: SceneBuildingSelection,
+    onBuildingSelectionChanged: (SceneBuildingSelection) -> Unit,
     shadowAppearance: ShadowAppearance,
     showShadowColorControl: Boolean,
     onOpenShadowColor: () -> Unit,
@@ -86,8 +86,8 @@ internal fun MapboxScene3DControls(
             currentPitch = currentPitch,
             isTopDown = isTopDown,
             showDome = showDome,
-            useMapboxBuildings = useMapboxBuildings,
-            onBuildingSourceSelected = onBuildingSourceSelected,
+            buildingSelection = buildingSelection,
+            onBuildingSelectionChanged = onBuildingSelectionChanged,
             shadowAppearance = shadowAppearance,
             showShadowColorControl = showShadowColorControl,
             onOpenShadowColor = onOpenShadowColor,
@@ -111,8 +111,8 @@ private fun BoxScope.MapboxScene3DBottomControls(
     currentPitch: Double,
     isTopDown: Boolean,
     showDome: Boolean,
-    useMapboxBuildings: Boolean,
-    onBuildingSourceSelected: (Boolean) -> Unit,
+    buildingSelection: SceneBuildingSelection,
+    onBuildingSelectionChanged: (SceneBuildingSelection) -> Unit,
     shadowAppearance: ShadowAppearance,
     showShadowColorControl: Boolean,
     onOpenShadowColor: () -> Unit,
@@ -177,19 +177,29 @@ private fun BoxScope.MapboxScene3DBottomControls(
             }
             val buildingsTitle = stringResource(R.string.buildings)
             val drawingBuildingsLabel = stringResource(R.string.drawing_buildings)
+            val force3dBuildingsLabel = stringResource(R.string.drawing_buildings_force_3d)
             val mapboxBuildingsLabel = stringResource(R.string.mapbox_buildings)
-            val selectedBuildingsIndex = if (useMapboxBuildings) 1 else 0
+            val buildingOptions = listOf(
+                drawingBuildingsLabel,
+                force3dBuildingsLabel,
+                mapboxBuildingsLabel
+            )
+            val selectedBuildingsIndex = buildingSelection.menuIndex
             MapboxScene3DSelectionButton(
-                isSelected = useMapboxBuildings,
+                isSelected = buildingSelection == SceneBuildingSelection.MAPBOX,
                 contentDescription = stringResource(
                     R.string.setting_current_value,
                     buildingsTitle,
-                    if (useMapboxBuildings) mapboxBuildingsLabel else drawingBuildingsLabel
+                    buildingOptions[selectedBuildingsIndex]
                 ),
                 menuTitle = buildingsTitle,
-                options = listOf(drawingBuildingsLabel, mapboxBuildingsLabel),
+                options = buildingOptions,
                 selectedOptionIndex = selectedBuildingsIndex,
-                onOptionSelected = { index -> onBuildingSourceSelected(index == 1) }
+                onOptionSelected = { index ->
+                    onBuildingSelectionChanged(
+                        SceneBuildingSelection.fromMenuIndex(index)
+                    )
+                }
             ) {
                 Icon(Icons.Outlined.Apartment, contentDescription = null)
             }
@@ -383,8 +393,8 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean) {
                 onDateTimeChanged = {},
                 onNowSelected = {},
                 showDome = true,
-                useMapboxBuildings = false,
-                onBuildingSourceSelected = {},
+                buildingSelection = SceneBuildingSelection.DRAWN_FORCE_3D,
+                onBuildingSelectionChanged = {},
                 shadowAppearance = ShadowAppearance.DEFAULT,
                 showShadowColorControl = true,
                 onOpenShadowColor = {},
