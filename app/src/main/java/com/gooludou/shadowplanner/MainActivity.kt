@@ -366,7 +366,7 @@ private fun ShadowMapScreen(
     val show3d = showFilament3d || showMapbox3d
     var showSatelliteIn3d by remember { mutableStateOf(true) }
     // The same optional solar guide is available in both 3D renderers.
-    var showDomeIn3d by remember { mutableStateOf(false) }
+    var showDomeIn3d by remember { mutableStateOf(true) }
     var sceneCameraView by remember { mutableStateOf(SceneCameraView.ORBIT) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
     var mapboxSceneViewport by remember { mutableStateOf<MapboxScene3DViewport?>(null) }

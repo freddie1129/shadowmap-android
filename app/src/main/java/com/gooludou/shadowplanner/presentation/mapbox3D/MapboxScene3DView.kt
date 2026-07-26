@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -95,9 +96,10 @@ fun MapboxScene3DView(
     onBackToMap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var basemapStyle by remember { mutableStateOf(MapboxBasemapStyle.SATELLITE) }
-    var useMapboxBuildings by remember { mutableStateOf(false) }
+    var basemapStyle by remember { mutableStateOf(MapboxBasemapStyle.STANDARD) }
+    var useMapboxBuildings by remember { mutableStateOf(true) }
     var sceneMapView by remember { mutableStateOf<MapView?>(null) }
+    var isSkyViewportReady by remember { mutableStateOf(false) }
     val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, sunPath)
     val mapSources = rememberMapboxScene3DMapSources(buildings, walls, trees)
 
@@ -116,6 +118,29 @@ fun MapboxScene3DView(
             bearing(viewport.bearing)
             pitch(Scene3DCamera.ORBIT_PITCH_DEGREES)
         }
+    }
+    fun refreshSkyViewport() {
+        val currentViewport = sceneMapView
+            ?.currentScene3DViewport(viewport)
+            ?: viewport.copy(
+                center = mapViewportState.cameraState?.center
+                    ?.let { GeoPoint(it.longitude(), it.latitude()) }
+                    ?: viewport.center
+            )
+        skyState.updateViewport(currentViewport)
+    }
+    LaunchedEffect(sceneMapView, showDome, viewport) {
+        if (!showDome || sceneMapView == null) {
+            isSkyViewportReady = false
+            return@LaunchedEffect
+        }
+        // Match the working toggle flow: keep the sky layers detached while their sources are
+        // rebuilt from the measured 3D viewport, then attach them on the following frame.
+        isSkyViewportReady = false
+        withFrameNanos { }
+        refreshSkyViewport()
+        withFrameNanos { }
+        isSkyViewportReady = true
     }
     val buildingColor = MaterialTheme.colorScheme.surfaceVariant
     val wallColor = MaterialTheme.colorScheme.tertiary
@@ -137,7 +162,7 @@ fun MapboxScene3DView(
             useMapboxBuildings = useMapboxBuildings,
             onMapViewReady = { sceneMapView = it }
         ) {
-            if (showDome) {
+            if (showDome && isSkyViewportReady) {
                 SceneSkyModelLayers(skyState)
             }
         }
@@ -184,14 +209,7 @@ fun MapboxScene3DView(
             },
             onToggleDome = {
                 if (!showDome) {
-                    val currentViewport = sceneMapView
-                        ?.currentScene3DViewport(viewport)
-                        ?: viewport.copy(
-                            center = mapViewportState.cameraState?.center
-                                ?.let { GeoPoint(it.longitude(), it.latitude()) }
-                                ?: viewport.center
-                        )
-                    skyState.updateViewport(currentViewport)
+                    refreshSkyViewport()
                 }
                 onToggleDome()
             },
