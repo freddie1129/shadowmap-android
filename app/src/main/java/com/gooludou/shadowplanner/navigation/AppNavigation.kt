@@ -21,17 +21,12 @@ import com.gooludou.shadowplanner.presentation.locationsearch.LocationSearchScre
 import com.gooludou.shadowplanner.presentation.projectview.ProjectListScreen
 import com.gooludou.shadowplanner.presentation.settings.SettingsScreen
 
-private data object MapDestination
-private data object SettingsDestination
-private data object LocationSearchDestination
-private data object ProjectsDestination
-
 @Composable
 fun AppNavigation(
     mapControllerFactory: MapboxShadowMapController.Factory,
     modifier: Modifier = Modifier
 ) {
-    val backStack = remember { mutableStateListOf<Any>(MapDestination) }
+    val backStack = remember { mutableStateListOf<Any>(AppDestination.Map) }
     var pendingLocation by remember {
         androidx.compose.runtime.mutableStateOf<LocationSearchResult?>(null)
     }
@@ -43,24 +38,24 @@ fun AppNavigation(
         onBack = { backStack.removeLastOrNull() },
         entryProvider = { key ->
             when (key) {
-                MapDestination -> NavEntry(key) {
+                AppDestination.Map -> NavEntry(key) {
                     ShadowMapRoute(
                         mapControllerFactory = mapControllerFactory,
                         pendingLocation = pendingLocation,
                         pendingProjectId = pendingProjectId,
                         onLocationApplied = { pendingLocation = null },
                         onProjectApplied = { pendingProjectId = null },
-                        onOpenLocationSearch = { backStack.add(LocationSearchDestination) },
-                        onOpenProjects = { backStack.add(ProjectsDestination) },
-                        onOpenSettings = { backStack.add(SettingsDestination) }
+                        onOpenLocationSearch = { backStack.add(AppDestination.LocationSearch) },
+                        onOpenProjects = { backStack.add(AppDestination.Projects) },
+                        onOpenSettings = { backStack.add(AppDestination.Settings) }
                     )
                 }
 
-                SettingsDestination -> NavEntry(key) {
+                AppDestination.Settings -> NavEntry(key) {
                     SettingsScreen(onBack = { backStack.removeLastOrNull() })
                 }
 
-                LocationSearchDestination -> NavEntry(key) {
+                AppDestination.LocationSearch -> NavEntry(key) {
                     val viewModel: LocationSearchViewModel = hiltViewModel()
                     val uiState by viewModel.uiState.collectAsState()
                     LaunchedEffect(uiState.selectedLocation) {
@@ -77,7 +72,7 @@ fun AppNavigation(
                     )
                 }
 
-                ProjectsDestination -> NavEntry(key) {
+                AppDestination.Projects -> NavEntry(key) {
                     val viewModel: ProjectListViewModel = hiltViewModel()
                     val projects by viewModel.projects.collectAsState()
                     ProjectListScreen(

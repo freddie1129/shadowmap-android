@@ -72,6 +72,7 @@ import com.gooludou.shadowplanner.domain.SceneObjectSource
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.map.BuildingLoadArea
 import com.gooludou.shadowplanner.map.MapboxShadowMapController
+import com.gooludou.shadowplanner.navigation.AppDestination
 import com.gooludou.shadowplanner.navigation.AppNavigation
 import com.gooludou.shadowplanner.presentation.BuildingLoadState
 import com.gooludou.shadowplanner.presentation.DrawingActions
@@ -117,10 +118,6 @@ import kotlin.math.max
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-
-private data object Map2DSceneDestination
-private data object Scene3DSceneDestination
-private data object MapboxScene3DSceneDestination
 
 private enum class Scene3DTarget {
     FILAMENT,
@@ -342,10 +339,10 @@ private fun ShadowMapScreen(
     var loadRequest by remember { mutableIntStateOf(0) }
     var buildingQueryLocation by remember { mutableStateOf<GeoPoint?>(null) }
     val sceneBackStack = remember {
-        androidx.compose.runtime.mutableStateListOf<Any>(Map2DSceneDestination)
+        androidx.compose.runtime.mutableStateListOf<Any>(AppDestination.Scene.Map2D)
     }
-    val showFilament3d = sceneBackStack.lastOrNull() == Scene3DSceneDestination
-    val showMapbox3d = sceneBackStack.lastOrNull() == MapboxScene3DSceneDestination
+    val showFilament3d = sceneBackStack.lastOrNull() == AppDestination.Scene.Filament3D
+    val showMapbox3d = sceneBackStack.lastOrNull() == AppDestination.Scene.Mapbox3D
     val show3d = showFilament3d || showMapbox3d
     var showSatelliteIn3d by remember { mutableStateOf(true) }
     // The same optional solar guide is available in both 3D renderers.
@@ -578,7 +575,7 @@ private fun ShadowMapScreen(
         sceneViewport = mapView?.toSceneViewport()
         sceneCameraView = SceneCameraView.ORBIT
         showDomeIn3d = false
-        if (!show3d) sceneBackStack.add(Scene3DSceneDestination)
+        if (!show3d) sceneBackStack.add(AppDestination.Scene.Filament3D)
     }
 
     fun enterMapbox3d() {
@@ -594,7 +591,7 @@ private fun ShadowMapScreen(
             widthPixels = currentMapView.width,
             heightPixels = currentMapView.height
         )
-        if (!show3d) sceneBackStack.add(MapboxScene3DSceneDestination)
+        if (!show3d) sceneBackStack.add(AppDestination.Scene.Mapbox3D)
     }
 
     fun exit3d() {
@@ -737,7 +734,7 @@ private fun ShadowMapScreen(
             onBack = ::exit3d,
             entryProvider = { key ->
                 when (key) {
-                    Map2DSceneDestination -> NavEntry(key) {
+                    AppDestination.Scene.Map2D -> NavEntry(key) {
                         val currentUiState by latestUiState
                         val currentAutoToolState by latestAutoToolState
                         val currentShowDateTime by latestShowDateTime
@@ -782,7 +779,7 @@ private fun ShadowMapScreen(
                         }
                     }
 
-                    Scene3DSceneDestination -> NavEntry(key) {
+                    AppDestination.Scene.Filament3D -> NavEntry(key) {
                         val currentUiState by latestUiState
                         Scene3DView(
                             buildings = currentUiState.buildings,
@@ -809,7 +806,7 @@ private fun ShadowMapScreen(
                         )
                     }
 
-                    MapboxScene3DSceneDestination -> NavEntry(key) {
+                    AppDestination.Scene.Mapbox3D -> NavEntry(key) {
                         val currentUiState by latestUiState
                         mapboxSceneViewport?.let { viewport ->
                             MapboxScene3DView(
