@@ -98,6 +98,14 @@ fun MapboxScene3DView(
             pitch(Scene3DCamera.ORBIT_PITCH_DEGREES)
         }
     }
+    LaunchedEffect(viewport) {
+        mapViewportState.setCameraOptions {
+            center(Point.fromLngLat(viewport.center.longitude, viewport.center.latitude))
+            zoom(viewport.zoom)
+            bearing(viewport.bearing)
+            pitch(Scene3DCamera.ORBIT_PITCH_DEGREES)
+        }
+    }
     val buildingColor = MaterialTheme.colorScheme.surfaceVariant
     val wallColor = MaterialTheme.colorScheme.tertiary
     val trunkColor = Color(0xFF75543A)
@@ -405,7 +413,7 @@ private fun circlePolygon(center: GeoPoint, radiusMeters: Double): Polygon {
 private fun GeoPoint.toMapboxPoint(): Point = Point.fromLngLat(longitude, latitude)
 
 /** Reads the current Mapbox camera and screen footprint for dome sizing. */
-private fun MapView.currentScene3DViewport(
+internal fun MapView.currentScene3DViewport(
     fallback: MapboxScene3DViewport
 ): MapboxScene3DViewport? {
     if (width <= 0 || height <= 0) return null

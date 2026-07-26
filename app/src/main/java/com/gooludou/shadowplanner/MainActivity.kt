@@ -93,6 +93,7 @@ import com.gooludou.shadowplanner.presentation.drawview.ShadowColorSheet
 import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSheet
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DView
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DViewport
+import com.gooludou.shadowplanner.presentation.mapbox3D.currentScene3DViewport
 import com.gooludou.shadowplanner.presentation.projectview.SaveProjectDialog
 import com.gooludou.shadowplanner.presentation.scene3D.Scene3DView
 import com.gooludou.shadowplanner.project.ProjectViewport
@@ -123,6 +124,19 @@ private enum class Scene3DTarget {
     FILAMENT,
     MAPBOX
 }
+
+private val FALLBACK_MAPBOX_SCENE_VIEWPORT = MapboxScene3DViewport(
+    center = GeoPoint(
+        longitude = Config.FALLBACK_MAP_CENTER_LONGITUDE,
+        latitude = Config.FALLBACK_MAP_CENTER_LATITUDE
+    ),
+    zoom = Config.FALLBACK_MAP_ZOOM,
+    bearing = Config.FALLBACK_MAP_BEARING_DEGREES,
+    widthMeters = Config.MAPBOX_3D_FALLBACK_WIDTH_METERS,
+    heightMeters = Config.MAPBOX_3D_FALLBACK_HEIGHT_METERS,
+    widthPixels = 1,
+    heightPixels = 1
+)
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -317,8 +331,14 @@ private fun ShadowMapScreen(
 
     val mapViewportState = rememberMapViewportState {
         setCameraOptions {
-            center(Point.fromLngLat(153.4038943, -28.0870458))
-            zoom(17.0)
+            center(
+                Point.fromLngLat(
+                    Config.FALLBACK_MAP_CENTER_LONGITUDE,
+                    Config.FALLBACK_MAP_CENTER_LATITUDE
+                )
+            )
+            zoom(Config.FALLBACK_MAP_ZOOM)
+            bearing(Config.FALLBACK_MAP_BEARING_DEGREES)
         }
     }
     LaunchedEffect(pendingLocation) {
@@ -339,7 +359,7 @@ private fun ShadowMapScreen(
     var loadRequest by remember { mutableIntStateOf(0) }
     var buildingQueryLocation by remember { mutableStateOf<GeoPoint?>(null) }
     val sceneBackStack = remember {
-        androidx.compose.runtime.mutableStateListOf<Any>(AppDestination.Scene.Map2D)
+        androidx.compose.runtime.mutableStateListOf<Any>(AppDestination.Scene.Mapbox3D)
     }
     val showFilament3d = sceneBackStack.lastOrNull() == AppDestination.Scene.Filament3D
     val showMapbox3d = sceneBackStack.lastOrNull() == AppDestination.Scene.Mapbox3D
@@ -350,6 +370,13 @@ private fun ShadowMapScreen(
     var sceneCameraView by remember { mutableStateOf(SceneCameraView.ORBIT) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
     var mapboxSceneViewport by remember { mutableStateOf<MapboxScene3DViewport?>(null) }
+    LaunchedEffect(mapView, showMapbox3d) {
+        if (!showMapbox3d) return@LaunchedEffect
+        withFrameNanos { }
+        mapboxSceneViewport = mapView?.currentScene3DViewport(
+            fallback = FALLBACK_MAPBOX_SCENE_VIEWPORT
+        ) ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
+    }
     var buildingLoadArea by remember { mutableStateOf<BuildingLoadArea?>(null) }
     var crosshairPoint by remember { mutableStateOf<GeoPoint?>(null) }
     var showDateTime by remember { mutableStateOf(true) }
@@ -368,7 +395,7 @@ private fun ShadowMapScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    DisposableEffect(mapView) {
+    DisposableEffect(mapView, showMapbox3d) {
         val currentMapView = mapView
         if (currentMapView == null) {
             buildingLoadArea = null
@@ -390,9 +417,17 @@ private fun ShadowMapScreen(
                 val point = currentMapView.mapboxMap.cameraState.center
                 crosshairPoint = GeoPoint(point.longitude(), point.latitude())
             }
+            fun updateMapboxSceneViewport() {
+                if (!showMapbox3d) return
+                mapboxSceneViewport = currentMapView.currentScene3DViewport(
+                    fallback = mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
+                ) ?: mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
+            }
             updateCrosshairPoint()
+            updateMapboxSceneViewport()
             val cameraSubscription = currentMapView.mapboxMap.subscribeCameraChanged {
                 updateCrosshairPoint()
+                updateMapboxSceneViewport()
             }
             onDispose {
                 mapIdleSubscription.cancel()
@@ -414,8 +449,16 @@ private fun ShadowMapScreen(
                     firstLocationReceived = true
                     mapViewportState.setCameraOptions {
                         center(point)
-                        zoom(17.0)
+                        zoom(Config.DEVICE_LOCATION_MAP_ZOOM)
+                        bearing(Config.FALLBACK_MAP_BEARING_DEGREES)
                     }
+                    mapboxSceneViewport = (
+                        mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
+                    ).copy(
+                        center = GeoPoint(point.longitude(), point.latitude()),
+                        zoom = Config.DEVICE_LOCATION_MAP_ZOOM,
+                        bearing = Config.FALLBACK_MAP_BEARING_DEGREES
+                    )
                     onCurrentLocationReceived(
                         GeoPoint(point.longitude(), point.latitude()),
                         currentLocationLabel
@@ -596,7 +639,12 @@ private fun ShadowMapScreen(
 
     fun exit3d() {
         showDomeIn3d = false
-        if (show3d) sceneBackStack.removeLastOrNull()
+        if (!show3d) return
+        if (sceneBackStack.size == 1) {
+            sceneBackStack[0] = AppDestination.Scene.Map2D
+        } else {
+            sceneBackStack.removeLastOrNull()
+        }
     }
 
     val pendingType = when (uiState.pendingDrawing) {

@@ -1,16 +1,13 @@
 package com.gooludou.shadowplanner.navigation
 
 /**
- * App navigation flow:
+ * Scene navigation flow:
  *
- * Map
- * ├── LocationSearch -> Map
- * ├── Projects -> Map
- * ├── Settings
- * └── Scene
- *     ├── Map2D
- *     ├── Filament3D -> Map2D
- *     └── Mapbox3D -> Map2D
+ * Mapbox3D
+ * └── Map2D
+ *     └── Mapbox3D
+ *
+ * Other app destinations are Map, LocationSearch, Projects, and Settings.
  */
 sealed interface AppDestination {
     data object Map : AppDestination
