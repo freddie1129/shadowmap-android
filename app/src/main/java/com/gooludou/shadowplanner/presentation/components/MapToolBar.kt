@@ -69,7 +69,7 @@ fun MapToolBar(
 }
 
 @Composable
-private fun ShadowColorButton(appearance: ShadowAppearance, onClick: () -> Unit) {
+fun ShadowColorButton(appearance: ShadowAppearance, onClick: () -> Unit) {
     MapRoundIconButton(
         onClick = onClick,
         contentDescription = stringResource(R.string.change_shadow_colour)

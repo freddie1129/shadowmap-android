@@ -19,7 +19,6 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.SatelliteAlt
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -46,9 +45,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.GeoPoint
+import com.gooludou.shadowplanner.domain.ShadowAppearance
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
 import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
 import com.gooludou.shadowplanner.presentation.components.PitchSlider
+import com.gooludou.shadowplanner.presentation.components.ShadowColorButton
 import com.gooludou.shadowplanner.ui.theme.Map3DActionBlue
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
@@ -63,11 +64,12 @@ internal fun MapboxScene3DControls(
     location: GeoPoint,
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
-    basemapStyle: MapboxBasemapStyle,
-    onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit,
     showDome: Boolean,
     useMapboxBuildings: Boolean,
     onBuildingSourceSelected: (Boolean) -> Unit,
+    shadowAppearance: ShadowAppearance,
+    showShadowColorControl: Boolean,
+    onOpenShadowColor: () -> Unit,
     onToggleDome: () -> Unit,
     onBackToMap: () -> Unit
 ) {
@@ -83,11 +85,12 @@ internal fun MapboxScene3DControls(
             mapViewportState = mapViewportState,
             currentPitch = currentPitch,
             isTopDown = isTopDown,
-            basemapStyle = basemapStyle,
-            onBasemapStyleSelected = onBasemapStyleSelected,
             showDome = showDome,
             useMapboxBuildings = useMapboxBuildings,
             onBuildingSourceSelected = onBuildingSourceSelected,
+            shadowAppearance = shadowAppearance,
+            showShadowColorControl = showShadowColorControl,
+            onOpenShadowColor = onOpenShadowColor,
             onToggleDome = onToggleDome,
             selectedEpochMillis = selectedEpochMillis,
             timeZoneId = timeZoneId,
@@ -107,11 +110,12 @@ private fun BoxScope.MapboxScene3DBottomControls(
     mapViewportState: MapViewportState,
     currentPitch: Double,
     isTopDown: Boolean,
-    basemapStyle: MapboxBasemapStyle,
-    onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit,
     showDome: Boolean,
     useMapboxBuildings: Boolean,
     onBuildingSourceSelected: (Boolean) -> Unit,
+    shadowAppearance: ShadowAppearance,
+    showShadowColorControl: Boolean,
+    onOpenShadowColor: () -> Unit,
     onToggleDome: () -> Unit,
     selectedEpochMillis: Long,
     timeZoneId: String,
@@ -138,6 +142,19 @@ private fun BoxScope.MapboxScene3DBottomControls(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)
     ) {
+        AnimatedVisibility(visible = showShadowColorControl) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                ShadowColorButton(
+                    appearance = shadowAppearance,
+                    onClick = onOpenShadowColor
+                )
+            }
+        }
         Row(
             modifier = Modifier.padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
             horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)
@@ -148,32 +165,6 @@ private fun BoxScope.MapboxScene3DBottomControls(
                 onClick = onBackToMap
             ) {
                 Icon(Icons.Outlined.Map, contentDescription = null)
-            }
-            val basemapTitle = stringResource(R.string.basemap)
-            val standardLabel = stringResource(R.string.standard_map_style)
-            val satelliteLabel = stringResource(R.string.satellite_map_style)
-            val selectedBasemapIndex = if (basemapStyle == MapboxBasemapStyle.STANDARD) 0 else 1
-            MapboxScene3DSelectionButton(
-                isSelected = basemapStyle == MapboxBasemapStyle.SATELLITE,
-                contentDescription = stringResource(
-                    R.string.setting_current_value,
-                    basemapTitle,
-                    if (selectedBasemapIndex == 0) standardLabel else satelliteLabel
-                ),
-                menuTitle = basemapTitle,
-                options = listOf(standardLabel, satelliteLabel),
-                selectedOptionIndex = selectedBasemapIndex,
-                onOptionSelected = { index ->
-                    onBasemapStyleSelected(
-                        if (index == 0) {
-                            MapboxBasemapStyle.STANDARD
-                        } else {
-                            MapboxBasemapStyle.SATELLITE
-                        }
-                    )
-                }
-            ) {
-                Icon(Icons.Outlined.SatelliteAlt, contentDescription = null)
             }
             MapboxScene3DToggleButton(
                 isSelected = showDome,
@@ -391,11 +382,12 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean) {
                 location = GeoPoint(longitude = 153.0251, latitude = -27.4698),
                 onDateTimeChanged = {},
                 onNowSelected = {},
-                basemapStyle = MapboxBasemapStyle.SATELLITE,
-                onBasemapStyleSelected = {},
                 showDome = true,
                 useMapboxBuildings = false,
                 onBuildingSourceSelected = {},
+                shadowAppearance = ShadowAppearance.DEFAULT,
+                showShadowColorControl = true,
+                onOpenShadowColor = {},
                 onToggleDome = {},
                 onBackToMap = {}
             )

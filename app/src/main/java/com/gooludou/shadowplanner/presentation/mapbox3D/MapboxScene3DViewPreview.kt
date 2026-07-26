@@ -61,6 +61,7 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
             canRecenterCurrentLocation = false,
             onOpenProjects = {},
             onSaveProject = {},
+            onOpenShadowColor = {},
             onToggleDome = {},
             onBackToMap = {}
         )

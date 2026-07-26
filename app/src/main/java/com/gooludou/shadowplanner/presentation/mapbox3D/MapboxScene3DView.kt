@@ -92,6 +92,7 @@ fun MapboxScene3DView(
     canRecenterCurrentLocation: Boolean,
     onOpenProjects: () -> Unit,
     onSaveProject: () -> Unit,
+    onOpenShadowColor: () -> Unit,
     onToggleDome: () -> Unit,
     onBackToMap: () -> Unit,
     modifier: Modifier = Modifier
@@ -146,6 +147,11 @@ fun MapboxScene3DView(
     val wallColor = MaterialTheme.colorScheme.tertiary
     val trunkColor = Color(0xFF75543A)
     val canopyColor = Color(0xFF3F7D48)
+    val buildingRenderMode = sceneBuildingRenderMode(
+        useMapboxBuildings = useMapboxBuildings,
+        cameraPitchDegrees = mapViewportState.cameraState?.pitch
+            ?: Scene3DCamera.ORBIT_PITCH_DEGREES
+    )
     Box(modifier = modifier.fillMaxSize()) {
         MapboxScene3DMap(
             mapViewportState = mapViewportState,
@@ -159,7 +165,8 @@ fun MapboxScene3DView(
             canopyColor = canopyColor,
             solarPosition = solarPosition,
             basemapStyle = basemapStyle,
-            useMapboxBuildings = useMapboxBuildings,
+            buildingRenderMode = buildingRenderMode,
+            uiState = uiState,
             onMapViewReady = { sceneMapView = it }
         ) {
             if (showDome && isSkyViewportReady) {
@@ -188,23 +195,24 @@ fun MapboxScene3DView(
             location = calculationLocation ?: viewport.center,
             onDateTimeChanged = onDateTimeChanged,
             onNowSelected = onNowSelected,
-            basemapStyle = basemapStyle,
-            onBasemapStyleSelected = { selectedStyle ->
-                basemapStyle = selectedStyle
-                if (selectedStyle == MapboxBasemapStyle.SATELLITE) {
-                    useMapboxBuildings = false
-                }
-            },
             showDome = showDome,
             useMapboxBuildings = useMapboxBuildings,
             onBuildingSourceSelected = { shouldUseMapboxBuildings ->
                 useMapboxBuildings = shouldUseMapboxBuildings
-                basemapStyle = if (shouldUseMapboxBuildings) {
-                    MapboxBasemapStyle.STANDARD
+                if (shouldUseMapboxBuildings) {
+                    basemapStyle = MapboxBasemapStyle.STANDARD
                 } else {
-                    MapboxBasemapStyle.SATELLITE
+                    // An explicit Drawn buildings selection always enters its 2D overview.
+                    basemapStyle = MapboxBasemapStyle.SATELLITE
+                    mapViewportState.setCameraOptions {
+                        pitch(Scene3DCamera.TOP_DOWN_PITCH_DEGREES)
+                    }
                 }
             },
+            shadowAppearance = uiState.shadowAppearance,
+            showShadowColorControl = buildingRenderMode ==
+                SceneBuildingRenderMode.DRAWN_TOP_DOWN,
+            onOpenShadowColor = onOpenShadowColor,
             onToggleDome = {
                 if (!showDome) {
                     refreshSkyViewport()
@@ -232,7 +240,8 @@ private fun MapboxScene3DMap(
     canopyColor: Color,
     solarPosition: SolarPosition?,
     basemapStyle: MapboxBasemapStyle,
-    useMapboxBuildings: Boolean,
+    buildingRenderMode: SceneBuildingRenderMode,
+    uiState: ShadowMapUiState,
     onMapViewReady: (MapView) -> Unit,
     domeContent: @Composable () -> Unit
 ) {
@@ -283,9 +292,20 @@ private fun MapboxScene3DMap(
             }
         }
     ) {
-        BuildingExtrusionLayer(buildingSource, buildingColor, !useMapboxBuildings)
-        WallExtrusionLayer(wallSource, wallColor)
-        TreeExtrusionLayers(treeTrunkSource, treeCanopySource, trunkColor, canopyColor)
+        val showExtrudedDrawings = buildingRenderMode != SceneBuildingRenderMode.DRAWN_TOP_DOWN
+        BuildingExtrusionLayer(
+            buildingSource,
+            buildingColor,
+            buildingRenderMode == SceneBuildingRenderMode.DRAWN_3D
+        )
+        WallExtrusionLayer(wallSource, wallColor, showExtrudedDrawings)
+        TreeExtrusionLayers(
+            treeTrunkSource,
+            treeCanopySource,
+            trunkColor,
+            canopyColor,
+            showExtrudedDrawings
+        )
         domeContent()
         MapEffect(sunVisible, sunAzimuth, sunZenith, basemapStyle) { mapView ->
             if (!mapView.mapboxMap.isStyleLoaded()) {
@@ -302,13 +322,13 @@ private fun MapboxScene3DMap(
             }
             mapView.mapboxMap.setLight(ambientLight, directionalLight)
         }
-        MapEffect(basemapStyle, useMapboxBuildings) { mapView ->
+        MapEffect(basemapStyle, buildingRenderMode) { mapView ->
             onMapViewReady(mapView)
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
             mapboxNative3dConfig(
-                useMapboxBuildings
+                buildingRenderMode == SceneBuildingRenderMode.MAPBOX
             ).forEach { (key, enabled) ->
                 mapView.mapboxMap.setStyleImportConfigProperty(
                     Scene3DMapIds.STANDARD_STYLE_IMPORT,
@@ -316,6 +336,16 @@ private fun MapboxScene3DMap(
                     Value(enabled)
                 )
             }
+        }
+        MapEffect(basemapStyle, buildingRenderMode, uiState) { mapView ->
+            if (!mapView.mapboxMap.isStyleLoaded()) {
+                mapView.mapboxMap.styleLoadedEvents.first()
+            }
+            renderMapboxTopDownScene(
+                mapView = mapView,
+                uiState = uiState,
+                visible = buildingRenderMode == SceneBuildingRenderMode.DRAWN_TOP_DOWN
+            )
         }
     }
 }
@@ -337,13 +367,14 @@ private fun BuildingExtrusionLayer(source: GeoJsonSourceState, color: Color, vis
 /** Renders user-drawn walls as shadow-casting extruded lines. */
 @Composable
 @OptIn(MapboxExperimental::class)
-private fun WallExtrusionLayer(source: GeoJsonSourceState, color: Color) {
+private fun WallExtrusionLayer(source: GeoJsonSourceState, color: Color, visible: Boolean) {
     FillExtrusionLayer(sourceState = source, layerId = Scene3DDrawingLayers.WALL_LAYER) {
         fillExtrusionHeight = DoubleValue(Expression.get(Scene3DFeatureProperties.HEIGHT))
         fillExtrusionLineWidth = DoubleValue(Scene3DObjectStyle.WALL_WIDTH_METERS)
         fillExtrusionColor = ColorValue(color)
         fillExtrusionOpacity = DoubleValue(Scene3DObjectStyle.OBJECT_OPACITY)
         fillExtrusionCastShadows = BooleanValue(true)
+        visibility = if (visible) VisibilityValue.VISIBLE else VisibilityValue.NONE
     }
 }
 
@@ -354,13 +385,15 @@ private fun TreeExtrusionLayers(
     trunkSource: GeoJsonSourceState,
     canopySource: GeoJsonSourceState,
     trunkColor: Color,
-    canopyColor: Color
+    canopyColor: Color,
+    visible: Boolean
 ) {
     FillExtrusionLayer(sourceState = trunkSource, layerId = Scene3DDrawingLayers.TREE_TRUNK_LAYER) {
         fillExtrusionHeight = DoubleValue(Expression.get(Scene3DFeatureProperties.HEIGHT))
         fillExtrusionColor = ColorValue(trunkColor)
         fillExtrusionOpacity = DoubleValue(Scene3DObjectStyle.OBJECT_OPACITY)
         fillExtrusionCastShadows = BooleanValue(true)
+        visibility = if (visible) VisibilityValue.VISIBLE else VisibilityValue.NONE
     }
     FillExtrusionLayer(
         sourceState = canopySource,
@@ -373,6 +406,7 @@ private fun TreeExtrusionLayers(
         fillExtrusionEdgeRadius = DoubleValue(Scene3DTreeGeometry.EDGE_RADIUS_METERS)
         fillExtrusionRoundedRoof = BooleanValue(true)
         fillExtrusionCastShadows = BooleanValue(true)
+        visibility = if (visible) VisibilityValue.VISIBLE else VisibilityValue.NONE
     }
 }
 

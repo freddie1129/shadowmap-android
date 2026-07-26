@@ -63,6 +63,30 @@ internal object Scene3DCamera {
     const val TOP_DOWN_THRESHOLD_DEGREES = 1.0
 }
 
+/** Rendering selected from the building source and current camera pitch. */
+internal enum class SceneBuildingRenderMode {
+    /** Mapbox Standard buildings supplied by the basemap. */
+    MAPBOX,
+
+    /** App buildings rendered with the same outlines and shadows as the 2D map. */
+    DRAWN_TOP_DOWN,
+
+    /** App buildings rendered as the existing height-aware 3D extrusions. */
+    DRAWN_3D
+}
+
+/** Resolves the building renderer without storing a second camera-mode state. */
+internal fun sceneBuildingRenderMode(
+    useMapboxBuildings: Boolean,
+    cameraPitchDegrees: Double
+): SceneBuildingRenderMode = when {
+    useMapboxBuildings -> SceneBuildingRenderMode.MAPBOX
+    cameraPitchDegrees <= Scene3DCamera.TOP_DOWN_THRESHOLD_DEGREES -> {
+        SceneBuildingRenderMode.DRAWN_TOP_DOWN
+    }
+    else -> SceneBuildingRenderMode.DRAWN_3D
+}
+
 /** Screen offsets used to keep the 3D controls clear of one another and system UI. */
 internal object Scene3DControlLayout {
     /** Bottom clearance reserved for the date/time control. */

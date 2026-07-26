@@ -887,6 +887,7 @@ private fun ShadowMapScreen(
                                     projectNameDraft = currentUiState.activeProjectName.orEmpty()
                                     showSaveProjectDialog = true
                                 },
+                                onOpenShadowColor = { showShadowColorSheet = true },
                                 onToggleDome = { showDomeIn3d = !showDomeIn3d },
                                 onBackToMap = ::exit3d
                             )
