@@ -190,7 +190,8 @@ private fun MapboxSceneDateTimeDisclosure(
             DateTimeSpinnerCollapsed(
                 selectedEpochMillis = selectedEpochMillis,
                 timeZoneId = timeZoneId,
-                onExpand = { onExpandedChanged(true) }
+                onExpand = { onExpandedChanged(true) },
+                location = location
             )
         }
     }
@@ -279,9 +280,9 @@ private fun MapboxScene3DBottomControls(
             ) {
                 Icon(Icons.Outlined.WbSunny, contentDescription = null)
             }
-            val buildingsTitle = stringResource(R.string.buildings)
-            val drawingBuildingsLabel = stringResource(R.string.drawing_buildings)
-            val mapboxBuildingsLabel = stringResource(R.string.mapbox_buildings)
+            val buildingsTitle = stringResource(R.string.map_display)
+            val drawingBuildingsLabel = stringResource(R.string.my_drawings)
+            val mapboxBuildingsLabel = stringResource(R.string.built_in_map_buildings)
             val buildingOptions = listOf(
                 drawingBuildingsLabel,
                 mapboxBuildingsLabel

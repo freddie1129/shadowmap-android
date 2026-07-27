@@ -52,10 +52,10 @@
     <string name="standard_map_style">Standard</string>
     <string name="satellite_map_style">Satellite</string>
     <string name="basemap">Basemap</string>
-    <string name="buildings">Buildings</string>
+    <string name="map_display">Map display</string>
     <string name="camera_view">Camera view</string>
-    <string name="mapbox_buildings">Mapbox buildings</string>
-    <string name="drawing_buildings">Drawn buildings</string>
+    <string name="built_in_map_buildings">Built-in map buildings</string>
+    <string name="my_drawings">My drawings</string>
     <string name="top_down_view">Top-down view</string>
     <string name="setting_current_value">%1$s: %2$s</string>
     <string name="change_shadow_colour">Change shadow colour</string>

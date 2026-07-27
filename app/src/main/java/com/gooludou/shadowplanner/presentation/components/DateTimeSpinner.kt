@@ -380,15 +380,22 @@ fun DateTimeSpinnerCollapsed(
     selectedEpochMillis: Long,
     timeZoneId: String,
     onExpand: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    location: GeoPoint? = null
 ) {
     val zoneId = remember(timeZoneId) {
         runCatching { ZoneId.of(timeZoneId) }.getOrElse { ZoneId.systemDefault() }
     }
-    val summary = remember(selectedEpochMillis, zoneId) {
-        Instant.ofEpochMilli(selectedEpochMillis)
-            .atZone(zoneId)
-            .format(DateTimeFormatter.ofPattern("d MMM · h:mm a"))
+    val selectedDateTime = remember(selectedEpochMillis, zoneId) {
+        Instant.ofEpochMilli(selectedEpochMillis).atZone(zoneId)
+    }
+    val summary = remember(selectedDateTime) {
+        selectedDateTime.format(DateTimeFormatter.ofPattern("d MMM · h:mm a"))
+    }
+    val sunriseSunset = remember(selectedDateTime, location, zoneId) {
+        location?.let {
+            SunriseSunsetCalculator().calculate(selectedDateTime.toLocalDate(), zoneId, it)
+        }
     }
     Surface(
         onClick = onExpand,
@@ -400,25 +407,46 @@ fun DateTimeSpinnerCollapsed(
         shadowElevation = DateTimeSpinnerDefaults.shadowElevation,
         tonalElevation = DateTimeSpinnerDefaults.tonalElevation
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(
                 horizontal = ShadowMapDesign.dimensions.spacingMedium,
                 vertical = ShadowMapDesign.dimensions.spacingXs
             ),
-            horizontalArrangement = Arrangement.spacedBy(
-                ShadowMapDesign.dimensions.spacingXs
-            ),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = summary,
-                style = MaterialTheme.typography.labelLarge
-            )
-            Icon(
-                imageVector = Icons.Outlined.ExpandLess,
-                contentDescription = stringResource(R.string.show_date_time),
-                modifier = Modifier.size(18.dp)
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(
+                    ShadowMapDesign.dimensions.spacingXs
+                ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Icon(
+                    imageVector = Icons.Outlined.ExpandLess,
+                    contentDescription = stringResource(R.string.show_date_time),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            sunriseSunset?.let { daylight ->
+                val sunriseLabel = stringResource(R.string.sunrise)
+                val sunsetLabel = stringResource(R.string.sunset)
+                Text(
+                    text = buildString {
+                        append(sunriseLabel)
+                        append(' ')
+                        append(daylight.sunrise.atZone(zoneId).format(DAYLIGHT_TIME_FORMATTER))
+                        append(" · ")
+                        append(sunsetLabel)
+                        append(' ')
+                        append(daylight.sunset.atZone(zoneId).format(DAYLIGHT_TIME_FORMATTER))
+                    },
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
         }
     }
 }
@@ -733,7 +761,8 @@ private fun DateTimeSpinnerPreviewContent(darkTheme: Boolean) {
                 selectedEpochMillis = dateTime.atZone(zoneId).toInstant().toEpochMilli(),
                 timeZoneId = zoneId.id,
                 onExpand = {},
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                location = GeoPoint(longitude = 153.0251, latitude = -27.4698)
             )
         }
     }
