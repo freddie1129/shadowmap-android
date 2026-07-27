@@ -4,6 +4,7 @@ package com.gooludou.shadowplanner.presentation.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,6 +21,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +53,8 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
@@ -113,6 +120,7 @@ fun DateTimeSpinner(
     timeZoneId: String,
     modifier: Modifier = Modifier,
     location: GeoPoint? = null,
+    onCollapse: (() -> Unit)? = null,
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit
 ) {
@@ -264,7 +272,14 @@ fun DateTimeSpinner(
             tonalElevation = DateTimeSpinnerDefaults.tonalElevation
         ) {
             Column {
-                sunriseSunset?.let { DaylightSummary(it, zoneId, spinnerColors) }
+                if (sunriseSunset != null || onCollapse != null) {
+                    DaylightSummary(
+                        sunriseSunset = sunriseSunset,
+                        zoneId = zoneId,
+                        colors = spinnerColors,
+                        onCollapse = onCollapse
+                    )
+                }
                 SpinnerHeader(
                     selectedDate = displayedDate,
                     selectedTime = selectedTime ?: initialDateTime.toLocalTime(),
@@ -300,28 +315,111 @@ fun DateTimeSpinner(
 }
 
 @Composable
-private fun DaylightSummary(sunriseSunset: SunriseSunset, zoneId: ZoneId, colors: SpinnerColors) {
-    Row(
+private fun DaylightSummary(
+    sunriseSunset: SunriseSunset?,
+    zoneId: ZoneId,
+    colors: SpinnerColors,
+    onCollapse: (() -> Unit)?
+) {
+    val collapseDescription = stringResource(R.string.hide_date_time)
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = ShadowMapDesign.dimensions.spacingMedium),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .heightIn(min = ShadowMapDesign.dimensions.minimumTouchTarget)
+            .then(
+                if (onCollapse != null) {
+                    Modifier
+                        .clickable(onClick = onCollapse)
+                        .semantics { contentDescription = collapseDescription }
+                } else {
+                    Modifier
+                }
+            )
     ) {
-        DaylightTime(
-            symbol = "↑",
-            label = stringResource(R.string.sunrise),
-            instant = sunriseSunset.sunrise,
-            zoneId = zoneId,
-            colors = colors
-        )
-        DaylightTime(
-            symbol = "↓",
-            label = stringResource(R.string.sunset),
-            instant = sunriseSunset.sunset,
-            zoneId = zoneId,
-            colors = colors
-        )
+        sunriseSunset?.let { daylight ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center)
+                    .padding(horizontal = ShadowMapDesign.dimensions.spacingMedium),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                DaylightTime(
+                    symbol = "↑",
+                    label = stringResource(R.string.sunrise),
+                    instant = daylight.sunrise,
+                    zoneId = zoneId,
+                    colors = colors
+                )
+                DaylightTime(
+                    symbol = "↓",
+                    label = stringResource(R.string.sunset),
+                    instant = daylight.sunset,
+                    zoneId = zoneId,
+                    colors = colors
+                )
+            }
+        }
+        if (onCollapse != null) {
+            Icon(
+                imageVector = Icons.Outlined.ExpandMore,
+                contentDescription = null,
+                tint = colors.content.copy(alpha = 0.72f),
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(18.dp)
+            )
+        }
+    }
+}
+
+/** Compact summary shown while the full date/time spinner is collapsed. */
+@Composable
+fun DateTimeSpinnerCollapsed(
+    selectedEpochMillis: Long,
+    timeZoneId: String,
+    onExpand: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val zoneId = remember(timeZoneId) {
+        runCatching { ZoneId.of(timeZoneId) }.getOrElse { ZoneId.systemDefault() }
+    }
+    val summary = remember(selectedEpochMillis, zoneId) {
+        Instant.ofEpochMilli(selectedEpochMillis)
+            .atZone(zoneId)
+            .format(DateTimeFormatter.ofPattern("d MMM · h:mm a"))
+    }
+    Surface(
+        onClick = onExpand,
+        modifier = modifier.heightIn(
+            min = ShadowMapDesign.dimensions.minimumTouchTarget
+        ),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+        shadowElevation = DateTimeSpinnerDefaults.shadowElevation,
+        tonalElevation = DateTimeSpinnerDefaults.tonalElevation
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = ShadowMapDesign.dimensions.spacingMedium,
+                vertical = ShadowMapDesign.dimensions.spacingXs
+            ),
+            horizontalArrangement = Arrangement.spacedBy(
+                ShadowMapDesign.dimensions.spacingXs
+            ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.labelLarge
+            )
+            Icon(
+                imageVector = Icons.Outlined.ExpandLess,
+                contentDescription = stringResource(R.string.show_date_time),
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }
 
@@ -622,12 +720,21 @@ private fun DateTimeSpinnerPreviewContent(darkTheme: Boolean) {
     val dateTime = LocalDateTime.of(2026, 7, 13, 14, 30)
 
     ShadowMapTheme(darkTheme = darkTheme, dynamicColor = false) {
-        DateTimeSpinner(
-            selectedEpochMillis = dateTime.atZone(zoneId).toInstant().toEpochMilli(),
-            timeZoneId = zoneId.id,
-            location = GeoPoint(longitude = 153.0251, latitude = -27.4698),
-            onDateTimeChanged = {},
-            onNowSelected = {}
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            DateTimeSpinner(
+                selectedEpochMillis = dateTime.atZone(zoneId).toInstant().toEpochMilli(),
+                timeZoneId = zoneId.id,
+                location = GeoPoint(longitude = 153.0251, latitude = -27.4698),
+                onCollapse = {},
+                onDateTimeChanged = {},
+                onNowSelected = {}
+            )
+            DateTimeSpinnerCollapsed(
+                selectedEpochMillis = dateTime.atZone(zoneId).toInstant().toEpochMilli(),
+                timeZoneId = zoneId.id,
+                onExpand = {},
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        }
     }
 }

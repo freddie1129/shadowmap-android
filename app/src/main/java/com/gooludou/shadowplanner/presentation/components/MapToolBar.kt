@@ -53,7 +53,8 @@ fun MapToolBar(
     onToggleTime: () -> Unit,
     onOpenShadowColor: () -> Unit,
     onOpenMapbox3D: (() -> Unit)?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showTimeToggle: Boolean = true
 ) {
     Row(
         modifier = modifier,
@@ -62,7 +63,9 @@ fun MapToolBar(
     ) {
         ShadowColorButton(shadowAppearance, onOpenShadowColor)
         PrimaryToolBar(autoState, hasSceneObjects, onDrawMode, onAutoLoad, onClear)
-        TimeToolButton(isTimeVisible, onToggleTime)
+        if (showTimeToggle) {
+            TimeToolButton(isTimeVisible, onToggleTime)
+        }
         if (onOpenMapbox3D != null) {
             Spacer(modifier = Modifier.weight(1f))
             Open3DToolButton(onOpenMapbox3D)

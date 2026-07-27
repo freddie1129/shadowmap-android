@@ -1,11 +1,13 @@
 package com.gooludou.shadowplanner.presentation.mapbox3D
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,8 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.SatelliteAlt
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.DropdownMenu
@@ -51,6 +51,7 @@ import com.gooludou.shadowplanner.domain.ShadowAppearance
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
+import com.gooludou.shadowplanner.presentation.components.DateTimeSpinnerCollapsed
 import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
 import com.gooludou.shadowplanner.presentation.components.MapToolBar
 import com.gooludou.shadowplanner.presentation.components.PitchSlider
@@ -130,8 +131,6 @@ internal fun MapboxScene3DControls(
                     showShadowColorControl = showShadowColorControl,
                     onOpenShadowColor = onOpenShadowColor,
                     onToggleDome = onToggleDome,
-                    isDateTimeVisible = isDateTimeVisible,
-                    onToggleDateTime = { isDateTimeVisible = !isDateTimeVisible },
                     onStartEditing = onStartEditing
                 )
             } else if (showEditingToolbar) {
@@ -139,7 +138,6 @@ internal fun MapboxScene3DControls(
                     uiState = uiState,
                     autoToolState = autoToolState,
                     isDateTimeVisible = isDateTimeVisible,
-                    onToggleDateTime = { isDateTimeVisible = !isDateTimeVisible },
                     onOpenShadowColor = onOpenShadowColor,
                     onDrawMode = onDrawMode,
                     onAutoLoad = onAutoLoad,
@@ -150,18 +148,50 @@ internal fun MapboxScene3DControls(
                         .padding(horizontal = ShadowMapDesign.dimensions.screenPadding)
                 )
             }
-            AnimatedVisibility(
-                visible = isDateTimeVisible &&
-                    (sceneMode == MapboxSceneMode.VIEW || showEditingToolbar)
-            ) {
-                DateTimeSpinner(
+            if (sceneMode == MapboxSceneMode.VIEW || showEditingToolbar) {
+                MapboxSceneDateTimeDisclosure(
                     selectedEpochMillis = selectedEpochMillis,
                     timeZoneId = timeZoneId,
                     location = location,
+                    isExpanded = isDateTimeVisible,
+                    onExpandedChanged = { isDateTimeVisible = it },
                     onDateTimeChanged = onDateTimeChanged,
                     onNowSelected = onNowSelected
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun MapboxSceneDateTimeDisclosure(
+    selectedEpochMillis: Long,
+    timeZoneId: String,
+    location: GeoPoint,
+    isExpanded: Boolean,
+    onExpandedChanged: (Boolean) -> Unit,
+    onDateTimeChanged: (Long) -> Unit,
+    onNowSelected: () -> Unit
+) {
+    AnimatedContent(
+        targetState = isExpanded,
+        label = "date-time-spinner"
+    ) { expanded ->
+        if (expanded) {
+            DateTimeSpinner(
+                selectedEpochMillis = selectedEpochMillis,
+                timeZoneId = timeZoneId,
+                location = location,
+                onCollapse = { onExpandedChanged(false) },
+                onDateTimeChanged = onDateTimeChanged,
+                onNowSelected = onNowSelected
+            )
+        } else {
+            DateTimeSpinnerCollapsed(
+                selectedEpochMillis = selectedEpochMillis,
+                timeZoneId = timeZoneId,
+                onExpand = { onExpandedChanged(true) }
+            )
         }
     }
 }
@@ -179,7 +209,6 @@ private fun MapboxScene3DEditingControls(
     uiState: ShadowMapUiState,
     autoToolState: AutoToolState,
     isDateTimeVisible: Boolean,
-    onToggleDateTime: () -> Unit,
     onOpenShadowColor: () -> Unit,
     onDrawMode: (DrawMode) -> Unit,
     onAutoLoad: () -> Unit,
@@ -195,10 +224,11 @@ private fun MapboxScene3DEditingControls(
         onDrawMode = onDrawMode,
         onAutoLoad = onAutoLoad,
         onClear = onClear,
-        onToggleTime = onToggleDateTime,
+        onToggleTime = {},
         onOpenShadowColor = onOpenShadowColor,
         onOpenMapbox3D = onFinishEditing,
-        modifier = modifier
+        modifier = modifier,
+        showTimeToggle = false
     )
 }
 
@@ -216,8 +246,6 @@ private fun MapboxScene3DBottomControls(
     showShadowColorControl: Boolean,
     onOpenShadowColor: () -> Unit,
     onToggleDome: () -> Unit,
-    isDateTimeVisible: Boolean,
-    onToggleDateTime: () -> Unit,
     onStartEditing: () -> Unit
 ) {
     Column(
@@ -307,24 +335,7 @@ private fun MapboxScene3DBottomControls(
                     contentDescription = null
                 )
             }
-            val dateTimeDescription = stringResource(
-                if (isDateTimeVisible) R.string.hide_date_time else R.string.show_date_time
-            )
-            MapboxScene3DTooltip(tooltip = dateTimeDescription) {
-                MapRoundIconButton(
-                    onClick = onToggleDateTime,
-                    contentDescription = dateTimeDescription
-                ) {
-                    Icon(
-                        imageVector = if (isDateTimeVisible) {
-                            Icons.Outlined.ExpandLess
-                        } else {
-                            Icons.Outlined.ExpandMore
-                        },
-                        contentDescription = null
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.weight(1f))
             MapboxScene3DModeButton(
                 onStartEditing = onStartEditing
             )
