@@ -95,6 +95,44 @@ internal enum class SceneBuildingSelection(
     }
 }
 
+/** Mapbox 3D presentation state restored after a project is successfully loaded. */
+internal object MapboxScene3DProjectDefaults {
+    /** Projects open with the camera looking straight down. */
+    const val CAMERA_PITCH_DEGREES = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+
+    /** Projects open with app-rendered building outlines and shadows. */
+    val BUILDING_SELECTION = SceneBuildingSelection.DRAWN
+
+    /** Satellite imagery is the default background for project drawings. */
+    val BASEMAP_STYLE = MapboxBasemapStyle.SATELLITE
+
+    /** The optional sky dome stays hidden until explicitly enabled. */
+    const val SHOW_DOME = false
+}
+
+/** Initial Mapbox presentation values chosen before the map is attached. */
+internal data class MapboxScene3DInitialState(
+    val cameraPitchDegrees: Double,
+    val buildingSelection: SceneBuildingSelection,
+    val basemapStyle: MapboxBasemapStyle
+)
+
+/** Ensures a loaded project starts with its defaults before Mapbox applies initial camera state. */
+internal fun initialMapboxScene3DState(projectLoadRevision: Long): MapboxScene3DInitialState =
+    if (projectLoadRevision > 0L) {
+        MapboxScene3DInitialState(
+            cameraPitchDegrees = MapboxScene3DProjectDefaults.CAMERA_PITCH_DEGREES,
+            buildingSelection = MapboxScene3DProjectDefaults.BUILDING_SELECTION,
+            basemapStyle = MapboxScene3DProjectDefaults.BASEMAP_STYLE
+        )
+    } else {
+        MapboxScene3DInitialState(
+            cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES,
+            buildingSelection = SceneBuildingSelection.MAPBOX,
+            basemapStyle = MapboxBasemapStyle.STANDARD
+        )
+    }
+
 /** Rendering selected from the building source and current camera pitch. */
 internal enum class SceneBuildingRenderMode {
     /** Mapbox Standard buildings supplied by the basemap. */

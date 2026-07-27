@@ -91,6 +91,7 @@ import com.gooludou.shadowplanner.presentation.drawview.DrawingPropertiesSheet
 import com.gooludou.shadowplanner.presentation.drawview.Map2DView
 import com.gooludou.shadowplanner.presentation.drawview.ShadowColorSheet
 import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSheet
+import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DProjectDefaults
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DView
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DViewport
 import com.gooludou.shadowplanner.presentation.mapbox3D.currentScene3DViewport
@@ -367,6 +368,10 @@ private fun ShadowMapScreen(
     var showSatelliteIn3d by remember { mutableStateOf(true) }
     // The same optional solar guide is available in both 3D renderers.
     var showDomeIn3d by remember { mutableStateOf(true) }
+    LaunchedEffect(uiState.projectLoadRevision) {
+        if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
+        showDomeIn3d = MapboxScene3DProjectDefaults.SHOW_DOME
+    }
     var sceneCameraView by remember { mutableStateOf(SceneCameraView.ORBIT) }
     var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
     var mapboxSceneViewport by remember { mutableStateOf<MapboxScene3DViewport?>(null) }

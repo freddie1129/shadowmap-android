@@ -16,6 +16,7 @@ import com.gooludou.shadowplanner.domain.UserObjectShadowCalculator
 import com.gooludou.shadowplanner.location.CurrentLocationResolver
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.project.ProjectRepository
+import com.gooludou.shadowplanner.project.ProjectSnapshot
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -401,6 +402,28 @@ class ShadowMapViewModelTest {
     }
 
     @Test
+    fun successfulProjectLoads_incrementSceneResetRevision() = runTest(dispatcher) {
+        val project = testProjectSnapshot()
+        val viewModel = createViewModel(
+            projectRepository = object : ProjectRepository {
+                override fun listProjects() =
+                    emptyList<com.gooludou.shadowplanner.project.ProjectSummary>()
+                override fun loadProject(id: String) = project
+                override fun saveProject(project: ProjectSnapshot) = Unit
+                override fun deleteProject(id: String) = Unit
+            }
+        )
+
+        viewModel.loadProject(project.id)
+        advanceUntilIdle()
+        assertEquals(1L, viewModel.uiState.value.projectLoadRevision)
+
+        viewModel.loadProject(project.id)
+        advanceUntilIdle()
+        assertEquals(2L, viewModel.uiState.value.projectLoadRevision)
+    }
+
+    @Test
     fun saveProjectAsNew_createsANewActiveProject() = runTest(dispatcher) {
         val savedProjects = mutableListOf<com.gooludou.shadowplanner.project.ProjectSnapshot>()
         val viewModel = createViewModel(
@@ -483,6 +506,24 @@ class ShadowMapViewModelTest {
         GeoPoint(153.0001, -28.0),
         GeoPoint(153.0001, -28.0001),
         GeoPoint(153.0, -28.0001)
+    )
+
+    private fun testProjectSnapshot() = ProjectSnapshot(
+        id = "project-1",
+        name = "Loaded project",
+        createdAt = 1L,
+        updatedAt = 2L,
+        selectedEpochMillis = DEFAULT_TIME.toEpochMilli(),
+        displayTimeZoneId = "Australia/Brisbane",
+        calculationLocation = TEST_LOCATION,
+        selectedLocationLabel = "Brisbane",
+        viewport = null,
+        drawnBuildings = emptyList(),
+        drawnWalls = emptyList(),
+        drawnTrees = emptyList(),
+        loadedBuildings = emptyList(),
+        loadedBuildingOverrides = emptyMap(),
+        suppressedLoadedBuildings = emptyMap()
     )
 
     private fun createViewModel(

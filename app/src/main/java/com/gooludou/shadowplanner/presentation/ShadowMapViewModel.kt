@@ -202,6 +202,7 @@ constructor(
             activeProjectId = id,
             activeProjectName = name,
             activeProjectCreatedAt = createdAt,
+            projectLoadRevision = previous.projectLoadRevision + 1L,
             isProjectDirty = false,
             projectError = null,
             loadedBuildings = loadedBuildings,

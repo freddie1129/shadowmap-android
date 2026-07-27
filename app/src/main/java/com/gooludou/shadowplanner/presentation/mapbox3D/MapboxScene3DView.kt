@@ -97,8 +97,15 @@ fun MapboxScene3DView(
     onBackToMap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var basemapStyle by remember { mutableStateOf(MapboxBasemapStyle.STANDARD) }
-    var buildingSelection by remember { mutableStateOf(SceneBuildingSelection.MAPBOX) }
+    val initialState = remember {
+        initialMapboxScene3DState(uiState.projectLoadRevision)
+    }
+    var basemapStyle by remember {
+        mutableStateOf(initialState.basemapStyle)
+    }
+    var buildingSelection by remember {
+        mutableStateOf(initialState.buildingSelection)
+    }
     var sceneMapView by remember { mutableStateOf<MapView?>(null) }
     var isSkyViewportReady by remember { mutableStateOf(false) }
     val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, sunPath)
@@ -109,7 +116,7 @@ fun MapboxScene3DView(
             center(Point.fromLngLat(viewport.center.longitude, viewport.center.latitude))
             zoom(viewport.zoom)
             bearing(viewport.bearing)
-            pitch(Scene3DCamera.ORBIT_PITCH_DEGREES)
+            pitch(initialState.cameraPitchDegrees)
         }
     }
     LaunchedEffect(viewport) {
@@ -117,8 +124,12 @@ fun MapboxScene3DView(
             center(Point.fromLngLat(viewport.center.longitude, viewport.center.latitude))
             zoom(viewport.zoom)
             bearing(viewport.bearing)
-            pitch(Scene3DCamera.ORBIT_PITCH_DEGREES)
         }
+    }
+    LaunchedEffect(uiState.projectLoadRevision) {
+        if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
+        basemapStyle = MapboxScene3DProjectDefaults.BASEMAP_STYLE
+        buildingSelection = MapboxScene3DProjectDefaults.BUILDING_SELECTION
     }
     fun refreshSkyViewport() {
         val currentViewport = sceneMapView
@@ -322,6 +333,12 @@ private fun MapboxScene3DMap(
                 shadowIntensity(Scene3DLighting.SHADOW_INTENSITY)
             }
             mapView.mapboxMap.setLight(ambientLight, directionalLight)
+        }
+        MapEffect(uiState.projectLoadRevision) { _ ->
+            if (uiState.projectLoadRevision == 0L) return@MapEffect
+            mapViewportState.setCameraOptions {
+                pitch(MapboxScene3DProjectDefaults.CAMERA_PITCH_DEGREES)
+            }
         }
         MapEffect(basemapStyle, buildingRenderMode) { mapView ->
             onMapViewReady(mapView)

@@ -88,4 +88,24 @@ class SceneBuildingRenderModeTest {
             )
         )
     }
+
+    @Test
+    fun `loaded projects use centralized Mapbox 3D defaults`() {
+        val initialState = initialMapboxScene3DState(projectLoadRevision = 1L)
+
+        assertEquals(
+            Scene3DCamera.TOP_DOWN_PITCH_DEGREES,
+            initialState.cameraPitchDegrees,
+            0.0
+        )
+        assertEquals(
+            SceneBuildingSelection.DRAWN,
+            initialState.buildingSelection
+        )
+        assertEquals(
+            MapboxBasemapStyle.SATELLITE,
+            initialState.basemapStyle
+        )
+        assertFalse(MapboxScene3DProjectDefaults.SHOW_DOME)
+    }
 }

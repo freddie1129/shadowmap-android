@@ -26,6 +26,7 @@ data class ShadowMapUiState(
     val activeProjectId: String? = null,
     val activeProjectName: String? = null,
     val activeProjectCreatedAt: Long? = null,
+    val projectLoadRevision: Long = 0L,
     val isProjectDirty: Boolean = false,
     val projectError: String? = null,
     val solarPosition: SolarPosition? = null,
