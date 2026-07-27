@@ -173,10 +173,12 @@ private fun BoxScope.MapboxScene3DBottomControls(
             ) {
                 Icon(Icons.Outlined.Map, contentDescription = null)
             }
-            MapboxScene3DBasemapSelectionButton(
-                basemapStyle = basemapStyle,
-                onBasemapStyleSelected = onBasemapStyleSelected
-            )
+            if (buildingSelection.allowsBasemapSelection) {
+                MapboxScene3DBasemapSelectionButton(
+                    basemapStyle = basemapStyle,
+                    onBasemapStyleSelected = onBasemapStyleSelected
+                )
+            }
             MapboxScene3DToggleButton(
                 isSelected = showDome,
                 contentDescription = stringResource(
@@ -188,11 +190,9 @@ private fun BoxScope.MapboxScene3DBottomControls(
             }
             val buildingsTitle = stringResource(R.string.buildings)
             val drawingBuildingsLabel = stringResource(R.string.drawing_buildings)
-            val force3dBuildingsLabel = stringResource(R.string.drawing_buildings_force_3d)
             val mapboxBuildingsLabel = stringResource(R.string.mapbox_buildings)
             val buildingOptions = listOf(
                 drawingBuildingsLabel,
-                force3dBuildingsLabel,
                 mapboxBuildingsLabel
             )
             val selectedBuildingsIndex = buildingSelection.menuIndex
@@ -437,7 +437,7 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean) {
                 basemapStyle = MapboxBasemapStyle.SATELLITE,
                 onBasemapStyleSelected = {},
                 showDome = true,
-                buildingSelection = SceneBuildingSelection.DRAWN_FORCE_3D,
+                buildingSelection = SceneBuildingSelection.DRAWN,
                 onBuildingSelectionChanged = {},
                 shadowAppearance = ShadowAppearance.DEFAULT,
                 showShadowColorControl = true,

@@ -1,7 +1,8 @@
 package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SceneBuildingRenderModeTest {
@@ -11,17 +12,19 @@ class SceneBuildingRenderModeTest {
             SceneBuildingRenderMode.MAPBOX,
             sceneBuildingRenderMode(
                 buildingSelection = SceneBuildingSelection.MAPBOX,
+                basemapStyle = MapboxBasemapStyle.STANDARD,
                 cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
             )
         )
     }
 
     @Test
-    fun `drawn buildings use 2D rendering in top-down view`() {
+    fun `satellite drawn buildings use 2D rendering in top-down view`() {
         assertEquals(
             SceneBuildingRenderMode.DRAWN_TOP_DOWN,
             sceneBuildingRenderMode(
                 buildingSelection = SceneBuildingSelection.DRAWN,
+                basemapStyle = MapboxBasemapStyle.SATELLITE,
                 cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
             )
         )
@@ -33,44 +36,56 @@ class SceneBuildingRenderModeTest {
             SceneBuildingRenderMode.DRAWN_3D,
             sceneBuildingRenderMode(
                 buildingSelection = SceneBuildingSelection.DRAWN,
+                basemapStyle = MapboxBasemapStyle.SATELLITE,
                 cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
             )
         )
     }
 
     @Test
-    fun `forced 3D drawn buildings use extrusion rendering in top-down view`() {
+    fun `standard drawn buildings remain extruded in top-down view`() {
         assertEquals(
             SceneBuildingRenderMode.DRAWN_3D,
             sceneBuildingRenderMode(
-                buildingSelection = SceneBuildingSelection.DRAWN_FORCE_3D,
+                buildingSelection = SceneBuildingSelection.DRAWN,
+                basemapStyle = MapboxBasemapStyle.STANDARD,
                 cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
             )
         )
     }
 
     @Test
-    fun `forced 3D menu option uses satellite without changing pitch`() {
-        val selection = SceneBuildingSelection.fromMenuIndex(1)
-
-        assertEquals(SceneBuildingSelection.DRAWN_FORCE_3D, selection)
-        assertEquals(MapboxBasemapStyle.SATELLITE, selection.basemapStyle)
-        assertNull(selection.pitchOnSelection)
+    fun `building menu contains only drawn and Mapbox options`() {
+        assertEquals(2, SceneBuildingSelection.entries.size)
+        assertEquals(SceneBuildingSelection.DRAWN, SceneBuildingSelection.fromMenuIndex(0))
+        assertEquals(SceneBuildingSelection.MAPBOX, SceneBuildingSelection.fromMenuIndex(1))
     }
 
     @Test
-    fun `satellite basemap replaces Mapbox buildings with regular drawn buildings`() {
+    fun `only drawn buildings allow basemap selection`() {
+        assertTrue(SceneBuildingSelection.DRAWN.allowsBasemapSelection)
+        assertFalse(SceneBuildingSelection.MAPBOX.allowsBasemapSelection)
+    }
+
+    @Test
+    fun `selecting Mapbox buildings switches to standard basemap`() {
         assertEquals(
-            SceneBuildingSelection.DRAWN,
-            SceneBuildingSelection.MAPBOX.compatibleWith(MapboxBasemapStyle.SATELLITE)
+            MapboxBasemapStyle.STANDARD,
+            basemapStyleAfterBuildingSelection(
+                buildingSelection = SceneBuildingSelection.MAPBOX,
+                currentBasemapStyle = MapboxBasemapStyle.SATELLITE
+            )
         )
     }
 
     @Test
-    fun `standard basemap preserves forced 3D drawn buildings`() {
+    fun `selecting drawn buildings preserves the current basemap`() {
         assertEquals(
-            SceneBuildingSelection.DRAWN_FORCE_3D,
-            SceneBuildingSelection.DRAWN_FORCE_3D.compatibleWith(MapboxBasemapStyle.STANDARD)
+            MapboxBasemapStyle.SATELLITE,
+            basemapStyleAfterBuildingSelection(
+                buildingSelection = SceneBuildingSelection.DRAWN,
+                currentBasemapStyle = MapboxBasemapStyle.SATELLITE
+            )
         )
     }
 }

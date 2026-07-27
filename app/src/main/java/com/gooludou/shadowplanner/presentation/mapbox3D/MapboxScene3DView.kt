@@ -149,6 +149,7 @@ fun MapboxScene3DView(
     val canopyColor = Color(0xFF3F7D48)
     val buildingRenderMode = sceneBuildingRenderMode(
         buildingSelection = buildingSelection,
+        basemapStyle = basemapStyle,
         cameraPitchDegrees = mapViewportState.cameraState?.pitch
             ?: Scene3DCamera.ORBIT_PITCH_DEGREES
     )
@@ -198,18 +199,15 @@ fun MapboxScene3DView(
             basemapStyle = basemapStyle,
             onBasemapStyleSelected = { selectedStyle ->
                 basemapStyle = selectedStyle
-                buildingSelection = buildingSelection.compatibleWith(selectedStyle)
             },
             showDome = showDome,
             buildingSelection = buildingSelection,
             onBuildingSelectionChanged = { selectedBuildings ->
                 buildingSelection = selectedBuildings
-                basemapStyle = selectedBuildings.basemapStyle
-                selectedBuildings.pitchOnSelection?.let { selectedPitch ->
-                    mapViewportState.setCameraOptions {
-                        pitch(selectedPitch)
-                    }
-                }
+                basemapStyle = basemapStyleAfterBuildingSelection(
+                    buildingSelection = selectedBuildings,
+                    currentBasemapStyle = basemapStyle
+                )
             },
             shadowAppearance = uiState.shadowAppearance,
             showShadowColorControl = buildingRenderMode ==

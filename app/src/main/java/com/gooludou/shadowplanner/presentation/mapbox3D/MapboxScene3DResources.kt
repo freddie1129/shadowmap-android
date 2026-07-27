@@ -75,28 +75,18 @@ internal object Scene3DCamera {
 /** Building source behavior selected from the 3D controls. */
 internal enum class SceneBuildingSelection(
     val menuIndex: Int,
-    val basemapStyle: MapboxBasemapStyle,
-    val pitchOnSelection: Double?
+    val allowsBasemapSelection: Boolean
 ) {
-    /** Mapbox Standard buildings supplied by the basemap. */
-    MAPBOX(
-        menuIndex = 2,
-        basemapStyle = MapboxBasemapStyle.STANDARD,
-        pitchOnSelection = null
-    ),
-
-    /** App buildings that follow the current top-down or 3D camera mode. */
+    /** App buildings rendered according to the selected basemap and camera view. */
     DRAWN(
         menuIndex = 0,
-        basemapStyle = MapboxBasemapStyle.SATELLITE,
-        pitchOnSelection = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+        allowsBasemapSelection = true
     ),
 
-    /** App buildings that remain extruded even when the camera is top-down. */
-    DRAWN_FORCE_3D(
+    /** Mapbox Standard buildings supplied by the basemap. */
+    MAPBOX(
         menuIndex = 1,
-        basemapStyle = MapboxBasemapStyle.SATELLITE,
-        pitchOnSelection = null
+        allowsBasemapSelection = false
     );
 
     companion object {
@@ -120,27 +110,25 @@ internal enum class SceneBuildingRenderMode {
 /** Resolves the building renderer without storing a second camera-mode state. */
 internal fun sceneBuildingRenderMode(
     buildingSelection: SceneBuildingSelection,
+    basemapStyle: MapboxBasemapStyle,
     cameraPitchDegrees: Double
 ): SceneBuildingRenderMode = when {
     buildingSelection == SceneBuildingSelection.MAPBOX -> SceneBuildingRenderMode.MAPBOX
-    buildingSelection == SceneBuildingSelection.DRAWN_FORCE_3D -> {
-        SceneBuildingRenderMode.DRAWN_3D
-    }
-    cameraPitchDegrees <= Scene3DCamera.TOP_DOWN_THRESHOLD_DEGREES -> {
+    basemapStyle == MapboxBasemapStyle.SATELLITE &&
+        cameraPitchDegrees <= Scene3DCamera.TOP_DOWN_THRESHOLD_DEGREES -> {
         SceneBuildingRenderMode.DRAWN_TOP_DOWN
     }
     else -> SceneBuildingRenderMode.DRAWN_3D
 }
 
-/** Prevents Mapbox building imports from being selected with the Satellite style. */
-internal fun SceneBuildingSelection.compatibleWith(
-    basemapStyle: MapboxBasemapStyle
-): SceneBuildingSelection = if (
-    basemapStyle == MapboxBasemapStyle.SATELLITE && this == SceneBuildingSelection.MAPBOX
-) {
-    SceneBuildingSelection.DRAWN
+/** Mapbox buildings require Standard; drawn buildings preserve the user's basemap choice. */
+internal fun basemapStyleAfterBuildingSelection(
+    buildingSelection: SceneBuildingSelection,
+    currentBasemapStyle: MapboxBasemapStyle
+): MapboxBasemapStyle = if (buildingSelection == SceneBuildingSelection.MAPBOX) {
+    MapboxBasemapStyle.STANDARD
 } else {
-    this
+    currentBasemapStyle
 }
 
 /** Screen offsets used to keep the 3D controls clear of one another and system UI. */

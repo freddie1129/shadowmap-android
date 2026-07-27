@@ -59,7 +59,6 @@
     <string name="camera_view">Camera view</string>
     <string name="mapbox_buildings">Mapbox buildings</string>
     <string name="drawing_buildings">Drawn buildings</string>
-    <string name="drawing_buildings_force_3d">Drawn buildings · force 3D</string>
     <string name="top_down_view">Top-down view</string>
     <string name="setting_current_value">%1$s: %2$s</string>
     <string name="change_shadow_colour">Change shadow colour</string>
