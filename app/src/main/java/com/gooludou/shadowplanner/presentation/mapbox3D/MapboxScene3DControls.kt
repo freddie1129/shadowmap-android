@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -214,33 +215,31 @@ private fun BoxScope.MapboxScene3DBottomControls(
             ) {
                 Icon(Icons.Outlined.Apartment, contentDescription = null)
             }
-            val cameraTitle = stringResource(R.string.camera_view)
             val topDownLabel = stringResource(R.string.top_down_view)
             val threeDimensionalLabel = stringResource(R.string.view_3d_button)
-            val selectedCameraIndex = if (isTopDown) 0 else 1
-            MapboxScene3DSelectionButton(
-                isSelected = isTopDown,
-                contentDescription = stringResource(
-                    R.string.setting_current_value,
-                    cameraTitle,
-                    if (isTopDown) topDownLabel else threeDimensionalLabel
-                ),
-                menuTitle = cameraTitle,
-                options = listOf(topDownLabel, threeDimensionalLabel),
-                selectedOptionIndex = selectedCameraIndex,
-                onOptionSelected = { index ->
+            val cameraDescription = stringResource(
+                R.string.setting_current_value,
+                stringResource(R.string.camera_view),
+                if (isTopDown) topDownLabel else threeDimensionalLabel
+            )
+            MapboxScene3DToggleButton(
+                isSelected = !isTopDown,
+                contentDescription = cameraDescription,
+                onClick = {
                     mapViewportState.setCameraOptions {
                         pitch(
-                            if (index == 0) {
-                                Scene3DCamera.TOP_DOWN_PITCH_DEGREES
-                            } else {
-                                Scene3DCamera.ORBIT_PITCH_DEGREES
-                            }
+                            if (isTopDown) Scene3DCamera.ORBIT_PITCH_DEGREES
+                            else Scene3DCamera.TOP_DOWN_PITCH_DEGREES
                         )
                     }
                 }
             ) {
-                Icon(Icons.Outlined.Map, contentDescription = null)
+                Icon(
+                    painter = painterResource(
+                        if (isTopDown) R.drawable.two_d_2_24dp else R.drawable.three_d_2_24dp
+                    ),
+                    contentDescription = null
+                )
             }
             val dateTimeDescription = stringResource(
                 if (isDateTimeVisible) R.string.hide_date_time else R.string.show_date_time
