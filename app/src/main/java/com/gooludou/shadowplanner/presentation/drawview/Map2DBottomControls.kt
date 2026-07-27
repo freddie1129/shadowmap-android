@@ -34,7 +34,7 @@ fun Map2DBottomControls(
     onDrawMode: (DrawMode) -> Unit,
     onAutoLoad: () -> Unit,
     onClear: () -> Unit,
-    onOpenMapbox3D: () -> Unit,
+    onOpenMapbox3D: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Column(

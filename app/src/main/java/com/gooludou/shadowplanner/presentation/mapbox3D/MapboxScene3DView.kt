@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.Building
+import com.gooludou.shadowplanner.domain.DrawMode
 import com.gooludou.shadowplanner.domain.DrawnTree
 import com.gooludou.shadowplanner.domain.DrawnWall
 import com.gooludou.shadowplanner.domain.GeoPoint
@@ -28,6 +29,7 @@ import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.domain.SolarPosition
 import com.gooludou.shadowplanner.presentation.components.mapboxNative3dConfig
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
+import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.gooludou.shadowplanner.presentation.drawview.Map2DTopControls
 import com.gooludou.shadowplanner.scene.SceneViewport
 import com.mapbox.bindgen.Value
@@ -70,8 +72,8 @@ import kotlinx.coroutines.flow.first
 /** Hosts the Mapbox 3D scene, drawing layers, sky dome, and scene controls. */
 @Composable
 @OptIn(MapboxDelicateApi::class, MapboxExperimental::class)
-@Suppress("LongMethod")
-fun MapboxScene3DView(
+@Suppress("LongMethod", "CyclomaticComplexMethod")
+internal fun MapboxScene3DView(
     buildings: List<Building>,
     walls: List<DrawnWall>,
     trees: List<DrawnTree>,
@@ -93,8 +95,17 @@ fun MapboxScene3DView(
     onOpenProjects: () -> Unit,
     onSaveProject: () -> Unit,
     onOpenShadowColor: () -> Unit,
+    sceneMode: MapboxSceneMode,
+    onSceneModeChanged: (MapboxSceneMode) -> Unit,
+    autoToolState: AutoToolState,
+    onFinishEditing: () -> Unit,
+    onDrawMode: (DrawMode) -> Unit,
+    onAutoLoad: () -> Unit,
+    onClear: () -> Unit,
+    editingCrosshairPoint: GeoPoint?,
+    onSceneMapViewReady: (MapView) -> Unit,
+    onSceneMapClick: (Point) -> Boolean,
     onToggleDome: () -> Unit,
-    onBackToMap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val initialState = remember {
@@ -106,6 +117,7 @@ fun MapboxScene3DView(
     var buildingSelection by remember {
         mutableStateOf(initialState.buildingSelection)
     }
+    var hasEnteredEditing by remember { mutableStateOf(false) }
     var sceneMapView by remember { mutableStateOf<MapView?>(null) }
     var isSkyViewportReady by remember { mutableStateOf(false) }
     val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, sunPath)
@@ -128,8 +140,28 @@ fun MapboxScene3DView(
     }
     LaunchedEffect(uiState.projectLoadRevision) {
         if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
+        hasEnteredEditing = false
         basemapStyle = MapboxScene3DProjectDefaults.BASEMAP_STYLE
         buildingSelection = MapboxScene3DProjectDefaults.BUILDING_SELECTION
+    }
+    LaunchedEffect(sceneMode) {
+        if (sceneMode == MapboxSceneMode.EDIT) {
+            hasEnteredEditing = true
+            basemapStyle = MapboxScene3DEditingDefaults.BASEMAP_STYLE
+            buildingSelection = MapboxScene3DEditingDefaults.BUILDING_SELECTION
+            mapViewportState.setCameraOptions {
+                pitch(MapboxScene3DEditingDefaults.CAMERA_PITCH_DEGREES)
+            }
+            if (showDome != MapboxScene3DEditingDefaults.SHOW_DOME) onToggleDome()
+        } else if (hasEnteredEditing) {
+            basemapStyle = MapboxScene3DEditingDefaults.BASEMAP_STYLE
+            buildingSelection = MapboxScene3DEditingDefaults.BUILDING_SELECTION
+            mapViewportState.setCameraOptions {
+                pitch(MapboxScene3DEditingDefaults.CAMERA_PITCH_DEGREES)
+            }
+            if (showDome != MapboxScene3DEditingDefaults.SHOW_DOME) onToggleDome()
+            hasEnteredEditing = false
+        }
     }
     fun refreshSkyViewport() {
         val currentViewport = sceneMapView
@@ -178,8 +210,14 @@ fun MapboxScene3DView(
             solarPosition = solarPosition,
             basemapStyle = basemapStyle,
             buildingRenderMode = buildingRenderMode,
+            sceneMode = sceneMode,
             uiState = uiState,
-            onMapViewReady = { sceneMapView = it }
+            editingCrosshairPoint = editingCrosshairPoint,
+            onMapViewReady = {
+                sceneMapView = it
+                onSceneMapViewReady(it)
+            },
+            onMapClick = onSceneMapClick
         ) {
             if (showDome && isSkyViewportReady) {
                 SceneSkyModelLayers(skyState)
@@ -230,7 +268,14 @@ fun MapboxScene3DView(
                 }
                 onToggleDome()
             },
-            onBackToMap = onBackToMap
+            sceneMode = sceneMode,
+            uiState = uiState,
+            autoToolState = autoToolState,
+            onStartEditing = { onSceneModeChanged(MapboxSceneMode.EDIT) },
+            onFinishEditing = onFinishEditing,
+            onDrawMode = onDrawMode,
+            onAutoLoad = onAutoLoad,
+            onClear = onClear
         )
     }
 }
@@ -252,8 +297,11 @@ private fun MapboxScene3DMap(
     solarPosition: SolarPosition?,
     basemapStyle: MapboxBasemapStyle,
     buildingRenderMode: SceneBuildingRenderMode,
+    sceneMode: MapboxSceneMode,
     uiState: ShadowMapUiState,
+    editingCrosshairPoint: GeoPoint?,
     onMapViewReady: (MapView) -> Unit,
+    onMapClick: (Point) -> Boolean,
     domeContent: @Composable () -> Unit
 ) {
     // Compose Preview cannot initialize Mapbox's native renderer, so show a safe placeholder.
@@ -273,6 +321,11 @@ private fun MapboxScene3DMap(
             pitchEnabled = true
         }
     }
+    LaunchedEffect(sceneMode) {
+        mapState.gesturesSettings = GesturesSettings {
+            pitchEnabled = sceneMode == MapboxSceneMode.VIEW
+        }
+    }
     val sunVisible = solarPosition?.isAboveHorizon == true
     val sunAzimuth = solarPosition?.azimuthDegrees ?: Scene3DLighting.DEFAULT_AZIMUTH_DEGREES
     val sunZenith = solarPosition?.zenithDegrees
@@ -289,6 +342,7 @@ private fun MapboxScene3DMap(
         modifier = Modifier.fillMaxSize(),
         mapViewportState = mapViewportState,
         mapState = mapState,
+        onMapClickListener = onMapClick,
         scaleBar = { },
         style = {
             when (basemapStyle) {
@@ -340,6 +394,12 @@ private fun MapboxScene3DMap(
                 pitch(MapboxScene3DProjectDefaults.CAMERA_PITCH_DEGREES)
             }
         }
+        MapEffect(sceneMode) { _ ->
+            if (sceneMode != MapboxSceneMode.EDIT) return@MapEffect
+            mapViewportState.setCameraOptions {
+                pitch(MapboxScene3DEditingDefaults.CAMERA_PITCH_DEGREES)
+            }
+        }
         MapEffect(basemapStyle, buildingRenderMode) { mapView ->
             onMapViewReady(mapView)
             if (!mapView.mapboxMap.isStyleLoaded()) {
@@ -361,14 +421,22 @@ private fun MapboxScene3DMap(
                 )
             }
         }
-        MapEffect(basemapStyle, buildingRenderMode, uiState) { mapView ->
+        MapEffect(
+            basemapStyle,
+            buildingRenderMode,
+            sceneMode,
+            uiState,
+            editingCrosshairPoint
+        ) { mapView ->
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
             renderMapboxTopDownScene(
                 mapView = mapView,
                 uiState = uiState,
-                visible = buildingRenderMode == SceneBuildingRenderMode.DRAWN_TOP_DOWN
+                crosshairPoint = editingCrosshairPoint,
+                visible = sceneMode == MapboxSceneMode.EDIT ||
+                    buildingRenderMode == SceneBuildingRenderMode.DRAWN_TOP_DOWN
             )
         }
     }

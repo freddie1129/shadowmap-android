@@ -1,5 +1,6 @@
 package com.gooludou.shadowplanner.presentation.mapbox3D
 
+import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.map.MapboxShadowMapController
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.mapbox.maps.MapView
@@ -8,6 +9,7 @@ import com.mapbox.maps.MapView
 internal fun renderMapboxTopDownScene(
     mapView: MapView,
     uiState: ShadowMapUiState,
+    crosshairPoint: GeoPoint?,
     visible: Boolean
 ) {
     MapboxShadowMapController(mapView).render(
@@ -16,10 +18,10 @@ internal fun renderMapboxTopDownScene(
         drawnWalls = if (visible) uiState.drawnWalls else emptyList(),
         drawnTrees = if (visible) uiState.drawnTrees else emptyList(),
         selection = if (visible) uiState.selectedDrawing else null,
-        activeDrawMode = null,
-        inProgressVertices = emptyList(),
-        pendingDrawing = null,
-        crosshairPoint = null,
+        activeDrawMode = if (visible) uiState.activeDrawMode else null,
+        inProgressVertices = if (visible) uiState.inProgressVertices else emptyList(),
+        pendingDrawing = if (visible) uiState.pendingDrawing else null,
+        crosshairPoint = if (visible) crosshairPoint else null,
         shadows = if (visible) uiState.shadows else emptyList(),
         shadowAppearance = uiState.shadowAppearance
     )

@@ -39,7 +39,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -57,8 +56,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.ui.NavDisplay
 import com.gooludou.shadowplanner.domain.AutomaticBuildingMatcher
 import com.gooludou.shadowplanner.domain.DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
 import com.gooludou.shadowplanner.domain.DEFAULT_DRAWN_TREE_HEIGHT_METERS
@@ -72,7 +69,6 @@ import com.gooludou.shadowplanner.domain.SceneObjectSource
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.map.BuildingLoadArea
 import com.gooludou.shadowplanner.map.MapboxShadowMapController
-import com.gooludou.shadowplanner.navigation.AppDestination
 import com.gooludou.shadowplanner.navigation.AppNavigation
 import com.gooludou.shadowplanner.presentation.BuildingLoadState
 import com.gooludou.shadowplanner.presentation.DrawingActions
@@ -88,18 +84,15 @@ import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.gooludou.shadowplanner.presentation.drawview.ActiveDrawingControls
 import com.gooludou.shadowplanner.presentation.drawview.DrawingCrosshair
 import com.gooludou.shadowplanner.presentation.drawview.DrawingPropertiesSheet
-import com.gooludou.shadowplanner.presentation.drawview.Map2DView
 import com.gooludou.shadowplanner.presentation.drawview.ShadowColorSheet
 import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSheet
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DProjectDefaults
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DView
 import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DViewport
+import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxSceneMode
 import com.gooludou.shadowplanner.presentation.mapbox3D.currentScene3DViewport
 import com.gooludou.shadowplanner.presentation.projectview.SaveProjectDialog
-import com.gooludou.shadowplanner.presentation.scene3D.Scene3DView
 import com.gooludou.shadowplanner.project.ProjectViewport
-import com.gooludou.shadowplanner.scene.Scene3DAppearance
-import com.gooludou.shadowplanner.scene.SceneCameraView
 import com.gooludou.shadowplanner.scene.SceneViewport
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
@@ -120,11 +113,6 @@ import kotlin.math.max
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-
-private enum class Scene3DTarget {
-    FILAMENT,
-    MAPBOX
-}
 
 private val FALLBACK_MAPBOX_SCENE_VIEWPORT = MapboxScene3DViewport(
     center = GeoPoint(
@@ -342,41 +330,58 @@ private fun ShadowMapScreen(
             bearing(Config.FALLBACK_MAP_BEARING_DEGREES)
         }
     }
-    LaunchedEffect(pendingLocation) {
-        val latitude = pendingLocation?.latitude ?: return@LaunchedEffect
-        val longitude = pendingLocation.longitude ?: return@LaunchedEffect
-        mapViewportState.setCameraOptions {
-            center(Point.fromLngLat(longitude, latitude))
-            zoom(15.0)
-        }
-        onLocationApplied()
-    }
-
     var mapView by remember { mutableStateOf<MapView?>(null) }
     val controller = remember(mapView, mapControllerFactory) {
         mapView?.let(mapControllerFactory::create)
     }
+    var mapboxSceneMapView by remember { mutableStateOf<MapView?>(null) }
+    val mapboxSceneController = remember(mapboxSceneMapView, mapControllerFactory) {
+        mapboxSceneMapView?.let(mapControllerFactory::create)
+    }
     var satelliteSnapshot by remember { mutableStateOf<Bitmap?>(null) }
     var loadRequest by remember { mutableIntStateOf(0) }
     var buildingQueryLocation by remember { mutableStateOf<GeoPoint?>(null) }
-    val sceneBackStack = remember {
-        androidx.compose.runtime.mutableStateListOf<Any>(AppDestination.Scene.Mapbox3D)
-    }
-    val showFilament3d = sceneBackStack.lastOrNull() == AppDestination.Scene.Filament3D
-    val showMapbox3d = sceneBackStack.lastOrNull() == AppDestination.Scene.Mapbox3D
-    val show3d = showFilament3d || showMapbox3d
-    var showSatelliteIn3d by remember { mutableStateOf(true) }
-    // The same optional solar guide is available in both 3D renderers.
     var showDomeIn3d by remember { mutableStateOf(true) }
+    var mapboxSceneMode by remember { mutableStateOf(MapboxSceneMode.VIEW) }
     LaunchedEffect(uiState.projectLoadRevision) {
         if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
+        mapboxSceneMode = MapboxSceneMode.VIEW
         showDomeIn3d = MapboxScene3DProjectDefaults.SHOW_DOME
     }
-    var sceneCameraView by remember { mutableStateOf(SceneCameraView.ORBIT) }
-    var sceneViewport by remember { mutableStateOf<SceneViewport?>(null) }
     var mapboxSceneViewport by remember { mutableStateOf<MapboxScene3DViewport?>(null) }
-    LaunchedEffect(mapView, showMapbox3d) {
-        if (!showMapbox3d) return@LaunchedEffect
+    LaunchedEffect(pendingLocation) {
+        val latitude = pendingLocation?.latitude ?: return@LaunchedEffect
+        val longitude = pendingLocation.longitude ?: return@LaunchedEffect
+        val center = Point.fromLngLat(longitude, latitude)
+        mapViewportState.setCameraOptions {
+            center(center)
+            zoom(15.0)
+        }
+        mapboxSceneViewport = (mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT).copy(
+            center = GeoPoint(longitude, latitude),
+            zoom = 15.0
+        )
+        onLocationApplied()
+    }
+    LaunchedEffect(uiState.projectLoadRevision) {
+        if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
+        val projectViewport = uiState.viewport ?: return@LaunchedEffect
+        val center = Point.fromLngLat(
+            projectViewport.center.longitude,
+            projectViewport.center.latitude
+        )
+        mapViewportState.setCameraOptions {
+            center(center)
+            zoom(projectViewport.zoom)
+            bearing(projectViewport.bearing)
+        }
+        mapboxSceneViewport = (mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT).copy(
+            center = projectViewport.center,
+            zoom = projectViewport.zoom,
+            bearing = projectViewport.bearing
+        )
+    }
+    LaunchedEffect(mapView) {
         withFrameNanos { }
         mapboxSceneViewport = mapView?.currentScene3DViewport(
             fallback = FALLBACK_MAPBOX_SCENE_VIEWPORT
@@ -384,12 +389,11 @@ private fun ShadowMapScreen(
     }
     var buildingLoadArea by remember { mutableStateOf<BuildingLoadArea?>(null) }
     var crosshairPoint by remember { mutableStateOf<GeoPoint?>(null) }
-    var showDateTime by remember { mutableStateOf(true) }
     var autoLoadAfterZoom by remember { mutableStateOf(false) }
     var showClearConfirmation by remember { mutableStateOf(false) }
     var showDiscardDraftConfirmation by remember { mutableStateOf(false) }
+    var exitEditingAfterDiscard by remember { mutableStateOf(false) }
     var currentLocationPoint by remember { mutableStateOf<Point?>(null) }
-    var draft3dTarget by remember { mutableStateOf<Scene3DTarget?>(null) }
     var showSelectedLocationSheet by remember { mutableStateOf(false) }
     var showShadowColorSheet by remember { mutableStateOf(false) }
     var showSaveProjectDialog by remember { mutableStateOf(false) }
@@ -400,9 +404,9 @@ private fun ShadowMapScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    DisposableEffect(mapView, showMapbox3d) {
+    DisposableEffect(mapView, mapboxSceneMapView) {
         val currentMapView = mapView
-        if (currentMapView == null) {
+        if (currentMapView == null || mapboxSceneMapView != null) {
             buildingLoadArea = null
             onDispose { }
         } else {
@@ -423,7 +427,6 @@ private fun ShadowMapScreen(
                 crosshairPoint = GeoPoint(point.longitude(), point.latitude())
             }
             fun updateMapboxSceneViewport() {
-                if (!showMapbox3d) return
                 mapboxSceneViewport = currentMapView.currentScene3DViewport(
                     fallback = mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
                 ) ?: mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
@@ -437,6 +440,45 @@ private fun ShadowMapScreen(
             onDispose {
                 mapIdleSubscription.cancel()
                 cameraSubscription.cancel()
+            }
+        }
+    }
+
+    DisposableEffect(mapboxSceneMapView, mapboxSceneMode) {
+        val currentMapView = mapboxSceneMapView
+        if (currentMapView == null) {
+            onDispose { }
+        } else {
+            fun updateEditingCrosshair() {
+                if (mapboxSceneMode != MapboxSceneMode.EDIT) return
+                currentMapView.post {
+                    val camera = currentMapView.mapboxMap.cameraState
+                    crosshairPoint = GeoPoint(
+                        camera.center.longitude(),
+                        camera.center.latitude()
+                    )
+                }
+            }
+            fun updateSettledSceneViewport() {
+                currentMapView.post {
+                    currentMapView.toProjectViewport()?.let(onViewportChanged)
+                    if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+                        buildingLoadArea = currentMapView.toBuildingLoadArea()
+                    }
+                }
+            }
+            updateEditingCrosshair()
+            updateSettledSceneViewport()
+            val cameraSubscription = currentMapView.mapboxMap.subscribeCameraChanged {
+                updateEditingCrosshair()
+            }
+            val mapIdleSubscription = currentMapView.mapboxMap.subscribeMapIdle {
+                updateEditingCrosshair()
+                updateSettledSceneViewport()
+            }
+            onDispose {
+                cameraSubscription.cancel()
+                mapIdleSubscription.cancel()
             }
         }
     }
@@ -490,12 +532,17 @@ private fun ShadowMapScreen(
         }
     }
 
-    LaunchedEffect(loadRequest, controller) {
-        if (loadRequest == 0 || controller == null) return@LaunchedEffect
+    val buildingController = if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+        mapboxSceneController
+    } else {
+        controller
+    }
+    LaunchedEffect(loadRequest, buildingController) {
+        if (loadRequest == 0 || buildingController == null) return@LaunchedEffect
         val calculationLocation = buildingQueryLocation ?: return@LaunchedEffect
         withFrameNanos { }
         try {
-            val result = runCatching { controller.fetchBuildings() }
+            val result = runCatching { buildingController.fetchBuildings() }
             val failure = result.exceptionOrNull()
             if (failure is CancellationException) throw failure
             result.fold(
@@ -545,19 +592,12 @@ private fun ShadowMapScreen(
         }
     }
 
-    LaunchedEffect(mapView, showFilament3d, showSatelliteIn3d) {
-        mapView?.visibility =
-            if (showFilament3d &&
-                !showSatelliteIn3d
-            ) {
-                android.view.View.INVISIBLE
-            } else {
-                android.view.View.VISIBLE
-            }
-    }
-
     fun startBuildingLoad() {
-        val currentMapView = mapView ?: return
+        val currentMapView = if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+            mapboxSceneMapView
+        } else {
+            mapView
+        } ?: return
         val currentLoadArea = currentMapView.toBuildingLoadArea()
         buildingLoadArea = currentLoadArea
         if (currentLoadArea?.isWithinLimit != true) return
@@ -576,7 +616,11 @@ private fun ShadowMapScreen(
     }
 
     fun zoomToValidAreaAndLoad() {
-        val currentMapView = mapView ?: return
+        val currentMapView = if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+            mapboxSceneMapView
+        } else {
+            mapView
+        } ?: return
         val area = buildingLoadArea ?: return
         val largestDimension = max(area.widthMeters, area.heightMeters).toDouble()
         val zoomIncrease = if (largestDimension > MAX_AUTO_LOAD_METERS) {
@@ -584,9 +628,19 @@ private fun ShadowMapScreen(
         } else {
             0.0
         }
-        mapViewportState.setCameraOptions {
-            center(currentMapView.mapboxMap.cameraState.center)
-            zoom(currentMapView.mapboxMap.cameraState.zoom + zoomIncrease)
+        val camera = currentMapView.mapboxMap.cameraState
+        if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+            currentMapView.mapboxMap.setCamera(
+                com.mapbox.maps.CameraOptions.Builder()
+                    .center(camera.center)
+                    .zoom(camera.zoom + zoomIncrease)
+                    .build()
+            )
+        } else {
+            mapViewportState.setCameraOptions {
+                center(camera.center)
+                zoom(camera.zoom + zoomIncrease)
+            }
         }
         autoLoadAfterZoom = true
     }
@@ -616,39 +670,6 @@ private fun ShadowMapScreen(
         if (autoLoadAfterZoom && buildingLoadArea?.isWithinLimit == true) {
             autoLoadAfterZoom = false
             startBuildingLoad()
-        }
-    }
-
-    fun enter3d() {
-        sceneViewport = mapView?.toSceneViewport()
-        sceneCameraView = SceneCameraView.ORBIT
-        showDomeIn3d = false
-        if (!show3d) sceneBackStack.add(AppDestination.Scene.Filament3D)
-    }
-
-    fun enterMapbox3d() {
-        val currentMapView = mapView ?: return
-        val camera = currentMapView.mapboxMap.cameraState
-        val viewport = currentMapView.toSceneViewport() ?: return
-        mapboxSceneViewport = MapboxScene3DViewport(
-            center = GeoPoint(camera.center.longitude(), camera.center.latitude()),
-            zoom = camera.zoom,
-            bearing = camera.bearing,
-            widthMeters = viewport.widthMeters.toDouble(),
-            heightMeters = viewport.heightMeters.toDouble(),
-            widthPixels = currentMapView.width,
-            heightPixels = currentMapView.height
-        )
-        if (!show3d) sceneBackStack.add(AppDestination.Scene.Mapbox3D)
-    }
-
-    fun exit3d() {
-        showDomeIn3d = false
-        if (!show3d) return
-        if (sceneBackStack.size == 1) {
-            sceneBackStack[0] = AppDestination.Scene.Map2D
-        } else {
-            sceneBackStack.removeLastOrNull()
         }
     }
 
@@ -692,32 +713,51 @@ private fun ShadowMapScreen(
         else -> AutoToolState.READY
     }
     val mode = uiState.activeDrawMode
-    val latestUiState = rememberUpdatedState(uiState)
-    val latestAutoToolState = rememberUpdatedState(autoToolState)
-    val latestShowDateTime = rememberUpdatedState(showDateTime)
-    val latestMode = rememberUpdatedState(mode)
-    val latestPropertyType = rememberUpdatedState(propertyType)
-
     fun requestDrawingExit() {
         if (uiState.hasDraft) {
+            exitEditingAfterDiscard = false
             showDiscardDraftConfirmation = true
         } else {
             onStopDrawing()
         }
     }
 
+    fun finishEditing() {
+        when {
+            uiState.moveSession != null -> {
+                onFinishMoving()
+                mapboxSceneMode = MapboxSceneMode.VIEW
+            }
+
+            uiState.pendingDrawing != null ||
+                (uiState.activeDrawMode != null && uiState.hasDraft) -> {
+                exitEditingAfterDiscard = true
+                showDiscardDraftConfirmation = true
+            }
+
+            uiState.activeDrawMode != null -> {
+                onStopDrawing()
+                mapboxSceneMode = MapboxSceneMode.VIEW
+            }
+
+            uiState.selectedDrawing != null -> {
+                onSelectDrawing(null)
+                mapboxSceneMode = MapboxSceneMode.VIEW
+            }
+
+            else -> mapboxSceneMode = MapboxSceneMode.VIEW
+        }
+    }
+
     BackHandler(
-        enabled = !show3d &&
-            (
-                uiState.activeDrawMode != null || uiState.pendingDrawing != null ||
-                    selectedType != null
-                )
+        enabled = mapboxSceneMode == MapboxSceneMode.EDIT
     ) {
         when {
             uiState.moveSession != null -> onCancelMoving()
             pendingType != null -> onReturnPendingToDrawing()
             selectedType != null -> onSelectDrawing(null)
-            else -> requestDrawingExit()
+            uiState.activeDrawMode != null -> requestDrawingExit()
+            else -> finishEditing()
         }
     }
 
@@ -740,10 +780,74 @@ private fun ShadowMapScreen(
             MapEffect(Unit) { currentMapView -> mapView = currentMapView }
         }
 
+        mapboxSceneViewport?.let { viewport ->
+            MapboxScene3DView(
+                buildings = uiState.buildings,
+                walls = uiState.drawnWalls,
+                trees = uiState.drawnTrees,
+                uiState = uiState,
+                viewport = viewport,
+                solarPosition = uiState.solarPosition,
+                sunPath = uiState.sunPath,
+                showDome = showDomeIn3d,
+                selectedEpochMillis = uiState.selectedEpochMillis,
+                timeZoneId = uiState.displayTimeZoneId,
+                calculationLocation = uiState.calculationLocation,
+                onDateTimeChanged = onDateTimeChanged,
+                onNowSelected = onNowSelected,
+                onOpenSettings = onOpenSettings,
+                onOpenLocationSearch = onOpenLocationSearch,
+                onShowLocationInfo = { showSelectedLocationSheet = true },
+                onRecenterCurrentLocation = {
+                    currentLocationPoint?.let { point ->
+                        mapViewportState.setCameraOptions { center(point) }
+                        mapboxSceneMapView?.mapboxMap?.setCamera(
+                            com.mapbox.maps.CameraOptions.Builder().center(point).build()
+                        )
+                    }
+                },
+                canRecenterCurrentLocation = currentLocationPoint != null,
+                onOpenProjects = onOpenProjects,
+                onSaveProject = {
+                    projectNameDraft = uiState.activeProjectName.orEmpty()
+                    showSaveProjectDialog = true
+                },
+                onOpenShadowColor = { showShadowColorSheet = true },
+                sceneMode = mapboxSceneMode,
+                onSceneModeChanged = { mapboxSceneMode = it },
+                autoToolState = autoToolState,
+                onFinishEditing = ::finishEditing,
+                onDrawMode = { selectedMode -> onSelectDrawMode(selectedMode) },
+                onAutoLoad = ::requestAutoLoad,
+                onClear = { showClearConfirmation = true },
+                editingCrosshairPoint = crosshairPoint,
+                onSceneMapViewReady = { mapboxSceneMapView = it },
+                onSceneMapClick = { point ->
+                    if (mapboxSceneMode == MapboxSceneMode.EDIT &&
+                        uiState.activeDrawMode == null &&
+                        uiState.pendingDrawing == null
+                    ) {
+                        mapboxSceneController?.queryDrawing(point, onSelectDrawing)
+                    }
+                    false
+                },
+                onToggleDome = { showDomeIn3d = !showDomeIn3d }
+            )
+        }
+
+        satelliteSnapshot?.let { snapshot ->
+            Image(
+                bitmap = snapshot.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+        }
+
         uiState.moveSession?.let {
             MoveModeOverlay(
                 onDrag = { start, current ->
-                    val map = mapView ?: return@MoveModeOverlay
+                    val map = mapboxSceneMapView ?: return@MoveModeOverlay
                     val startPoint = map.mapboxMap.coordinateForPixel(
                         ScreenCoordinate(start.x.toDouble(), start.y.toDouble())
                     )
@@ -760,149 +864,12 @@ private fun ShadowMapScreen(
             )
         }
 
-        if (!show3d && uiState.activeDrawMode != null && uiState.pendingDrawing == null) {
+        if (mapboxSceneMode == MapboxSceneMode.EDIT &&
+            uiState.activeDrawMode != null &&
+            uiState.pendingDrawing == null
+        ) {
             DrawingCrosshair(modifier = Modifier.align(Alignment.Center))
         }
-
-        if (showFilament3d && !showSatelliteIn3d) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(Scene3DAppearance.HIDDEN_MAP_BACKDROP_ARGB))
-            )
-        }
-
-        satelliteSnapshot?.let { snapshot ->
-            Image(
-                bitmap = snapshot.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
-            )
-        }
-
-        NavDisplay(
-            modifier = Modifier.fillMaxSize(),
-            backStack = sceneBackStack,
-            onBack = ::exit3d,
-            entryProvider = { key ->
-                when (key) {
-                    AppDestination.Scene.Map2D -> NavEntry(key) {
-                        val currentUiState by latestUiState
-                        val currentAutoToolState by latestAutoToolState
-                        val currentShowDateTime by latestShowDateTime
-                        val currentMode by latestMode
-                        val currentPropertyType by latestPropertyType
-                        if (currentMode == null && currentPropertyType == null) {
-                            Map2DView(
-                                uiState = currentUiState,
-                                autoToolState = currentAutoToolState,
-                                isTimeVisible = currentShowDateTime,
-                                onDateTimeChanged = onDateTimeChanged,
-                                onNowSelected = onNowSelected,
-                                onToggleTime = { showDateTime = !showDateTime },
-                                onOpenShadowColor = { showShadowColorSheet = true },
-                                onDrawMode = { selectedMode -> onSelectDrawMode(selectedMode) },
-                                onAutoLoad = ::requestAutoLoad,
-                                onClear = { showClearConfirmation = true },
-                                onOpenSettings = onOpenSettings,
-                                onOpenMapbox3D = {
-                                    if (currentUiState.hasDraft) {
-                                        draft3dTarget = Scene3DTarget.MAPBOX
-                                    } else {
-                                        enterMapbox3d()
-                                    }
-                                },
-                                onRecenterCurrentLocation = {
-                                    currentLocationPoint?.let { point ->
-                                        mapViewportState.setCameraOptions {
-                                            center(point)
-                                        }
-                                    }
-                                },
-                                canRecenterCurrentLocation = currentLocationPoint != null,
-                                onOpenProjects = onOpenProjects,
-                                onSaveProject = {
-                                    projectNameDraft = currentUiState.activeProjectName.orEmpty()
-                                    showSaveProjectDialog = true
-                                },
-                                onOpenLocationSearch = onOpenLocationSearch,
-                                onShowLocationInfo = { showSelectedLocationSheet = true }
-                            )
-                        }
-                    }
-
-                    AppDestination.Scene.Filament3D -> NavEntry(key) {
-                        val currentUiState by latestUiState
-                        Scene3DView(
-                            buildings = currentUiState.buildings,
-                            walls = currentUiState.drawnWalls,
-                            trees = currentUiState.drawnTrees,
-                            viewport = sceneViewport,
-                            azimuth = currentUiState.solarPosition?.azimuthDegrees?.toFloat()
-                                ?: Scene3DAppearance.DEFAULT_SUN_AZIMUTH_DEGREES,
-                            zenith = currentUiState.solarPosition?.zenithDegrees?.toFloat()
-                                ?: Scene3DAppearance.DEFAULT_SUN_ZENITH_DEGREES,
-                            sunVisible = currentUiState.solarPosition?.isAboveHorizon == true,
-                            sunPath = currentUiState.sunPath,
-                            cameraView = sceneCameraView,
-                            showSatellite = showSatelliteIn3d,
-                            showSky = showDomeIn3d,
-                            onCameraViewChanged = { sceneCameraView = it },
-                            onToggleSatellite = { showSatelliteIn3d = !showSatelliteIn3d },
-                            onToggleSky = { showDomeIn3d = !showDomeIn3d },
-                            onBackToMap = ::exit3d,
-                            selectedEpochMillis = currentUiState.selectedEpochMillis,
-                            timeZoneId = currentUiState.displayTimeZoneId,
-                            onDateTimeChanged = onDateTimeChanged,
-                            onNowSelected = onNowSelected
-                        )
-                    }
-
-                    AppDestination.Scene.Mapbox3D -> NavEntry(key) {
-                        val currentUiState by latestUiState
-                        mapboxSceneViewport?.let { viewport ->
-                            MapboxScene3DView(
-                                buildings = currentUiState.buildings,
-                                walls = currentUiState.drawnWalls,
-                                trees = currentUiState.drawnTrees,
-                                uiState = currentUiState,
-                                viewport = viewport,
-                                solarPosition = currentUiState.solarPosition,
-                                sunPath = currentUiState.sunPath,
-                                showDome = showDomeIn3d,
-                                selectedEpochMillis = currentUiState.selectedEpochMillis,
-                                timeZoneId = currentUiState.displayTimeZoneId,
-                                calculationLocation = currentUiState.calculationLocation,
-                                onDateTimeChanged = onDateTimeChanged,
-                                onNowSelected = onNowSelected,
-                                onOpenSettings = onOpenSettings,
-                                onOpenLocationSearch = onOpenLocationSearch,
-                                onShowLocationInfo = { showSelectedLocationSheet = true },
-                                onRecenterCurrentLocation = {
-                                    currentLocationPoint?.let { point ->
-                                        mapViewportState.setCameraOptions {
-                                            center(point)
-                                        }
-                                    }
-                                },
-                                canRecenterCurrentLocation = currentLocationPoint != null,
-                                onOpenProjects = onOpenProjects,
-                                onSaveProject = {
-                                    projectNameDraft = currentUiState.activeProjectName.orEmpty()
-                                    showSaveProjectDialog = true
-                                },
-                                onOpenShadowColor = { showShadowColorSheet = true },
-                                onToggleDome = { showDomeIn3d = !showDomeIn3d },
-                                onBackToMap = ::exit3d
-                            )
-                        }
-                    }
-
-                    else -> error("Unknown scene destination: $key")
-                }
-            }
-        )
 
         Box(
             modifier = Modifier
@@ -914,16 +881,12 @@ private fun ShadowMapScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(
-                        bottom = if (show3d || showDateTime) {
-                            THREE_D_BOTTOM_CONTROL_CLEARANCE
-                        } else {
-                            64.dp
-                        }
+                        bottom = THREE_D_BOTTOM_CONTROL_CLEARANCE
                     )
             )
         }
 
-        if (!show3d && mode != null && pendingType == null) {
+        if (mapboxSceneMode == MapboxSceneMode.EDIT && mode != null && pendingType == null) {
             ActiveDrawingControls(
                 mode = mode,
                 vertexCount = uiState.inProgressVertices.size,
@@ -935,7 +898,7 @@ private fun ShadowMapScreen(
                         val last = uiState.inProgressVertices.lastOrNull()
                         val threshold = with(density) { MIN_POINT_SPACING_DP.dp.toPx() }
                         if (last == null ||
-                            mapView?.isFarEnoughFrom(last, point, threshold) != false
+                            mapboxSceneMapView?.isFarEnoughFrom(last, point, threshold) != false
                         ) {
                             onAddVertex(point)
                         } else {
@@ -954,7 +917,7 @@ private fun ShadowMapScreen(
             )
         }
 
-        if (!show3d && showPropertiesSheet) {
+        if (mapboxSceneMode == MapboxSceneMode.EDIT && showPropertiesSheet) {
             DrawingPropertiesSheet(
                 type = propertyType,
                 initialHeightMeters = propertyInitialHeight,
@@ -1034,40 +997,28 @@ private fun ShadowMapScreen(
 
     if (showDiscardDraftConfirmation) {
         AlertDialog(
-            onDismissRequest = { showDiscardDraftConfirmation = false },
+            onDismissRequest = {
+                showDiscardDraftConfirmation = false
+                exitEditingAfterDiscard = false
+            },
             title = { Text(stringResource(R.string.discard_drawing_question)) },
             text = { Text(stringResource(R.string.unfinished_points_removed)) },
             confirmButton = {
                 Button(onClick = {
                     onStopDrawing()
                     showDiscardDraftConfirmation = false
+                    if (exitEditingAfterDiscard) {
+                        exitEditingAfterDiscard = false
+                        mapboxSceneMode = MapboxSceneMode.VIEW
+                    }
                 }) { Text(stringResource(R.string.discard)) }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showDiscardDraftConfirmation = false }) {
+                OutlinedButton(onClick = {
+                    showDiscardDraftConfirmation = false
+                    exitEditingAfterDiscard = false
+                }) {
                     Text(stringResource(R.string.keep_drawing))
-                }
-            }
-        )
-    }
-
-    draft3dTarget?.let { target ->
-        AlertDialog(
-            onDismissRequest = { draft3dTarget = null },
-            title = { Text(stringResource(R.string.view_committed_objects_3d_question)) },
-            text = { Text(stringResource(R.string.unfinished_drawing_kept)) },
-            confirmButton = {
-                Button(onClick = {
-                    draft3dTarget = null
-                    when (target) {
-                        Scene3DTarget.FILAMENT -> enter3d()
-                        Scene3DTarget.MAPBOX -> enterMapbox3d()
-                    }
-                }) { Text(stringResource(R.string.view_3d)) }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { draft3dTarget = null }) {
-                    Text(stringResource(R.string.continue_drawing))
                 }
             }
         )

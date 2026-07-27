@@ -13,6 +13,7 @@
     <string name="updated">Updated %1$s</string>
     <string name="finish">Finish</string>
     <string name="done">Done</string>
+    <string name="edit">Edit</string>
     <string name="move_object">Move</string>
     <string name="move_object_hint">Drag object to align it</string>
     <string name="building">Building</string>
@@ -33,10 +34,6 @@
     <string name="unfinished_points_removed">Your unfinished points will be removed.</string>
     <string name="discard">Discard</string>
     <string name="keep_drawing">Keep drawing</string>
-    <string name="view_committed_objects_3d_question">View committed objects in 3D?</string>
-    <string name="unfinished_drawing_kept">The unfinished drawing will be kept and restored in Map View.</string>
-    <string name="view_3d">View 3D</string>
-    <string name="continue_drawing">Continue drawing</string>
     <string name="save_project">Save project</string>
     <string name="project_name">Project name</string>
     <string name="projects">Projects</string>

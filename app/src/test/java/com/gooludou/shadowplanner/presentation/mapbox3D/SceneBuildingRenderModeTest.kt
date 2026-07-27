@@ -108,4 +108,22 @@ class SceneBuildingRenderModeTest {
         )
         assertFalse(MapboxScene3DProjectDefaults.SHOW_DOME)
     }
+
+    @Test
+    fun `editing and post-edit view use centralized top-down drawing defaults`() {
+        assertEquals(
+            Scene3DCamera.TOP_DOWN_PITCH_DEGREES,
+            MapboxScene3DEditingDefaults.CAMERA_PITCH_DEGREES,
+            0.0
+        )
+        assertEquals(
+            SceneBuildingSelection.DRAWN,
+            MapboxScene3DEditingDefaults.BUILDING_SELECTION
+        )
+        assertEquals(
+            MapboxBasemapStyle.SATELLITE,
+            MapboxScene3DEditingDefaults.BASEMAP_STYLE
+        )
+        assertFalse(MapboxScene3DEditingDefaults.SHOW_DOME)
+    }
 }

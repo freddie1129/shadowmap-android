@@ -5,6 +5,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.SolarPosition
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
+import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
 @Preview(name = "Mapbox 3D view - light", showBackground = true)
@@ -62,8 +63,17 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
             onOpenProjects = {},
             onSaveProject = {},
             onOpenShadowColor = {},
+            sceneMode = MapboxSceneMode.VIEW,
+            onSceneModeChanged = {},
+            autoToolState = AutoToolState.READY,
+            onFinishEditing = {},
+            onDrawMode = {},
+            onAutoLoad = {},
+            onClear = {},
+            editingCrosshairPoint = null,
+            onSceneMapViewReady = {},
+            onSceneMapClick = { false },
             onToggleDome = {},
-            onBackToMap = {}
         )
     }
 }

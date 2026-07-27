@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,9 +15,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.SatelliteAlt
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.DropdownMenu
@@ -46,10 +45,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
+import com.gooludou.shadowplanner.domain.DrawMode
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.ShadowAppearance
+import com.gooludou.shadowplanner.presentation.ShadowMapUiState
+import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
 import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
+import com.gooludou.shadowplanner.presentation.components.MapToolBar
 import com.gooludou.shadowplanner.presentation.components.PitchSlider
 import com.gooludou.shadowplanner.presentation.components.ShadowColorButton
 import com.gooludou.shadowplanner.ui.theme.Map3DActionBlue
@@ -75,46 +78,134 @@ internal fun MapboxScene3DControls(
     showShadowColorControl: Boolean,
     onOpenShadowColor: () -> Unit,
     onToggleDome: () -> Unit,
-    onBackToMap: () -> Unit
+    sceneMode: MapboxSceneMode,
+    uiState: ShadowMapUiState,
+    autoToolState: AutoToolState,
+    onStartEditing: () -> Unit,
+    onFinishEditing: () -> Unit,
+    onDrawMode: (DrawMode) -> Unit,
+    onAutoLoad: () -> Unit,
+    onClear: () -> Unit
 ) {
     val currentPitch = mapViewportState.cameraState?.pitch ?: Scene3DCamera.ORBIT_PITCH_DEGREES
     val isTopDown = currentPitch <= Scene3DCamera.TOP_DOWN_THRESHOLD_DEGREES
     var isDateTimeVisible by rememberSaveable { mutableStateOf(true) }
+    val showEditingToolbar = sceneMode == MapboxSceneMode.EDIT &&
+        uiState.canShowMapboxEditingToolbar()
     Box(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
-        MapboxScene3DBottomControls(
-            mapViewportState = mapViewportState,
-            currentPitch = currentPitch,
-            isTopDown = isTopDown,
-            basemapStyle = basemapStyle,
-            onBasemapStyleSelected = onBasemapStyleSelected,
-            showDome = showDome,
-            buildingSelection = buildingSelection,
-            onBuildingSelectionChanged = onBuildingSelectionChanged,
-            shadowAppearance = shadowAppearance,
-            showShadowColorControl = showShadowColorControl,
-            onOpenShadowColor = onOpenShadowColor,
-            onToggleDome = onToggleDome,
-            selectedEpochMillis = selectedEpochMillis,
-            timeZoneId = timeZoneId,
-            location = location,
-            onDateTimeChanged = onDateTimeChanged,
-            onNowSelected = onNowSelected,
-            isDateTimeVisible = isDateTimeVisible,
-            onToggleDateTime = { isDateTimeVisible = !isDateTimeVisible },
-            onBackToMap = onBackToMap
-        )
+        if (sceneMode == MapboxSceneMode.VIEW) {
+            PitchSlider(
+                pitch = currentPitch.toFloat(),
+                onPitchChange = { pitch ->
+                    mapViewportState.setCameraOptions {
+                        pitch(pitch.toDouble())
+                    }
+                },
+                modifier = Modifier.align(Alignment.CenterEnd)
+            )
+        }
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(
+                ShadowMapDesign.dimensions.spacingSmall
+            )
+        ) {
+            if (sceneMode == MapboxSceneMode.VIEW) {
+                MapboxScene3DBottomControls(
+                    mapViewportState = mapViewportState,
+                    isTopDown = isTopDown,
+                    basemapStyle = basemapStyle,
+                    onBasemapStyleSelected = onBasemapStyleSelected,
+                    showDome = showDome,
+                    buildingSelection = buildingSelection,
+                    onBuildingSelectionChanged = onBuildingSelectionChanged,
+                    shadowAppearance = shadowAppearance,
+                    showShadowColorControl = showShadowColorControl,
+                    onOpenShadowColor = onOpenShadowColor,
+                    onToggleDome = onToggleDome,
+                    isDateTimeVisible = isDateTimeVisible,
+                    onToggleDateTime = { isDateTimeVisible = !isDateTimeVisible },
+                    onStartEditing = onStartEditing
+                )
+            } else if (showEditingToolbar) {
+                MapboxScene3DEditingControls(
+                    uiState = uiState,
+                    autoToolState = autoToolState,
+                    isDateTimeVisible = isDateTimeVisible,
+                    onToggleDateTime = { isDateTimeVisible = !isDateTimeVisible },
+                    onOpenShadowColor = onOpenShadowColor,
+                    onDrawMode = onDrawMode,
+                    onAutoLoad = onAutoLoad,
+                    onClear = onClear,
+                    onFinishEditing = onFinishEditing,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = ShadowMapDesign.dimensions.screenPadding)
+                )
+            }
+            AnimatedVisibility(
+                visible = isDateTimeVisible &&
+                    (sceneMode == MapboxSceneMode.VIEW || showEditingToolbar)
+            ) {
+                DateTimeSpinner(
+                    selectedEpochMillis = selectedEpochMillis,
+                    timeZoneId = timeZoneId,
+                    location = location,
+                    onDateTimeChanged = onDateTimeChanged,
+                    onNowSelected = onNowSelected
+                )
+            }
+        }
     }
+}
+
+private fun ShadowMapUiState.canShowMapboxEditingToolbar(): Boolean = when {
+    activeDrawMode != null -> false
+    pendingDrawing != null -> false
+    selectedDrawing != null -> false
+    moveSession != null -> false
+    else -> true
+}
+
+@Composable
+private fun MapboxScene3DEditingControls(
+    uiState: ShadowMapUiState,
+    autoToolState: AutoToolState,
+    isDateTimeVisible: Boolean,
+    onToggleDateTime: () -> Unit,
+    onOpenShadowColor: () -> Unit,
+    onDrawMode: (DrawMode) -> Unit,
+    onAutoLoad: () -> Unit,
+    onClear: () -> Unit,
+    onFinishEditing: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    MapToolBar(
+        autoState = autoToolState,
+        hasSceneObjects = uiState.hasSceneObjects,
+        isTimeVisible = isDateTimeVisible,
+        shadowAppearance = uiState.shadowAppearance,
+        onDrawMode = onDrawMode,
+        onAutoLoad = onAutoLoad,
+        onClear = onClear,
+        onToggleTime = onToggleDateTime,
+        onOpenShadowColor = onOpenShadowColor,
+        onOpenMapbox3D = onFinishEditing,
+        modifier = modifier
+    )
 }
 
 @Composable
 @Suppress("LongMethod")
-private fun BoxScope.MapboxScene3DBottomControls(
+private fun MapboxScene3DBottomControls(
     mapViewportState: MapViewportState,
-    currentPitch: Double,
     isTopDown: Boolean,
     basemapStyle: MapboxBasemapStyle,
     onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit,
@@ -125,54 +216,25 @@ private fun BoxScope.MapboxScene3DBottomControls(
     showShadowColorControl: Boolean,
     onOpenShadowColor: () -> Unit,
     onToggleDome: () -> Unit,
-    selectedEpochMillis: Long,
-    timeZoneId: String,
-    location: GeoPoint,
-    onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit,
     isDateTimeVisible: Boolean,
     onToggleDateTime: () -> Unit,
-    onBackToMap: () -> Unit
+    onStartEditing: () -> Unit
 ) {
-    PitchSlider(
-        pitch = currentPitch.toFloat(),
-        onPitchChange = { pitch ->
-            mapViewportState.setCameraOptions {
-                pitch(pitch.toDouble())
-            }
-        },
-        modifier = Modifier.align(Alignment.CenterEnd)
-    )
     Column(
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)
     ) {
-        AnimatedVisibility(visible = showShadowColorControl) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
-                horizontalArrangement = Arrangement.Start
-            ) {
+        Row(
+            modifier = Modifier.padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
+            horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AnimatedVisibility(visible = showShadowColorControl) {
                 ShadowColorButton(
                     appearance = shadowAppearance,
                     onClick = onOpenShadowColor
                 )
-            }
-        }
-        Row(
-            modifier = Modifier.padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
-            horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)
-        ) {
-            MapboxScene3DToggleButton(
-                isSelected = false,
-                contentDescription = stringResource(R.string.back_to_map),
-                onClick = onBackToMap
-            ) {
-                Icon(Icons.Outlined.Map, contentDescription = null)
             }
             if (buildingSelection.allowsBasemapSelection) {
                 MapboxScene3DBasemapSelectionButton(
@@ -236,7 +298,11 @@ private fun BoxScope.MapboxScene3DBottomControls(
             ) {
                 Icon(
                     painter = painterResource(
-                        if (isTopDown) R.drawable.two_d_2_24dp else R.drawable.three_d_2_24dp
+                        if (isTopDown) {
+                            R.drawable.two_d_2_24dp
+                        } else {
+                            R.drawable.three_d_2_24dp
+                        }
                     ),
                     contentDescription = null
                 )
@@ -259,16 +325,23 @@ private fun BoxScope.MapboxScene3DBottomControls(
                     )
                 }
             }
-        }
-        AnimatedVisibility(visible = isDateTimeVisible) {
-            DateTimeSpinner(
-                selectedEpochMillis = selectedEpochMillis,
-                timeZoneId = timeZoneId,
-                location = location,
-                onDateTimeChanged = onDateTimeChanged,
-                onNowSelected = onNowSelected
+            MapboxScene3DModeButton(
+                onStartEditing = onStartEditing
             )
         }
+    }
+}
+
+@Composable
+private fun MapboxScene3DModeButton(
+    onStartEditing: () -> Unit
+) {
+    MapboxScene3DToggleButton(
+        isSelected = true,
+        contentDescription = stringResource(R.string.edit),
+        onClick = onStartEditing,
+    ) {
+        Icon(Icons.Outlined.Edit, contentDescription = null)
     }
 }
 
@@ -412,17 +485,44 @@ private fun MapboxScene3DTooltip(tooltip: String, content: @Composable () -> Uni
 @Preview(name = "Mapbox 3D controls - light", showBackground = true)
 @Composable
 private fun MapboxScene3DControlsLightPreview() {
-    MapboxScene3DControlsPreviewContent(darkTheme = false)
+    MapboxScene3DControlsPreviewContent(
+        darkTheme = false,
+        sceneMode = MapboxSceneMode.VIEW
+    )
 }
 
 @Preview(name = "Mapbox 3D controls - dark", showBackground = true)
 @Composable
 private fun MapboxScene3DControlsDarkPreview() {
-    MapboxScene3DControlsPreviewContent(darkTheme = true)
+    MapboxScene3DControlsPreviewContent(
+        darkTheme = true,
+        sceneMode = MapboxSceneMode.VIEW
+    )
+}
+
+@Preview(name = "Mapbox editing controls - light", showBackground = true)
+@Composable
+private fun MapboxScene3DEditingControlsLightPreview() {
+    MapboxScene3DControlsPreviewContent(
+        darkTheme = false,
+        sceneMode = MapboxSceneMode.EDIT
+    )
+}
+
+@Preview(name = "Mapbox editing controls - dark", showBackground = true)
+@Composable
+private fun MapboxScene3DEditingControlsDarkPreview() {
+    MapboxScene3DControlsPreviewContent(
+        darkTheme = true,
+        sceneMode = MapboxSceneMode.EDIT
+    )
 }
 
 @Composable
-private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean) {
+private fun MapboxScene3DControlsPreviewContent(
+    darkTheme: Boolean,
+    sceneMode: MapboxSceneMode
+) {
     ShadowMapTheme(darkTheme = darkTheme, dynamicColor = false) {
         androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.background) {
             val mapViewportState = rememberMapViewportState()
@@ -442,7 +542,18 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean) {
                 showShadowColorControl = true,
                 onOpenShadowColor = {},
                 onToggleDome = {},
-                onBackToMap = {}
+                sceneMode = sceneMode,
+                uiState = ShadowMapUiState(
+                    selectedEpochMillis = 1_752_640_000_000L,
+                    displayTimeZoneId = "Australia/Brisbane",
+                    calculationLocation = GeoPoint(153.0251, -27.4698)
+                ),
+                autoToolState = AutoToolState.READY,
+                onStartEditing = {},
+                onFinishEditing = {},
+                onDrawMode = {},
+                onAutoLoad = {},
+                onClear = {}
             )
         }
     }

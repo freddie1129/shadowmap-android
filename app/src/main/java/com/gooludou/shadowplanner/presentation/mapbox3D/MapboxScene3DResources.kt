@@ -95,6 +95,12 @@ internal enum class SceneBuildingSelection(
     }
 }
 
+/** Interaction mode for the single Mapbox scene workspace. */
+internal enum class MapboxSceneMode {
+    VIEW,
+    EDIT
+}
+
 /** Mapbox 3D presentation state restored after a project is successfully loaded. */
 internal object MapboxScene3DProjectDefaults {
     /** Projects open with the camera looking straight down. */
@@ -107,6 +113,21 @@ internal object MapboxScene3DProjectDefaults {
     val BASEMAP_STYLE = MapboxBasemapStyle.SATELLITE
 
     /** The optional sky dome stays hidden until explicitly enabled. */
+    const val SHOW_DOME = false
+}
+
+/** Mapbox scene settings used while editing and retained after editing finishes. */
+internal object MapboxScene3DEditingDefaults {
+    /** Editing and its resulting view always use a top-down camera. */
+    const val CAMERA_PITCH_DEGREES = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+
+    /** User-drawn buildings remain selected after editing. */
+    val BUILDING_SELECTION = SceneBuildingSelection.DRAWN
+
+    /** Satellite imagery remains selected after editing. */
+    val BASEMAP_STYLE = MapboxBasemapStyle.SATELLITE
+
+    /** The sky dome remains disabled after editing. */
     const val SHOW_DOME = false
 }
 
