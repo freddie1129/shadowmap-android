@@ -108,6 +108,16 @@ def compass_png():
         ),
         fill=(214, 220, 224, 58),
     )
+    # Keep the map visible beneath the dome and tint only the compass area outside it.
+    draw.ellipse(
+        (
+            center - ring_radius,
+            center - ring_radius,
+            center + ring_radius,
+            center + ring_radius,
+        ),
+        fill=(0, 0, 0, 0),
+    )
 
     for azimuth in range(0, 360, 5):
         cardinal = azimuth in (0, 90, 180, 270)
