@@ -325,7 +325,6 @@ private fun DaylightSummary(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = ShadowMapDesign.dimensions.minimumTouchTarget)
             .then(
                 if (onCollapse != null) {
                     Modifier
@@ -422,6 +421,7 @@ fun DateTimeSpinnerCollapsed(
             ) {
                 Text(
                     text = summary,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                     style = MaterialTheme.typography.labelLarge
                 )
                 Icon(
