@@ -47,8 +47,6 @@
     <string name="mapbox_3d_view">Mapbox 3D view</string>
     <string name="standard_map_style">Standard</string>
     <string name="satellite_map_style">Satellite</string>
-    <string name="switch_to_standard_map">Switch to standard map</string>
-    <string name="switch_to_satellite_map">Switch to satellite map</string>
     <string name="basemap">Basemap</string>
     <string name="map_display">Map display</string>
     <string name="camera_view">Camera view</string>

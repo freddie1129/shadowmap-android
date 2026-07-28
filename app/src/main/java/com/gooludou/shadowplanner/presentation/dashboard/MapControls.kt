@@ -64,17 +64,6 @@ internal fun MapControls(
             onShowLocationInfo = actions.navigation.onShowLocationInfo,
             onRecenterCurrentLocation = actions.navigation.onRecenterCurrentLocation,
             canRecenterCurrentLocation = state.canRecenterCurrentLocation,
-            isSatelliteMap = state.displayMode.basemapStyle == MapboxBasemapStyle.SATELLITE,
-            onToggleMapStyle = {
-                actions.display.onDisplayModeChanged(
-                    state.displayMode.copy(
-                        basemapStyle = when (state.displayMode.basemapStyle) {
-                            MapboxBasemapStyle.STANDARD -> MapboxBasemapStyle.SATELLITE
-                            MapboxBasemapStyle.SATELLITE -> MapboxBasemapStyle.STANDARD
-                        }
-                    )
-                )
-            },
             onOpenProjects = actions.navigation.onOpenProjects,
             onSaveProject = actions.navigation.onSaveProject,
             modifier = Modifier.align(Alignment.TopCenter)

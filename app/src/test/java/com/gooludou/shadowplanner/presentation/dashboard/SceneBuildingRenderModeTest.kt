@@ -133,4 +133,18 @@ class SceneBuildingRenderModeTest {
         assertEquals(MapCameraMode.THREE_DIMENSIONAL, displayMode.cameraMode)
         assertEquals(true, displayMode.isDomeVisible)
     }
+
+    @Test
+    fun `editing forces satellite basemap`() {
+        val displayMode = MapDisplayDefaults.APP_LAUNCH.forSceneMode(MapboxSceneMode.EDIT)
+
+        assertEquals(MapboxBasemapStyle.SATELLITE, displayMode.basemapStyle)
+    }
+
+    @Test
+    fun `view mode preserves selected basemap`() {
+        val displayMode = MapDisplayDefaults.APP_LAUNCH.forSceneMode(MapboxSceneMode.VIEW)
+
+        assertEquals(MapboxBasemapStyle.STANDARD, displayMode.basemapStyle)
+    }
 }

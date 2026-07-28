@@ -86,6 +86,7 @@ internal fun ShadowPlannerSceneView(
     var displayMode by remember {
         mutableStateOf(initialDisplayMode)
     }
+    val activeDisplayMode = displayMode.forSceneMode(state.sceneMode)
     var hasEnteredEditing by remember { mutableStateOf(false) }
     var sceneMapView by remember { mutableStateOf<MapView?>(null) }
     var isSkyViewportReady by remember { mutableStateOf(false) }
@@ -144,8 +145,8 @@ internal fun ShadowPlannerSceneView(
             )
         skyState.updateViewport(currentViewport)
     }
-    LaunchedEffect(sceneMapView, displayMode.isDomeVisible, viewport) {
-        if (!displayMode.isDomeVisible || sceneMapView == null) {
+    LaunchedEffect(sceneMapView, activeDisplayMode.isDomeVisible, viewport) {
+        if (!activeDisplayMode.isDomeVisible || sceneMapView == null) {
             isSkyViewportReady = false
             return@LaunchedEffect
         }
@@ -162,9 +163,9 @@ internal fun ShadowPlannerSceneView(
     val trunkColor = Color(0xFF75543A)
     val canopyColor = Color(0xFF3F7D48)
     val buildingRenderMode = sceneBuildingRenderMode(
-        buildingSelection = displayMode.content,
-        basemapStyle = displayMode.basemapStyle,
-        cameraPitchDegrees = displayMode.cameraPitchDegrees
+        buildingSelection = activeDisplayMode.content,
+        basemapStyle = activeDisplayMode.basemapStyle,
+        cameraPitchDegrees = activeDisplayMode.cameraPitchDegrees
     )
     Box(modifier = modifier.fillMaxSize()) {
         MapboxScene3DMap(
@@ -178,7 +179,7 @@ internal fun ShadowPlannerSceneView(
             trunkColor = trunkColor,
             canopyColor = canopyColor,
             solarPosition = solarPosition,
-            basemapStyle = displayMode.basemapStyle,
+            basemapStyle = activeDisplayMode.basemapStyle,
             buildingRenderMode = buildingRenderMode,
             sceneMode = state.sceneMode,
             uiState = uiState,
@@ -189,7 +190,7 @@ internal fun ShadowPlannerSceneView(
             },
             onMapClick = actions.onSceneMapClick
         ) {
-            if (displayMode.isDomeVisible && isSkyViewportReady) {
+            if (activeDisplayMode.isDomeVisible && isSkyViewportReady) {
                 SceneSkyModelLayers(skyState)
             }
         }
@@ -209,7 +210,7 @@ internal fun ShadowPlannerSceneView(
             state = MapControlsState(
                 dateTimeLocation = uiState.calculationLocation ?: viewport.center,
                 canRecenterCurrentLocation = state.canRecenterCurrentLocation,
-                displayMode = displayMode,
+                displayMode = activeDisplayMode,
                 sceneMode = state.sceneMode,
                 autoToolState = state.autoToolState
             ),
@@ -217,15 +218,18 @@ internal fun ShadowPlannerSceneView(
                 navigation = actions.navigation,
                 display = MapDisplayActions(
                     onDisplayModeChanged = { updatedMode ->
-                        if (!displayMode.isDomeVisible && updatedMode.isDomeVisible) {
+                        val constrainedMode = updatedMode.forSceneMode(state.sceneMode)
+                        if (!activeDisplayMode.isDomeVisible && constrainedMode.isDomeVisible) {
                             refreshSkyViewport()
                         }
-                        if (displayMode.cameraPitchDegrees != updatedMode.cameraPitchDegrees) {
+                        if (activeDisplayMode.cameraPitchDegrees !=
+                            constrainedMode.cameraPitchDegrees
+                        ) {
                             mapViewportState.setCameraOptions {
-                                pitch(updatedMode.cameraPitchDegrees)
+                                pitch(constrainedMode.cameraPitchDegrees)
                             }
                         }
-                        displayMode = updatedMode
+                        displayMode = constrainedMode
                     },
                     onOpenShadowColor = actions.onOpenShadowColor,
                     onStartEditing = {

@@ -134,6 +134,14 @@ internal object MapDisplayDefaults {
 internal fun initialMapDisplayMode(projectLoadRevision: Long): MapDisplayMode =
     if (projectLoadRevision > 0L) MapDisplayDefaults.PROJECT else MapDisplayDefaults.APP_LAUNCH
 
+/** Keeps editing on satellite imagery while leaving view-mode basemap selection unrestricted. */
+internal fun MapDisplayMode.forSceneMode(sceneMode: MapboxSceneMode): MapDisplayMode =
+    if (sceneMode == MapboxSceneMode.EDIT && basemapStyle != MapboxBasemapStyle.SATELLITE) {
+        copy(basemapStyle = MapboxBasemapStyle.SATELLITE)
+    } else {
+        this
+    }
+
 /** Rendering selected from the building source and current camera pitch. */
 internal enum class SceneBuildingRenderMode {
     /** Mapbox Standard buildings supplied by the basemap. */
