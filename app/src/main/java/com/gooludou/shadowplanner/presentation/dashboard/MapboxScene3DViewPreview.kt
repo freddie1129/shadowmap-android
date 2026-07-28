@@ -24,56 +24,64 @@ private fun MapboxScene3DViewDarkPreview() {
 private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
     ShadowMapTheme(darkTheme = darkTheme, dynamicColor = false) {
         ShadowPlannerSceneView(
-            buildings = emptyList(),
-            walls = emptyList(),
-            trees = emptyList(),
             uiState = ShadowMapUiState(
                 selectedEpochMillis = 1_752_640_000_000L,
                 displayTimeZoneId = "Australia/Brisbane",
-                selectedLocationLabel = "Brisbane, Queensland"
+                calculationLocation = GeoPoint(153.0251, -27.4698),
+                selectedLocationLabel = "Brisbane, Queensland",
+                solarPosition = SolarPosition(azimuthDegrees = 315.0, zenithDegrees = 45.0),
+                sunPath = listOf(
+                    SolarPosition(azimuthDegrees = 80.0, zenithDegrees = 85.0),
+                    SolarPosition(azimuthDegrees = 120.0, zenithDegrees = 55.0),
+                    SolarPosition(azimuthDegrees = 180.0, zenithDegrees = 35.0),
+                    SolarPosition(azimuthDegrees = 240.0, zenithDegrees = 55.0),
+                    SolarPosition(azimuthDegrees = 280.0, zenithDegrees = 85.0)
+                )
             ),
-            viewport = MapboxScene3DViewport(
-                center = GeoPoint(153.0251, -27.4698),
-                zoom = 17.0,
-                bearing = 0.0,
-                widthMeters = 120.0,
-                heightMeters = 240.0,
-                widthPixels = 1080,
-                heightPixels = 2400
+            state = ShadowPlannerSceneState(
+                viewport = MapboxScene3DViewport(
+                    center = GeoPoint(153.0251, -27.4698),
+                    zoom = 17.0,
+                    bearing = 0.0,
+                    widthMeters = 120.0,
+                    heightMeters = 240.0,
+                    widthPixels = 1080,
+                    heightPixels = 2400
+                ),
+                showDome = true,
+                sceneMode = MapboxSceneMode.VIEW,
+                autoToolState = AutoToolState.READY,
+                canRecenterCurrentLocation = false,
+                editingCrosshairPoint = null
             ),
-            solarPosition = SolarPosition(azimuthDegrees = 315.0, zenithDegrees = 45.0),
-            sunPath = listOf(
-                SolarPosition(azimuthDegrees = 80.0, zenithDegrees = 85.0),
-                SolarPosition(azimuthDegrees = 120.0, zenithDegrees = 55.0),
-                SolarPosition(azimuthDegrees = 180.0, zenithDegrees = 35.0),
-                SolarPosition(azimuthDegrees = 240.0, zenithDegrees = 55.0),
-                SolarPosition(azimuthDegrees = 280.0, zenithDegrees = 85.0)
-            ),
-            showDome = true,
-            selectedEpochMillis = 1_752_640_000_000L,
-            timeZoneId = "Australia/Brisbane",
-            calculationLocation = GeoPoint(longitude = 153.0251, latitude = -27.4698),
-            onDateTimeChanged = {},
-            onNowSelected = {},
+            actions = previewShadowPlannerSceneActions()
+        )
+    }
+}
+
+private fun previewShadowPlannerSceneActions(): ShadowPlannerSceneActions =
+    ShadowPlannerSceneActions(
+        navigation = MapNavigationActions(
             onOpenSettings = {},
             onOpenLocationSearch = {},
             onShowLocationInfo = {},
             onRecenterCurrentLocation = {},
-            canRecenterCurrentLocation = false,
             onOpenProjects = {},
-            onSaveProject = {},
-            onOpenShadowColor = {},
-            sceneMode = MapboxSceneMode.VIEW,
-            onSceneModeChanged = {},
-            autoToolState = AutoToolState.READY,
+            onSaveProject = {}
+        ),
+        editing = MapEditingActions(
             onFinishEditing = {},
             onDrawMode = {},
             onAutoLoad = {},
-            onClear = {},
-            editingCrosshairPoint = null,
-            onSceneMapViewReady = {},
-            onSceneMapClick = { false },
-            onToggleDome = {}
-        )
-    }
-}
+            onClear = {}
+        ),
+        dateTime = MapDateTimeActions(
+            onDateTimeChanged = {},
+            onNowSelected = {}
+        ),
+        onOpenShadowColor = {},
+        onSceneModeChanged = {},
+        onSceneMapViewReady = {},
+        onSceneMapClick = { false },
+        onToggleDome = {}
+    )

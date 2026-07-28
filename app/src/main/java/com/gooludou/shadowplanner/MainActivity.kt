@@ -89,6 +89,11 @@ import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSh
 import com.gooludou.shadowplanner.presentation.dashboard.MapboxScene3DProjectDefaults
 import com.gooludou.shadowplanner.presentation.dashboard.MapboxScene3DViewport
 import com.gooludou.shadowplanner.presentation.dashboard.MapboxSceneMode
+import com.gooludou.shadowplanner.presentation.dashboard.MapDateTimeActions
+import com.gooludou.shadowplanner.presentation.dashboard.MapEditingActions
+import com.gooludou.shadowplanner.presentation.dashboard.MapNavigationActions
+import com.gooludou.shadowplanner.presentation.dashboard.ShadowPlannerSceneActions
+import com.gooludou.shadowplanner.presentation.dashboard.ShadowPlannerSceneState
 import com.gooludou.shadowplanner.presentation.dashboard.ShadowPlannerSceneView
 import com.gooludou.shadowplanner.presentation.dashboard.currentScene3DViewport
 import com.gooludou.shadowplanner.presentation.projectview.SaveProjectDialog
@@ -782,56 +787,60 @@ private fun ShadowMapScreen(
 
         mapboxSceneViewport?.let { viewport ->
             ShadowPlannerSceneView(
-                buildings = uiState.buildings,
-                walls = uiState.drawnWalls,
-                trees = uiState.drawnTrees,
                 uiState = uiState,
-                viewport = viewport,
-                solarPosition = uiState.solarPosition,
-                sunPath = uiState.sunPath,
-                showDome = showDomeIn3d,
-                selectedEpochMillis = uiState.selectedEpochMillis,
-                timeZoneId = uiState.displayTimeZoneId,
-                calculationLocation = uiState.calculationLocation,
-                onDateTimeChanged = onDateTimeChanged,
-                onNowSelected = onNowSelected,
-                onOpenSettings = onOpenSettings,
-                onOpenLocationSearch = onOpenLocationSearch,
-                onShowLocationInfo = { showSelectedLocationSheet = true },
-                onRecenterCurrentLocation = {
-                    currentLocationPoint?.let { point ->
-                        mapViewportState.setCameraOptions { center(point) }
-                        mapboxSceneMapView?.mapboxMap?.setCamera(
-                            com.mapbox.maps.CameraOptions.Builder().center(point).build()
-                        )
-                    }
-                },
-                canRecenterCurrentLocation = currentLocationPoint != null,
-                onOpenProjects = onOpenProjects,
-                onSaveProject = {
-                    projectNameDraft = uiState.activeProjectName.orEmpty()
-                    showSaveProjectDialog = true
-                },
-                onOpenShadowColor = { showShadowColorSheet = true },
-                sceneMode = mapboxSceneMode,
-                onSceneModeChanged = { mapboxSceneMode = it },
-                autoToolState = autoToolState,
-                onFinishEditing = ::finishEditing,
-                onDrawMode = { selectedMode -> onSelectDrawMode(selectedMode) },
-                onAutoLoad = ::requestAutoLoad,
-                onClear = { showClearConfirmation = true },
-                editingCrosshairPoint = crosshairPoint,
-                onSceneMapViewReady = { mapboxSceneMapView = it },
-                onSceneMapClick = { point ->
-                    if (mapboxSceneMode == MapboxSceneMode.EDIT &&
-                        uiState.activeDrawMode == null &&
-                        uiState.pendingDrawing == null
-                    ) {
-                        mapboxSceneController?.queryDrawing(point, onSelectDrawing)
-                    }
-                    false
-                },
-                onToggleDome = { showDomeIn3d = !showDomeIn3d }
+                state = ShadowPlannerSceneState(
+                    viewport = viewport,
+                    showDome = showDomeIn3d,
+                    sceneMode = mapboxSceneMode,
+                    autoToolState = autoToolState,
+                    canRecenterCurrentLocation = currentLocationPoint != null,
+                    editingCrosshairPoint = crosshairPoint
+                ),
+                actions = ShadowPlannerSceneActions(
+                    navigation = MapNavigationActions(
+                        onOpenSettings = onOpenSettings,
+                        onOpenLocationSearch = onOpenLocationSearch,
+                        onShowLocationInfo = { showSelectedLocationSheet = true },
+                        onRecenterCurrentLocation = {
+                            currentLocationPoint?.let { point ->
+                                mapViewportState.setCameraOptions { center(point) }
+                                mapboxSceneMapView?.mapboxMap?.setCamera(
+                                    com.mapbox.maps.CameraOptions.Builder()
+                                        .center(point)
+                                        .build()
+                                )
+                            }
+                        },
+                        onOpenProjects = onOpenProjects,
+                        onSaveProject = {
+                            projectNameDraft = uiState.activeProjectName.orEmpty()
+                            showSaveProjectDialog = true
+                        }
+                    ),
+                    editing = MapEditingActions(
+                        onFinishEditing = ::finishEditing,
+                        onDrawMode = { selectedMode -> onSelectDrawMode(selectedMode) },
+                        onAutoLoad = ::requestAutoLoad,
+                        onClear = { showClearConfirmation = true }
+                    ),
+                    dateTime = MapDateTimeActions(
+                        onDateTimeChanged = onDateTimeChanged,
+                        onNowSelected = onNowSelected
+                    ),
+                    onOpenShadowColor = { showShadowColorSheet = true },
+                    onSceneModeChanged = { mapboxSceneMode = it },
+                    onSceneMapViewReady = { mapboxSceneMapView = it },
+                    onSceneMapClick = { point ->
+                        if (mapboxSceneMode == MapboxSceneMode.EDIT &&
+                            uiState.activeDrawMode == null &&
+                            uiState.pendingDrawing == null
+                        ) {
+                            mapboxSceneController?.queryDrawing(point, onSelectDrawing)
+                        }
+                        false
+                    },
+                    onToggleDome = { showDomeIn3d = !showDomeIn3d }
+                )
             )
         }
 

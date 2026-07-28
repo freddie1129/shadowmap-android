@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.domain.DrawMode
 import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.ShadowAppearance
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
@@ -35,39 +34,14 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 @Suppress("LongMethod")
 internal fun MapControls(
     mapViewportState: MapViewportState,
-    selectedEpochMillis: Long,
-    timeZoneId: String,
-    location: GeoPoint,
-    onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenLocationSearch: () -> Unit,
-    onShowLocationInfo: () -> Unit,
-    onRecenterCurrentLocation: () -> Unit,
-    canRecenterCurrentLocation: Boolean,
-    onOpenProjects: () -> Unit,
-    onSaveProject: () -> Unit,
-    basemapStyle: MapboxBasemapStyle,
-    onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit,
-    showDome: Boolean,
-    buildingSelection: SceneBuildingSelection,
-    onBuildingSelectionChanged: (SceneBuildingSelection) -> Unit,
-    shadowAppearance: ShadowAppearance,
-    onOpenShadowColor: () -> Unit,
-    onToggleDome: () -> Unit,
-    sceneMode: MapboxSceneMode,
     uiState: ShadowMapUiState,
-    autoToolState: AutoToolState,
-    onStartEditing: () -> Unit,
-    onFinishEditing: () -> Unit,
-    onDrawMode: (DrawMode) -> Unit,
-    onAutoLoad: () -> Unit,
-    onClear: () -> Unit
+    state: MapControlsState,
+    actions: MapControlsActions
 ) {
     val currentPitch = mapViewportState.cameraState?.pitch ?: Scene3DCamera.ORBIT_PITCH_DEGREES
     val isTopDown = currentPitch <= Scene3DCamera.TOP_DOWN_THRESHOLD_DEGREES
     var isDateTimeVisible by rememberSaveable { mutableStateOf(true) }
-    val showEditingToolbar = sceneMode == MapboxSceneMode.EDIT &&
+    val showEditingToolbar = state.sceneMode == MapboxSceneMode.EDIT &&
         uiState.canShowMapboxEditingToolbar()
     Box(
         modifier = Modifier
@@ -76,25 +50,25 @@ internal fun MapControls(
     ) {
         MapTopControls(
             uiState = uiState,
-            onOpenSettings = onOpenSettings,
-            onOpenLocationSearch = onOpenLocationSearch,
-            onShowLocationInfo = onShowLocationInfo,
-            onRecenterCurrentLocation = onRecenterCurrentLocation,
-            canRecenterCurrentLocation = canRecenterCurrentLocation,
-            isSatelliteMap = basemapStyle == MapboxBasemapStyle.SATELLITE,
+            onOpenSettings = actions.navigation.onOpenSettings,
+            onOpenLocationSearch = actions.navigation.onOpenLocationSearch,
+            onShowLocationInfo = actions.navigation.onShowLocationInfo,
+            onRecenterCurrentLocation = actions.navigation.onRecenterCurrentLocation,
+            canRecenterCurrentLocation = state.canRecenterCurrentLocation,
+            isSatelliteMap = state.basemapStyle == MapboxBasemapStyle.SATELLITE,
             onToggleMapStyle = {
-                onBasemapStyleSelected(
-                    when (basemapStyle) {
+                actions.display.onBasemapStyleSelected(
+                    when (state.basemapStyle) {
                         MapboxBasemapStyle.STANDARD -> MapboxBasemapStyle.SATELLITE
                         MapboxBasemapStyle.SATELLITE -> MapboxBasemapStyle.STANDARD
                     }
                 )
             },
-            onOpenProjects = onOpenProjects,
-            onSaveProject = onSaveProject,
+            onOpenProjects = actions.navigation.onOpenProjects,
+            onSaveProject = actions.navigation.onSaveProject,
             modifier = Modifier.align(Alignment.TopCenter)
         )
-        if (sceneMode == MapboxSceneMode.VIEW) {
+        if (state.sceneMode == MapboxSceneMode.VIEW) {
             PitchSlider(
                 pitch = currentPitch.toFloat(),
                 onPitchChange = { pitch ->
@@ -114,44 +88,44 @@ internal fun MapControls(
                 ShadowMapDesign.dimensions.spacingSmall
             )
         ) {
-            if (sceneMode == MapboxSceneMode.VIEW) {
+            if (state.sceneMode == MapboxSceneMode.VIEW) {
                 MapBottomControls(
                     mapViewportState = mapViewportState,
                     isTopDown = isTopDown,
-                    basemapStyle = basemapStyle,
-                    onBasemapStyleSelected = onBasemapStyleSelected,
-                    showDome = showDome,
-                    buildingSelection = buildingSelection,
-                    onBuildingSelectionChanged = onBuildingSelectionChanged,
-                    shadowAppearance = shadowAppearance,
-                    onOpenShadowColor = onOpenShadowColor,
-                    onToggleDome = onToggleDome,
-                    onStartEditing = onStartEditing
+                    basemapStyle = state.basemapStyle,
+                    onBasemapStyleSelected = actions.display.onBasemapStyleSelected,
+                    showDome = state.showDome,
+                    buildingSelection = state.buildingSelection,
+                    onBuildingSelectionChanged = actions.display.onBuildingSelectionChanged,
+                    shadowAppearance = uiState.shadowAppearance,
+                    onOpenShadowColor = actions.display.onOpenShadowColor,
+                    onToggleDome = actions.display.onToggleDome,
+                    onStartEditing = actions.display.onStartEditing
                 )
             } else if (showEditingToolbar) {
                 MapEditingControls(
                     uiState = uiState,
-                    autoToolState = autoToolState,
+                    autoToolState = state.autoToolState,
                     isDateTimeVisible = isDateTimeVisible,
-                    onOpenShadowColor = onOpenShadowColor,
-                    onDrawMode = onDrawMode,
-                    onAutoLoad = onAutoLoad,
-                    onClear = onClear,
-                    onFinishEditing = onFinishEditing,
+                    onOpenShadowColor = actions.display.onOpenShadowColor,
+                    onDrawMode = actions.editing.onDrawMode,
+                    onAutoLoad = actions.editing.onAutoLoad,
+                    onClear = actions.editing.onClear,
+                    onFinishEditing = actions.editing.onFinishEditing,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = ShadowMapDesign.dimensions.screenPadding)
                 )
             }
-            if (sceneMode == MapboxSceneMode.VIEW || showEditingToolbar) {
+            if (state.sceneMode == MapboxSceneMode.VIEW || showEditingToolbar) {
                 MapDateTimeControls(
-                    selectedEpochMillis = selectedEpochMillis,
-                    timeZoneId = timeZoneId,
-                    location = location,
+                    selectedEpochMillis = uiState.selectedEpochMillis,
+                    timeZoneId = uiState.displayTimeZoneId,
+                    location = state.dateTimeLocation,
                     isExpanded = isDateTimeVisible,
                     onExpandedChanged = { isDateTimeVisible = it },
-                    onDateTimeChanged = onDateTimeChanged,
-                    onNowSelected = onNowSelected
+                    onDateTimeChanged = actions.dateTime.onDateTimeChanged,
+                    onNowSelected = actions.dateTime.onNowSelected
                 )
             }
         }
@@ -280,39 +254,50 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean, sceneMode: M
             val mapViewportState = rememberMapViewportState()
             MapControls(
                 mapViewportState = mapViewportState,
-                selectedEpochMillis = 1_752_640_000_000L,
-                timeZoneId = "Australia/Brisbane",
-                location = GeoPoint(longitude = 153.0251, latitude = -27.4698),
-                onDateTimeChanged = {},
-                onNowSelected = {},
-                onOpenSettings = {},
-                onOpenLocationSearch = {},
-                onShowLocationInfo = {},
-                onRecenterCurrentLocation = {},
-                canRecenterCurrentLocation = true,
-                onOpenProjects = {},
-                onSaveProject = {},
-                basemapStyle = MapboxBasemapStyle.SATELLITE,
-                onBasemapStyleSelected = {},
-                showDome = true,
-                buildingSelection = SceneBuildingSelection.DRAWN,
-                onBuildingSelectionChanged = {},
-                shadowAppearance = ShadowAppearance.DEFAULT,
-                onOpenShadowColor = {},
-                onToggleDome = {},
-                sceneMode = sceneMode,
                 uiState = ShadowMapUiState(
                     selectedEpochMillis = 1_752_640_000_000L,
                     displayTimeZoneId = "Australia/Brisbane",
                     calculationLocation = GeoPoint(153.0251, -27.4698)
                 ),
-                autoToolState = AutoToolState.READY,
-                onStartEditing = {},
-                onFinishEditing = {},
-                onDrawMode = {},
-                onAutoLoad = {},
-                onClear = {}
+                state = MapControlsState(
+                    dateTimeLocation = GeoPoint(153.0251, -27.4698),
+                    canRecenterCurrentLocation = true,
+                    basemapStyle = MapboxBasemapStyle.SATELLITE,
+                    showDome = true,
+                    buildingSelection = SceneBuildingSelection.DRAWN,
+                    sceneMode = sceneMode,
+                    autoToolState = AutoToolState.READY
+                ),
+                actions = previewMapControlsActions()
             )
         }
     }
 }
+
+private fun previewMapControlsActions(): MapControlsActions = MapControlsActions(
+    navigation = MapNavigationActions(
+        onOpenSettings = {},
+        onOpenLocationSearch = {},
+        onShowLocationInfo = {},
+        onRecenterCurrentLocation = {},
+        onOpenProjects = {},
+        onSaveProject = {}
+    ),
+    display = MapDisplayActions(
+        onBasemapStyleSelected = {},
+        onBuildingSelectionChanged = {},
+        onOpenShadowColor = {},
+        onToggleDome = {},
+        onStartEditing = {}
+    ),
+    editing = MapEditingActions(
+        onFinishEditing = {},
+        onDrawMode = {},
+        onAutoLoad = {},
+        onClear = {}
+    ),
+    dateTime = MapDateTimeActions(
+        onDateTimeChanged = {},
+        onNowSelected = {}
+    )
+)

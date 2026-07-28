@@ -19,14 +19,12 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.DrawMode
 import com.gooludou.shadowplanner.domain.DrawnTree
 import com.gooludou.shadowplanner.domain.DrawnWall
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.domain.SolarPosition
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
-import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.gooludou.shadowplanner.presentation.components.mapboxNative3dConfig
 import com.gooludou.shadowplanner.scene.SceneViewport
 import com.mapbox.bindgen.Value
@@ -71,40 +69,13 @@ import kotlinx.coroutines.flow.first
 @OptIn(MapboxDelicateApi::class, MapboxExperimental::class)
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 internal fun ShadowPlannerSceneView(
-    buildings: List<Building>,
-    walls: List<DrawnWall>,
-    trees: List<DrawnTree>,
     uiState: ShadowMapUiState,
-    viewport: MapboxScene3DViewport,
-    solarPosition: SolarPosition?,
-    sunPath: List<SolarPosition>,
-    showDome: Boolean,
-    selectedEpochMillis: Long,
-    timeZoneId: String,
-    calculationLocation: GeoPoint?,
-    onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenLocationSearch: () -> Unit,
-    onShowLocationInfo: () -> Unit,
-    onRecenterCurrentLocation: () -> Unit,
-    canRecenterCurrentLocation: Boolean,
-    onOpenProjects: () -> Unit,
-    onSaveProject: () -> Unit,
-    onOpenShadowColor: () -> Unit,
-    sceneMode: MapboxSceneMode,
-    onSceneModeChanged: (MapboxSceneMode) -> Unit,
-    autoToolState: AutoToolState,
-    onFinishEditing: () -> Unit,
-    onDrawMode: (DrawMode) -> Unit,
-    onAutoLoad: () -> Unit,
-    onClear: () -> Unit,
-    editingCrosshairPoint: GeoPoint?,
-    onSceneMapViewReady: (MapView) -> Unit,
-    onSceneMapClick: (Point) -> Boolean,
-    onToggleDome: () -> Unit,
+    state: ShadowPlannerSceneState,
+    actions: ShadowPlannerSceneActions,
     modifier: Modifier = Modifier
 ) {
+    val viewport = state.viewport
+    val solarPosition = uiState.solarPosition
     val initialState = remember {
         initialMapboxScene3DState(uiState.projectLoadRevision)
     }
@@ -117,8 +88,12 @@ internal fun ShadowPlannerSceneView(
     var hasEnteredEditing by remember { mutableStateOf(false) }
     var sceneMapView by remember { mutableStateOf<MapView?>(null) }
     var isSkyViewportReady by remember { mutableStateOf(false) }
-    val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, sunPath)
-    val mapSources = rememberMapboxScene3DMapSources(buildings, walls, trees)
+    val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, uiState.sunPath)
+    val mapSources = rememberMapboxScene3DMapSources(
+        uiState.buildings,
+        uiState.drawnWalls,
+        uiState.drawnTrees
+    )
 
     val mapViewportState = rememberMapViewportState {
         setCameraOptions {
@@ -141,22 +116,26 @@ internal fun ShadowPlannerSceneView(
         basemapStyle = MapboxScene3DProjectDefaults.BASEMAP_STYLE
         buildingSelection = MapboxScene3DProjectDefaults.BUILDING_SELECTION
     }
-    LaunchedEffect(sceneMode) {
-        if (sceneMode == MapboxSceneMode.EDIT) {
+    LaunchedEffect(state.sceneMode) {
+        if (state.sceneMode == MapboxSceneMode.EDIT) {
             hasEnteredEditing = true
             basemapStyle = MapboxScene3DEditingDefaults.BASEMAP_STYLE
             buildingSelection = MapboxScene3DEditingDefaults.BUILDING_SELECTION
             mapViewportState.setCameraOptions {
                 pitch(MapboxScene3DEditingDefaults.CAMERA_PITCH_DEGREES)
             }
-            if (showDome != MapboxScene3DEditingDefaults.SHOW_DOME) onToggleDome()
+            if (state.showDome != MapboxScene3DEditingDefaults.SHOW_DOME) {
+                actions.onToggleDome()
+            }
         } else if (hasEnteredEditing) {
             basemapStyle = MapboxScene3DEditingDefaults.BASEMAP_STYLE
             buildingSelection = MapboxScene3DEditingDefaults.BUILDING_SELECTION
             mapViewportState.setCameraOptions {
                 pitch(MapboxScene3DEditingDefaults.CAMERA_PITCH_DEGREES)
             }
-            if (showDome != MapboxScene3DEditingDefaults.SHOW_DOME) onToggleDome()
+            if (state.showDome != MapboxScene3DEditingDefaults.SHOW_DOME) {
+                actions.onToggleDome()
+            }
             hasEnteredEditing = false
         }
     }
@@ -170,8 +149,8 @@ internal fun ShadowPlannerSceneView(
             )
         skyState.updateViewport(currentViewport)
     }
-    LaunchedEffect(sceneMapView, showDome, viewport) {
-        if (!showDome || sceneMapView == null) {
+    LaunchedEffect(sceneMapView, state.showDome, viewport) {
+        if (!state.showDome || sceneMapView == null) {
             isSkyViewportReady = false
             return@LaunchedEffect
         }
@@ -207,63 +186,59 @@ internal fun ShadowPlannerSceneView(
             solarPosition = solarPosition,
             basemapStyle = basemapStyle,
             buildingRenderMode = buildingRenderMode,
-            sceneMode = sceneMode,
+            sceneMode = state.sceneMode,
             uiState = uiState,
-            editingCrosshairPoint = editingCrosshairPoint,
+            editingCrosshairPoint = state.editingCrosshairPoint,
             onMapViewReady = {
                 sceneMapView = it
-                onSceneMapViewReady(it)
+                actions.onSceneMapViewReady(it)
             },
-            onMapClick = onSceneMapClick
+            onMapClick = actions.onSceneMapClick
         ) {
-            if (showDome && isSkyViewportReady) {
+            if (state.showDome && isSkyViewportReady) {
                 SceneSkyModelLayers(skyState)
             }
         }
 
         MapControls(
             mapViewportState = mapViewportState,
-            selectedEpochMillis = selectedEpochMillis,
-            timeZoneId = timeZoneId,
-            location = calculationLocation ?: viewport.center,
-            onDateTimeChanged = onDateTimeChanged,
-            onNowSelected = onNowSelected,
-            onOpenSettings = onOpenSettings,
-            onOpenLocationSearch = onOpenLocationSearch,
-            onShowLocationInfo = onShowLocationInfo,
-            onRecenterCurrentLocation = onRecenterCurrentLocation,
-            canRecenterCurrentLocation = canRecenterCurrentLocation,
-            onOpenProjects = onOpenProjects,
-            onSaveProject = onSaveProject,
-            basemapStyle = basemapStyle,
-            onBasemapStyleSelected = { selectedStyle ->
-                basemapStyle = selectedStyle
-            },
-            showDome = showDome,
-            buildingSelection = buildingSelection,
-            onBuildingSelectionChanged = { selectedBuildings ->
-                buildingSelection = selectedBuildings
-                basemapStyle = basemapStyleAfterBuildingSelection(
-                    buildingSelection = selectedBuildings,
-                    currentBasemapStyle = basemapStyle
-                )
-            },
-            shadowAppearance = uiState.shadowAppearance,
-            onOpenShadowColor = onOpenShadowColor,
-            onToggleDome = {
-                if (!showDome) {
-                    refreshSkyViewport()
-                }
-                onToggleDome()
-            },
-            sceneMode = sceneMode,
             uiState = uiState,
-            autoToolState = autoToolState,
-            onStartEditing = { onSceneModeChanged(MapboxSceneMode.EDIT) },
-            onFinishEditing = onFinishEditing,
-            onDrawMode = onDrawMode,
-            onAutoLoad = onAutoLoad,
-            onClear = onClear
+            state = MapControlsState(
+                dateTimeLocation = uiState.calculationLocation ?: viewport.center,
+                canRecenterCurrentLocation = state.canRecenterCurrentLocation,
+                basemapStyle = basemapStyle,
+                showDome = state.showDome,
+                buildingSelection = buildingSelection,
+                sceneMode = state.sceneMode,
+                autoToolState = state.autoToolState
+            ),
+            actions = MapControlsActions(
+                navigation = actions.navigation,
+                display = MapDisplayActions(
+                    onBasemapStyleSelected = { selectedStyle ->
+                        basemapStyle = selectedStyle
+                    },
+                    onBuildingSelectionChanged = { selectedBuildings ->
+                        buildingSelection = selectedBuildings
+                        basemapStyle = basemapStyleAfterBuildingSelection(
+                            buildingSelection = selectedBuildings,
+                            currentBasemapStyle = basemapStyle
+                        )
+                    },
+                    onOpenShadowColor = actions.onOpenShadowColor,
+                    onToggleDome = {
+                        if (!state.showDome) {
+                            refreshSkyViewport()
+                        }
+                        actions.onToggleDome()
+                    },
+                    onStartEditing = {
+                        actions.onSceneModeChanged(MapboxSceneMode.EDIT)
+                    }
+                ),
+                editing = actions.editing,
+                dateTime = actions.dateTime
+            )
         )
     }
 }
