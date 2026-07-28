@@ -55,6 +55,7 @@ import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
 import com.gooludou.shadowplanner.presentation.components.MapToolBar
 import com.gooludou.shadowplanner.presentation.components.PitchSlider
 import com.gooludou.shadowplanner.presentation.components.ShadowColorButton
+import com.gooludou.shadowplanner.presentation.drawview.Map2DTopControls
 import com.gooludou.shadowplanner.ui.theme.Map3DActionBlue
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
@@ -62,6 +63,7 @@ import com.mapbox.maps.extension.compose.animation.viewport.MapViewportState
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 
 @Composable
+@Suppress("LongMethod")
 internal fun MapboxScene3DControls(
     mapViewportState: MapViewportState,
     selectedEpochMillis: Long,
@@ -69,6 +71,13 @@ internal fun MapboxScene3DControls(
     location: GeoPoint,
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenLocationSearch: () -> Unit,
+    onShowLocationInfo: () -> Unit,
+    onRecenterCurrentLocation: () -> Unit,
+    canRecenterCurrentLocation: Boolean,
+    onOpenProjects: () -> Unit,
+    onSaveProject: () -> Unit,
     basemapStyle: MapboxBasemapStyle,
     onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit,
     showDome: Boolean,
@@ -96,6 +105,26 @@ internal fun MapboxScene3DControls(
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
+        Map2DTopControls(
+            uiState = uiState,
+            onOpenSettings = onOpenSettings,
+            onOpenLocationSearch = onOpenLocationSearch,
+            onShowLocationInfo = onShowLocationInfo,
+            onRecenterCurrentLocation = onRecenterCurrentLocation,
+            canRecenterCurrentLocation = canRecenterCurrentLocation,
+            isSatelliteMap = basemapStyle == MapboxBasemapStyle.SATELLITE,
+            onToggleMapStyle = {
+                onBasemapStyleSelected(
+                    when (basemapStyle) {
+                        MapboxBasemapStyle.STANDARD -> MapboxBasemapStyle.SATELLITE
+                        MapboxBasemapStyle.SATELLITE -> MapboxBasemapStyle.STANDARD
+                    }
+                )
+            },
+            onOpenProjects = onOpenProjects,
+            onSaveProject = onSaveProject,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
         if (sceneMode == MapboxSceneMode.VIEW) {
             PitchSlider(
                 pitch = currentPitch.toFloat(),
@@ -547,6 +576,13 @@ private fun MapboxScene3DControlsPreviewContent(
                 location = GeoPoint(longitude = 153.0251, latitude = -27.4698),
                 onDateTimeChanged = {},
                 onNowSelected = {},
+                onOpenSettings = {},
+                onOpenLocationSearch = {},
+                onShowLocationInfo = {},
+                onRecenterCurrentLocation = {},
+                canRecenterCurrentLocation = true,
+                onOpenProjects = {},
+                onSaveProject = {},
                 basemapStyle = MapboxBasemapStyle.SATELLITE,
                 onBasemapStyleSelected = {},
                 showDome = true,
