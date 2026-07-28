@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.mapbox3D
+package com.gooludou.shadowplanner.presentation.dashboard
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,7 +23,7 @@ private fun MapboxScene3DViewDarkPreview() {
 @Composable
 private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
     ShadowMapTheme(darkTheme = darkTheme, dynamicColor = false) {
-        MapboxScene3DView(
+        ShadowPlannerSceneView(
             buildings = emptyList(),
             walls = emptyList(),
             trees = emptyList(),
@@ -73,7 +73,7 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
             editingCrosshairPoint = null,
             onSceneMapViewReady = {},
             onSceneMapClick = { false },
-            onToggleDome = {},
+            onToggleDome = {}
         )
     }
 }

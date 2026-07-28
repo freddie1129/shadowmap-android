@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.mapbox3D
+package com.gooludou.shadowplanner.presentation.dashboard
 
 import com.gooludou.shadowplanner.domain.GeoPoint
 

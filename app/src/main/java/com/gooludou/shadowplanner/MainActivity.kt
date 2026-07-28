@@ -86,11 +86,11 @@ import com.gooludou.shadowplanner.presentation.drawview.DrawingCrosshair
 import com.gooludou.shadowplanner.presentation.drawview.DrawingPropertiesSheet
 import com.gooludou.shadowplanner.presentation.drawview.ShadowColorSheet
 import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSheet
-import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DProjectDefaults
-import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DView
-import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxScene3DViewport
-import com.gooludou.shadowplanner.presentation.mapbox3D.MapboxSceneMode
-import com.gooludou.shadowplanner.presentation.mapbox3D.currentScene3DViewport
+import com.gooludou.shadowplanner.presentation.dashboard.MapboxScene3DProjectDefaults
+import com.gooludou.shadowplanner.presentation.dashboard.MapboxScene3DViewport
+import com.gooludou.shadowplanner.presentation.dashboard.MapboxSceneMode
+import com.gooludou.shadowplanner.presentation.dashboard.ShadowPlannerSceneView
+import com.gooludou.shadowplanner.presentation.dashboard.currentScene3DViewport
 import com.gooludou.shadowplanner.presentation.projectview.SaveProjectDialog
 import com.gooludou.shadowplanner.project.ProjectViewport
 import com.gooludou.shadowplanner.scene.SceneViewport
@@ -501,7 +501,7 @@ private fun ShadowMapScreen(
                     }
                     mapboxSceneViewport = (
                         mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
-                    ).copy(
+                        ).copy(
                         center = GeoPoint(point.longitude(), point.latitude()),
                         zoom = Config.DEVICE_LOCATION_MAP_ZOOM,
                         bearing = Config.FALLBACK_MAP_BEARING_DEGREES
@@ -781,7 +781,7 @@ private fun ShadowMapScreen(
         }
 
         mapboxSceneViewport?.let { viewport ->
-            MapboxScene3DView(
+            ShadowPlannerSceneView(
                 buildings = uiState.buildings,
                 walls = uiState.drawnWalls,
                 trees = uiState.drawnTrees,

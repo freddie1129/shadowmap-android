@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.drawview
+package com.gooludou.shadowplanner.presentation.dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,8 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.MyLocation
-import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.SatelliteAlt
+import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,18 +36,18 @@ import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 
 @Composable
-fun Map2DTopControls(
+fun MapTopControls(
     uiState: ShadowMapUiState,
     onOpenSettings: () -> Unit,
     onOpenLocationSearch: () -> Unit,
     onShowLocationInfo: () -> Unit,
     onRecenterCurrentLocation: () -> Unit,
     canRecenterCurrentLocation: Boolean,
+    modifier: Modifier = Modifier,
     isSatelliteMap: Boolean = false,
     onToggleMapStyle: (() -> Unit)? = null,
     onOpenProjects: () -> Unit,
-    onSaveProject: () -> Unit,
-    modifier: Modifier = Modifier
+    onSaveProject: () -> Unit
 ) {
     val dimensions = ShadowMapDesign.dimensions
     Column(
@@ -151,7 +151,7 @@ private fun Map2DTopControlsPreview() {
             .background(Color(0xFF6B8064)),
         contentAlignment = Alignment.TopCenter
     ) {
-        Map2DTopControls(
+        MapTopControls(
             uiState = ShadowMapUiState(
                 selectedEpochMillis = 1_752_640_000_000L,
                 displayTimeZoneId = "Australia/Brisbane",

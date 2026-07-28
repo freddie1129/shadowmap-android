@@ -1,9 +1,8 @@
-package com.gooludou.shadowplanner.presentation.mapbox3D
+package com.gooludou.shadowplanner.presentation.dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,9 +25,9 @@ import com.gooludou.shadowplanner.domain.DrawnWall
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.domain.GeoPolygon
 import com.gooludou.shadowplanner.domain.SolarPosition
-import com.gooludou.shadowplanner.presentation.components.mapboxNative3dConfig
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
+import com.gooludou.shadowplanner.presentation.components.mapboxNative3dConfig
 import com.gooludou.shadowplanner.scene.SceneViewport
 import com.mapbox.bindgen.Value
 import com.mapbox.geojson.Feature
@@ -71,7 +70,7 @@ import kotlinx.coroutines.flow.first
 @Composable
 @OptIn(MapboxDelicateApi::class, MapboxExperimental::class)
 @Suppress("LongMethod", "CyclomaticComplexMethod")
-internal fun MapboxScene3DView(
+internal fun ShadowPlannerSceneView(
     buildings: List<Building>,
     walls: List<DrawnWall>,
     trees: List<DrawnTree>,
@@ -222,7 +221,7 @@ internal fun MapboxScene3DView(
             }
         }
 
-        MapboxScene3DControls(
+        MapControls(
             mapViewportState = mapViewportState,
             selectedEpochMillis = selectedEpochMillis,
             timeZoneId = timeZoneId,
@@ -420,7 +419,7 @@ private fun MapboxScene3DMap(
             if (!mapView.mapboxMap.isStyleLoaded()) {
                 mapView.mapboxMap.styleLoadedEvents.first()
             }
-            renderMapboxTopDownScene(
+            renderMapboxDrawingOverlay(
                 mapView = mapView,
                 uiState = uiState,
                 crosshairPoint = editingCrosshairPoint,

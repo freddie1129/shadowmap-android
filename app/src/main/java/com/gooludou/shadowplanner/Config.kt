@@ -11,7 +11,7 @@ object Config {
     const val FALLBACK_MAP_CENTER_LATITUDE = 0.0
 
     /** World-level zoom used until a useful local location is available. */
-    const val FALLBACK_MAP_ZOOM = 1.5
+    const val FALLBACK_MAP_ZOOM = 10.0
 
     /** Local zoom used after the device provides a current location. */
     const val DEVICE_LOCATION_MAP_ZOOM = 17.0

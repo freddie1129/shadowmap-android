@@ -63,40 +63,6 @@ fun DrawingCrosshair(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun DrawingToolChooser(
-    expanded: Boolean,
-    onExpand: () -> Unit,
-    onSelect: (DrawMode) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    if (!expanded) {
-        Button(onClick = onExpand, modifier = modifier) {
-            Text(stringResource(R.string.add_object))
-        }
-        return
-    }
-    Row(
-        modifier = modifier
-            .background(
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-                RoundedCornerShape(16.dp)
-            )
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        OutlinedButton(onClick = {
-            onSelect(DrawMode.BUILDING)
-        }) { Text(stringResource(R.string.building)) }
-        OutlinedButton(onClick = {
-            onSelect(DrawMode.WALL)
-        }) { Text(stringResource(R.string.wall)) }
-        OutlinedButton(onClick = {
-            onSelect(DrawMode.TREE)
-        }) { Text(stringResource(R.string.tree)) }
-    }
-}
-
-@Composable
 fun ActiveDrawingControls(
     mode: DrawMode,
     vertexCount: Int,
@@ -266,18 +232,6 @@ private fun DrawingCrosshairPreview() {
     showBackground = true,
     backgroundColor = 0xFF52654B
 )
-@Composable
-private fun DrawingToolChooserPreview() {
-    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
-        DrawingToolChooser(
-            expanded = true,
-            onExpand = {},
-            onSelect = {},
-            modifier = Modifier.padding(12.dp)
-        )
-    }
-}
-
 @Preview(
     name = "Active building controls",
     widthDp = 540,

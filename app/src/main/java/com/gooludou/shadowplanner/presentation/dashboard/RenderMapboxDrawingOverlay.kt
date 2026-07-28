@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.mapbox3D
+package com.gooludou.shadowplanner.presentation.dashboard
 
 import com.gooludou.shadowplanner.domain.GeoPoint
 import com.gooludou.shadowplanner.map.MapboxShadowMapController
@@ -6,7 +6,7 @@ import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.mapbox.maps.MapView
 
 /** Reuses the 2D map renderer so outlines and calculated shadows stay visually identical. */
-internal fun renderMapboxTopDownScene(
+internal fun renderMapboxDrawingOverlay(
     mapView: MapView,
     uiState: ShadowMapUiState,
     crosshairPoint: GeoPoint?,

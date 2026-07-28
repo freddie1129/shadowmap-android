@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.presentation.mapbox3D
+package com.gooludou.shadowplanner.presentation.dashboard
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

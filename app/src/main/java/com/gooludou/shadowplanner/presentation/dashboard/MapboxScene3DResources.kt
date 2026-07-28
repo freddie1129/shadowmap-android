@@ -1,6 +1,5 @@
-package com.gooludou.shadowplanner.presentation.mapbox3D
+package com.gooludou.shadowplanner.presentation.dashboard
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /** IDs used by the Standard style import and the scene's Mapbox light objects. */
@@ -73,7 +72,7 @@ internal object Scene3DCamera {
 }
 
 /** Building source behavior selected from the 3D controls. */
-internal enum class SceneBuildingSelection(val menuIndex: Int) {
+enum class SceneBuildingSelection(val menuIndex: Int) {
     /** App buildings rendered according to the selected basemap and camera view. */
     DRAWN(menuIndex = 0),
 
@@ -164,10 +163,12 @@ internal fun sceneBuildingRenderMode(
     cameraPitchDegrees: Double
 ): SceneBuildingRenderMode = when {
     buildingSelection == SceneBuildingSelection.MAPBOX -> SceneBuildingRenderMode.MAPBOX
+
     basemapStyle == MapboxBasemapStyle.SATELLITE &&
         cameraPitchDegrees <= Scene3DCamera.TOP_DOWN_THRESHOLD_DEGREES -> {
         SceneBuildingRenderMode.DRAWN_TOP_DOWN
     }
+
     else -> SceneBuildingRenderMode.DRAWN_3D
 }
 
