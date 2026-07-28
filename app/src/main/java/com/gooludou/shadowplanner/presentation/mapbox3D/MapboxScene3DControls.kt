@@ -251,7 +251,20 @@ private fun MapboxScene3DBottomControls(
         verticalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            MapboxScene3DModeButton(
+                onStartEditing = onStartEditing
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
             horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -298,6 +311,7 @@ private fun MapboxScene3DBottomControls(
             ) {
                 Icon(Icons.Outlined.Apartment, contentDescription = null)
             }
+            Spacer(modifier = Modifier.weight(1f))
             val topDownLabel = stringResource(R.string.top_down_view)
             val threeDimensionalLabel = stringResource(R.string.view_3d_button)
             val cameraDescription = stringResource(
@@ -328,10 +342,6 @@ private fun MapboxScene3DBottomControls(
                     contentDescription = null
                 )
             }
-            Spacer(modifier = Modifier.weight(1f))
-            MapboxScene3DModeButton(
-                onStartEditing = onStartEditing
-            )
         }
     }
 }
