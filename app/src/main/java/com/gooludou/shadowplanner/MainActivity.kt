@@ -86,7 +86,6 @@ import com.gooludou.shadowplanner.presentation.drawview.DrawingCrosshair
 import com.gooludou.shadowplanner.presentation.drawview.DrawingPropertiesSheet
 import com.gooludou.shadowplanner.presentation.drawview.ShadowColorSheet
 import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSheet
-import com.gooludou.shadowplanner.presentation.dashboard.MapboxScene3DProjectDefaults
 import com.gooludou.shadowplanner.presentation.dashboard.MapboxScene3DViewport
 import com.gooludou.shadowplanner.presentation.dashboard.MapboxSceneMode
 import com.gooludou.shadowplanner.presentation.dashboard.MapDateTimeActions
@@ -346,12 +345,10 @@ private fun ShadowMapScreen(
     var satelliteSnapshot by remember { mutableStateOf<Bitmap?>(null) }
     var loadRequest by remember { mutableIntStateOf(0) }
     var buildingQueryLocation by remember { mutableStateOf<GeoPoint?>(null) }
-    var showDomeIn3d by remember { mutableStateOf(true) }
     var mapboxSceneMode by remember { mutableStateOf(MapboxSceneMode.VIEW) }
     LaunchedEffect(uiState.projectLoadRevision) {
         if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
         mapboxSceneMode = MapboxSceneMode.VIEW
-        showDomeIn3d = MapboxScene3DProjectDefaults.SHOW_DOME
     }
     var mapboxSceneViewport by remember { mutableStateOf<MapboxScene3DViewport?>(null) }
     LaunchedEffect(pendingLocation) {
@@ -790,7 +787,6 @@ private fun ShadowMapScreen(
                 uiState = uiState,
                 state = ShadowPlannerSceneState(
                     viewport = viewport,
-                    showDome = showDomeIn3d,
                     sceneMode = mapboxSceneMode,
                     autoToolState = autoToolState,
                     canRecenterCurrentLocation = currentLocationPoint != null,
@@ -838,8 +834,7 @@ private fun ShadowMapScreen(
                             mapboxSceneController?.queryDrawing(point, onSelectDrawing)
                         }
                         false
-                    },
-                    onToggleDome = { showDomeIn3d = !showDomeIn3d }
+                    }
                 )
             )
         }

@@ -48,7 +48,6 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
                     widthPixels = 1080,
                     heightPixels = 2400
                 ),
-                showDome = true,
                 sceneMode = MapboxSceneMode.VIEW,
                 autoToolState = AutoToolState.READY,
                 canRecenterCurrentLocation = false,
@@ -82,6 +81,5 @@ private fun previewShadowPlannerSceneActions(): ShadowPlannerSceneActions =
         onOpenShadowColor = {},
         onSceneModeChanged = {},
         onSceneMapViewReady = {},
-        onSceneMapClick = { false },
-        onToggleDome = {}
+        onSceneMapClick = { false }
     )

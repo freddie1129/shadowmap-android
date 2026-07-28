@@ -9,9 +9,7 @@ import com.mapbox.maps.MapView
 internal data class MapControlsState(
     val dateTimeLocation: GeoPoint,
     val canRecenterCurrentLocation: Boolean,
-    val basemapStyle: MapboxBasemapStyle,
-    val showDome: Boolean,
-    val buildingSelection: SceneBuildingSelection,
+    val displayMode: MapDisplayMode,
     val sceneMode: MapboxSceneMode,
     val autoToolState: AutoToolState
 )
@@ -33,10 +31,8 @@ internal data class MapNavigationActions(
 )
 
 internal data class MapDisplayActions(
-    val onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit,
-    val onBuildingSelectionChanged: (SceneBuildingSelection) -> Unit,
+    val onDisplayModeChanged: (MapDisplayMode) -> Unit,
     val onOpenShadowColor: () -> Unit,
-    val onToggleDome: () -> Unit,
     val onStartEditing: () -> Unit
 )
 
@@ -54,7 +50,6 @@ internal data class MapDateTimeActions(
 
 internal data class ShadowPlannerSceneState(
     val viewport: MapboxScene3DViewport,
-    val showDome: Boolean,
     val sceneMode: MapboxSceneMode,
     val autoToolState: AutoToolState,
     val canRecenterCurrentLocation: Boolean,
@@ -68,6 +63,5 @@ internal data class ShadowPlannerSceneActions(
     val onOpenShadowColor: () -> Unit,
     val onSceneModeChanged: (MapboxSceneMode) -> Unit,
     val onSceneMapViewReady: (MapView) -> Unit,
-    val onSceneMapClick: (Point) -> Boolean,
-    val onToggleDome: () -> Unit
+    val onSceneMapClick: (Point) -> Boolean
 )

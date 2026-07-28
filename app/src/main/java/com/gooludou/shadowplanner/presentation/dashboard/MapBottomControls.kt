@@ -45,23 +45,17 @@ import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
 import com.gooludou.shadowplanner.presentation.components.ShadowColorButton
 import com.gooludou.shadowplanner.ui.theme.Map3DActionBlue
 import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
-import com.mapbox.maps.extension.compose.animation.viewport.MapViewportState
 
 @Composable
 @Suppress("LongMethod")
-fun MapBottomControls(
-    mapViewportState: MapViewportState,
-    isTopDown: Boolean,
-    basemapStyle: MapboxBasemapStyle,
-    onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit,
-    showDome: Boolean,
-    buildingSelection: SceneBuildingSelection,
-    onBuildingSelectionChanged: (SceneBuildingSelection) -> Unit,
+internal fun MapBottomControls(
+    displayMode: MapDisplayMode,
+    onDisplayModeChanged: (MapDisplayMode) -> Unit,
     shadowAppearance: ShadowAppearance,
     onOpenShadowColor: () -> Unit,
-    onToggleDome: () -> Unit,
     onStartEditing: () -> Unit
 ) {
+    val isTopDown = displayMode.cameraMode == MapCameraMode.TOP_DOWN
     Column(
         modifier = Modifier.Companion.fillMaxWidth(),
         horizontalAlignment = Alignment.Companion.CenterHorizontally,
@@ -90,15 +84,25 @@ fun MapBottomControls(
                 onClick = onOpenShadowColor
             )
             MapboxScene3DBasemapSelectionButton(
-                basemapStyle = basemapStyle,
-                onBasemapStyleSelected = onBasemapStyleSelected
+                basemapStyle = displayMode.basemapStyle,
+                onBasemapStyleSelected = { selectedStyle ->
+                    onDisplayModeChanged(displayMode.copy(basemapStyle = selectedStyle))
+                }
             )
             MapboxScene3DToggleButton(
-                isSelected = showDome,
+                isSelected = displayMode.isDomeVisible,
                 contentDescription = stringResource(
-                    if (showDome) R.string.hide_sky_overview else R.string.show_sky_overview
+                    if (displayMode.isDomeVisible) {
+                        R.string.hide_sky_overview
+                    } else {
+                        R.string.show_sky_overview
+                    }
                 ),
-                onClick = onToggleDome
+                onClick = {
+                    onDisplayModeChanged(
+                        displayMode.copy(isDomeVisible = !displayMode.isDomeVisible)
+                    )
+                }
             ) {
                 Icon(Icons.Outlined.WbSunny, contentDescription = null)
             }
@@ -109,9 +113,9 @@ fun MapBottomControls(
                 drawingBuildingsLabel,
                 mapboxBuildingsLabel
             )
-            val selectedBuildingsIndex = buildingSelection.menuIndex
+            val selectedBuildingsIndex = displayMode.content.menuIndex
             MapboxScene3DSelectionButton(
-                isSelected = buildingSelection == SceneBuildingSelection.MAPBOX,
+                isSelected = displayMode.content == SceneBuildingSelection.MAPBOX,
                 contentDescription = stringResource(
                     R.string.setting_current_value,
                     buildingsTitle,
@@ -121,8 +125,15 @@ fun MapBottomControls(
                 options = buildingOptions,
                 selectedOptionIndex = selectedBuildingsIndex,
                 onOptionSelected = { index ->
-                    onBuildingSelectionChanged(
-                        SceneBuildingSelection.fromMenuIndex(index)
+                    val selectedContent = SceneBuildingSelection.fromMenuIndex(index)
+                    onDisplayModeChanged(
+                        displayMode.copy(
+                            content = selectedContent,
+                            basemapStyle = basemapStyleAfterBuildingSelection(
+                                buildingSelection = selectedContent,
+                                currentBasemapStyle = displayMode.basemapStyle
+                            )
+                        )
                     )
                 }
             ) {
@@ -140,15 +151,15 @@ fun MapBottomControls(
                 isSelected = !isTopDown,
                 contentDescription = cameraDescription,
                 onClick = {
-                    mapViewportState.setCameraOptions {
-                        pitch(
-                            if (isTopDown) {
+                    onDisplayModeChanged(
+                        displayMode.copy(
+                            cameraPitchDegrees = if (isTopDown) {
                                 Scene3DCamera.ORBIT_PITCH_DEGREES
                             } else {
                                 Scene3DCamera.TOP_DOWN_PITCH_DEGREES
                             }
                         )
-                    }
+                    )
                 }
             ) {
                 Icon(

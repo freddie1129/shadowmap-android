@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -29,6 +30,7 @@ import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
 import com.mapbox.maps.extension.compose.animation.viewport.MapViewportState
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import kotlin.math.abs
 
 @Composable
 @Suppress("LongMethod")
@@ -38,11 +40,18 @@ internal fun MapControls(
     state: MapControlsState,
     actions: MapControlsActions
 ) {
-    val currentPitch = mapViewportState.cameraState?.pitch ?: Scene3DCamera.ORBIT_PITCH_DEGREES
-    val isTopDown = currentPitch <= Scene3DCamera.TOP_DOWN_THRESHOLD_DEGREES
+    val currentPitch = mapViewportState.cameraState?.pitch
+        ?: state.displayMode.cameraPitchDegrees
     var isDateTimeVisible by rememberSaveable { mutableStateOf(true) }
     val showEditingToolbar = state.sceneMode == MapboxSceneMode.EDIT &&
         uiState.canShowMapboxEditingToolbar()
+    LaunchedEffect(currentPitch) {
+        if (abs(currentPitch - state.displayMode.cameraPitchDegrees) > CAMERA_PITCH_SYNC_EPSILON) {
+            actions.display.onDisplayModeChanged(
+                state.displayMode.copy(cameraPitchDegrees = currentPitch)
+            )
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -55,13 +64,15 @@ internal fun MapControls(
             onShowLocationInfo = actions.navigation.onShowLocationInfo,
             onRecenterCurrentLocation = actions.navigation.onRecenterCurrentLocation,
             canRecenterCurrentLocation = state.canRecenterCurrentLocation,
-            isSatelliteMap = state.basemapStyle == MapboxBasemapStyle.SATELLITE,
+            isSatelliteMap = state.displayMode.basemapStyle == MapboxBasemapStyle.SATELLITE,
             onToggleMapStyle = {
-                actions.display.onBasemapStyleSelected(
-                    when (state.basemapStyle) {
-                        MapboxBasemapStyle.STANDARD -> MapboxBasemapStyle.SATELLITE
-                        MapboxBasemapStyle.SATELLITE -> MapboxBasemapStyle.STANDARD
-                    }
+                actions.display.onDisplayModeChanged(
+                    state.displayMode.copy(
+                        basemapStyle = when (state.displayMode.basemapStyle) {
+                            MapboxBasemapStyle.STANDARD -> MapboxBasemapStyle.SATELLITE
+                            MapboxBasemapStyle.SATELLITE -> MapboxBasemapStyle.STANDARD
+                        }
+                    )
                 )
             },
             onOpenProjects = actions.navigation.onOpenProjects,
@@ -72,9 +83,9 @@ internal fun MapControls(
             PitchSlider(
                 pitch = currentPitch.toFloat(),
                 onPitchChange = { pitch ->
-                    mapViewportState.setCameraOptions {
-                        pitch(pitch.toDouble())
-                    }
+                    actions.display.onDisplayModeChanged(
+                        state.displayMode.copy(cameraPitchDegrees = pitch.toDouble())
+                    )
                 },
                 modifier = Modifier.align(Alignment.CenterEnd)
             )
@@ -90,16 +101,10 @@ internal fun MapControls(
         ) {
             if (state.sceneMode == MapboxSceneMode.VIEW) {
                 MapBottomControls(
-                    mapViewportState = mapViewportState,
-                    isTopDown = isTopDown,
-                    basemapStyle = state.basemapStyle,
-                    onBasemapStyleSelected = actions.display.onBasemapStyleSelected,
-                    showDome = state.showDome,
-                    buildingSelection = state.buildingSelection,
-                    onBuildingSelectionChanged = actions.display.onBuildingSelectionChanged,
+                    displayMode = state.displayMode,
+                    onDisplayModeChanged = actions.display.onDisplayModeChanged,
                     shadowAppearance = uiState.shadowAppearance,
                     onOpenShadowColor = actions.display.onOpenShadowColor,
-                    onToggleDome = actions.display.onToggleDome,
                     onStartEditing = actions.display.onStartEditing
                 )
             } else if (showEditingToolbar) {
@@ -262,9 +267,12 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean, sceneMode: M
                 state = MapControlsState(
                     dateTimeLocation = GeoPoint(153.0251, -27.4698),
                     canRecenterCurrentLocation = true,
-                    basemapStyle = MapboxBasemapStyle.SATELLITE,
-                    showDome = true,
-                    buildingSelection = SceneBuildingSelection.DRAWN,
+                    displayMode = MapDisplayMode(
+                        basemapStyle = MapboxBasemapStyle.SATELLITE,
+                        isDomeVisible = true,
+                        content = SceneBuildingSelection.DRAWN,
+                        cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
+                    ),
                     sceneMode = sceneMode,
                     autoToolState = AutoToolState.READY
                 ),
@@ -284,10 +292,8 @@ private fun previewMapControlsActions(): MapControlsActions = MapControlsActions
         onSaveProject = {}
     ),
     display = MapDisplayActions(
-        onBasemapStyleSelected = {},
-        onBuildingSelectionChanged = {},
+        onDisplayModeChanged = {},
         onOpenShadowColor = {},
-        onToggleDome = {},
         onStartEditing = {}
     ),
     editing = MapEditingActions(
@@ -301,3 +307,5 @@ private fun previewMapControlsActions(): MapControlsActions = MapControlsActions
         onNowSelected = {}
     )
 )
+
+private const val CAMERA_PITCH_SYNC_EPSILON = 0.01

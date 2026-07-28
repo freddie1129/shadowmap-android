@@ -91,58 +91,48 @@ internal enum class MapboxSceneMode {
     EDIT
 }
 
-/** Mapbox 3D presentation state restored after a project is successfully loaded. */
-internal object MapboxScene3DProjectDefaults {
-    /** Projects open with the camera looking straight down. */
-    const val CAMERA_PITCH_DEGREES = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
-
-    /** Projects open with app-rendered building outlines and shadows. */
-    val BUILDING_SELECTION = SceneBuildingSelection.DRAWN
-
-    /** Satellite imagery is the default background for project drawings. */
-    val BASEMAP_STYLE = MapboxBasemapStyle.SATELLITE
-
-    /** The optional sky dome stays hidden until explicitly enabled. */
-    const val SHOW_DOME = false
+internal enum class MapCameraMode {
+    TOP_DOWN,
+    THREE_DIMENSIONAL
 }
 
-/** Mapbox scene settings used while editing and retained after editing finishes. */
-internal object MapboxScene3DEditingDefaults {
-    /** Editing and its resulting view always use a top-down camera. */
-    const val CAMERA_PITCH_DEGREES = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
-
-    /** User-drawn buildings remain selected after editing. */
-    val BUILDING_SELECTION = SceneBuildingSelection.DRAWN
-
-    /** Satellite imagery remains selected after editing. */
-    val BASEMAP_STYLE = MapboxBasemapStyle.SATELLITE
-
-    /** The sky dome remains disabled after editing. */
-    const val SHOW_DOME = false
+/** User-selectable settings that determine how the Mapbox scene is displayed. */
+internal data class MapDisplayMode(
+    val basemapStyle: MapboxBasemapStyle,
+    val isDomeVisible: Boolean,
+    val content: SceneBuildingSelection,
+    val cameraPitchDegrees: Double
+) {
+    val cameraMode: MapCameraMode
+        get() = if (cameraPitchDegrees <= Scene3DCamera.TOP_DOWN_THRESHOLD_DEGREES) {
+            MapCameraMode.TOP_DOWN
+        } else {
+            MapCameraMode.THREE_DIMENSIONAL
+        }
 }
 
-/** Initial Mapbox presentation values chosen before the map is attached. */
-internal data class MapboxScene3DInitialState(
-    val cameraPitchDegrees: Double,
-    val buildingSelection: SceneBuildingSelection,
-    val basemapStyle: MapboxBasemapStyle
-)
+/** Central defaults for app launch, project loading, and editing transitions. */
+internal object MapDisplayDefaults {
+    val APP_LAUNCH = MapDisplayMode(
+        basemapStyle = MapboxBasemapStyle.STANDARD,
+        isDomeVisible = true,
+        content = SceneBuildingSelection.MAPBOX,
+        cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
+    )
 
-/** Ensures a loaded project starts with its defaults before Mapbox applies initial camera state. */
-internal fun initialMapboxScene3DState(projectLoadRevision: Long): MapboxScene3DInitialState =
-    if (projectLoadRevision > 0L) {
-        MapboxScene3DInitialState(
-            cameraPitchDegrees = MapboxScene3DProjectDefaults.CAMERA_PITCH_DEGREES,
-            buildingSelection = MapboxScene3DProjectDefaults.BUILDING_SELECTION,
-            basemapStyle = MapboxScene3DProjectDefaults.BASEMAP_STYLE
-        )
-    } else {
-        MapboxScene3DInitialState(
-            cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES,
-            buildingSelection = SceneBuildingSelection.MAPBOX,
-            basemapStyle = MapboxBasemapStyle.STANDARD
-        )
-    }
+    val PROJECT = MapDisplayMode(
+        basemapStyle = MapboxBasemapStyle.SATELLITE,
+        isDomeVisible = false,
+        content = SceneBuildingSelection.DRAWN,
+        cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+    )
+
+    val EDITING = PROJECT
+}
+
+/** Selects the initial display mode before the Mapbox map is attached. */
+internal fun initialMapDisplayMode(projectLoadRevision: Long): MapDisplayMode =
+    if (projectLoadRevision > 0L) MapDisplayDefaults.PROJECT else MapDisplayDefaults.APP_LAUNCH
 
 /** Rendering selected from the building source and current camera pitch. */
 internal enum class SceneBuildingRenderMode {

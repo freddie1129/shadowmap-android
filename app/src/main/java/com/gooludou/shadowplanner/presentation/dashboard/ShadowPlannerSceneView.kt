@@ -76,14 +76,11 @@ internal fun ShadowPlannerSceneView(
 ) {
     val viewport = state.viewport
     val solarPosition = uiState.solarPosition
-    val initialState = remember {
-        initialMapboxScene3DState(uiState.projectLoadRevision)
+    val initialDisplayMode = remember {
+        initialMapDisplayMode(uiState.projectLoadRevision)
     }
-    var basemapStyle by remember {
-        mutableStateOf(initialState.basemapStyle)
-    }
-    var buildingSelection by remember {
-        mutableStateOf(initialState.buildingSelection)
+    var displayMode by remember {
+        mutableStateOf(initialDisplayMode)
     }
     var hasEnteredEditing by remember { mutableStateOf(false) }
     var sceneMapView by remember { mutableStateOf<MapView?>(null) }
@@ -100,7 +97,7 @@ internal fun ShadowPlannerSceneView(
             center(Point.fromLngLat(viewport.center.longitude, viewport.center.latitude))
             zoom(viewport.zoom)
             bearing(viewport.bearing)
-            pitch(initialState.cameraPitchDegrees)
+            pitch(initialDisplayMode.cameraPitchDegrees)
         }
     }
     LaunchedEffect(viewport) {
@@ -113,28 +110,22 @@ internal fun ShadowPlannerSceneView(
     LaunchedEffect(uiState.projectLoadRevision) {
         if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
         hasEnteredEditing = false
-        basemapStyle = MapboxScene3DProjectDefaults.BASEMAP_STYLE
-        buildingSelection = MapboxScene3DProjectDefaults.BUILDING_SELECTION
+        displayMode = MapDisplayDefaults.PROJECT
+        mapViewportState.setCameraOptions {
+            pitch(MapDisplayDefaults.PROJECT.cameraPitchDegrees)
+        }
     }
     LaunchedEffect(state.sceneMode) {
         if (state.sceneMode == MapboxSceneMode.EDIT) {
             hasEnteredEditing = true
-            basemapStyle = MapboxScene3DEditingDefaults.BASEMAP_STYLE
-            buildingSelection = MapboxScene3DEditingDefaults.BUILDING_SELECTION
+            displayMode = MapDisplayDefaults.EDITING
             mapViewportState.setCameraOptions {
-                pitch(MapboxScene3DEditingDefaults.CAMERA_PITCH_DEGREES)
-            }
-            if (state.showDome != MapboxScene3DEditingDefaults.SHOW_DOME) {
-                actions.onToggleDome()
+                pitch(MapDisplayDefaults.EDITING.cameraPitchDegrees)
             }
         } else if (hasEnteredEditing) {
-            basemapStyle = MapboxScene3DEditingDefaults.BASEMAP_STYLE
-            buildingSelection = MapboxScene3DEditingDefaults.BUILDING_SELECTION
+            displayMode = MapDisplayDefaults.EDITING
             mapViewportState.setCameraOptions {
-                pitch(MapboxScene3DEditingDefaults.CAMERA_PITCH_DEGREES)
-            }
-            if (state.showDome != MapboxScene3DEditingDefaults.SHOW_DOME) {
-                actions.onToggleDome()
+                pitch(MapDisplayDefaults.EDITING.cameraPitchDegrees)
             }
             hasEnteredEditing = false
         }
@@ -149,8 +140,8 @@ internal fun ShadowPlannerSceneView(
             )
         skyState.updateViewport(currentViewport)
     }
-    LaunchedEffect(sceneMapView, state.showDome, viewport) {
-        if (!state.showDome || sceneMapView == null) {
+    LaunchedEffect(sceneMapView, displayMode.isDomeVisible, viewport) {
+        if (!displayMode.isDomeVisible || sceneMapView == null) {
             isSkyViewportReady = false
             return@LaunchedEffect
         }
@@ -167,10 +158,9 @@ internal fun ShadowPlannerSceneView(
     val trunkColor = Color(0xFF75543A)
     val canopyColor = Color(0xFF3F7D48)
     val buildingRenderMode = sceneBuildingRenderMode(
-        buildingSelection = buildingSelection,
-        basemapStyle = basemapStyle,
-        cameraPitchDegrees = mapViewportState.cameraState?.pitch
-            ?: Scene3DCamera.ORBIT_PITCH_DEGREES
+        buildingSelection = displayMode.content,
+        basemapStyle = displayMode.basemapStyle,
+        cameraPitchDegrees = displayMode.cameraPitchDegrees
     )
     Box(modifier = modifier.fillMaxSize()) {
         MapboxScene3DMap(
@@ -184,7 +174,7 @@ internal fun ShadowPlannerSceneView(
             trunkColor = trunkColor,
             canopyColor = canopyColor,
             solarPosition = solarPosition,
-            basemapStyle = basemapStyle,
+            basemapStyle = displayMode.basemapStyle,
             buildingRenderMode = buildingRenderMode,
             sceneMode = state.sceneMode,
             uiState = uiState,
@@ -195,7 +185,7 @@ internal fun ShadowPlannerSceneView(
             },
             onMapClick = actions.onSceneMapClick
         ) {
-            if (state.showDome && isSkyViewportReady) {
+            if (displayMode.isDomeVisible && isSkyViewportReady) {
                 SceneSkyModelLayers(skyState)
             }
         }
@@ -206,32 +196,25 @@ internal fun ShadowPlannerSceneView(
             state = MapControlsState(
                 dateTimeLocation = uiState.calculationLocation ?: viewport.center,
                 canRecenterCurrentLocation = state.canRecenterCurrentLocation,
-                basemapStyle = basemapStyle,
-                showDome = state.showDome,
-                buildingSelection = buildingSelection,
+                displayMode = displayMode,
                 sceneMode = state.sceneMode,
                 autoToolState = state.autoToolState
             ),
             actions = MapControlsActions(
                 navigation = actions.navigation,
                 display = MapDisplayActions(
-                    onBasemapStyleSelected = { selectedStyle ->
-                        basemapStyle = selectedStyle
-                    },
-                    onBuildingSelectionChanged = { selectedBuildings ->
-                        buildingSelection = selectedBuildings
-                        basemapStyle = basemapStyleAfterBuildingSelection(
-                            buildingSelection = selectedBuildings,
-                            currentBasemapStyle = basemapStyle
-                        )
-                    },
-                    onOpenShadowColor = actions.onOpenShadowColor,
-                    onToggleDome = {
-                        if (!state.showDome) {
+                    onDisplayModeChanged = { updatedMode ->
+                        if (!displayMode.isDomeVisible && updatedMode.isDomeVisible) {
                             refreshSkyViewport()
                         }
-                        actions.onToggleDome()
+                        if (displayMode.cameraPitchDegrees != updatedMode.cameraPitchDegrees) {
+                            mapViewportState.setCameraOptions {
+                                pitch(updatedMode.cameraPitchDegrees)
+                            }
+                        }
+                        displayMode = updatedMode
                     },
+                    onOpenShadowColor = actions.onOpenShadowColor,
                     onStartEditing = {
                         actions.onSceneModeChanged(MapboxSceneMode.EDIT)
                     }
@@ -350,18 +333,6 @@ private fun MapboxScene3DMap(
                 shadowIntensity(Scene3DLighting.SHADOW_INTENSITY)
             }
             mapView.mapboxMap.setLight(ambientLight, directionalLight)
-        }
-        MapEffect(uiState.projectLoadRevision) { _ ->
-            if (uiState.projectLoadRevision == 0L) return@MapEffect
-            mapViewportState.setCameraOptions {
-                pitch(MapboxScene3DProjectDefaults.CAMERA_PITCH_DEGREES)
-            }
-        }
-        MapEffect(sceneMode) { _ ->
-            if (sceneMode != MapboxSceneMode.EDIT) return@MapEffect
-            mapViewportState.setCameraOptions {
-                pitch(MapboxScene3DEditingDefaults.CAMERA_PITCH_DEGREES)
-            }
         }
         MapEffect(basemapStyle, buildingRenderMode) { mapView ->
             onMapViewReady(mapView)
