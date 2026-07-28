@@ -11,7 +11,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -46,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -785,6 +783,7 @@ private fun ShadowMapScreen(
         mapboxSceneViewport?.let { viewport ->
             ShadowPlannerSceneView(
                 uiState = uiState,
+                mapSnapshotOverlay = satelliteSnapshot?.asImageBitmap(),
                 state = ShadowPlannerSceneState(
                     viewport = viewport,
                     sceneMode = mapboxSceneMode,
@@ -836,15 +835,6 @@ private fun ShadowMapScreen(
                         false
                     }
                 )
-            )
-        }
-
-        satelliteSnapshot?.let { snapshot ->
-            Image(
-                bitmap = snapshot.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
             )
         }
 

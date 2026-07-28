@@ -2,7 +2,7 @@ package com.gooludou.shadowplanner
 
 /** App-wide feature configuration. */
 object Config {
-    const val ALLOW_LOAD_BUILDING = false
+    const val ALLOW_LOAD_BUILDING = true
 
     /** Neutral longitude used while permission is pending or location is unavailable. */
     const val FALLBACK_MAP_CENTER_LONGITUDE = 0.0

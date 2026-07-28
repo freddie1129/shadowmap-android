@@ -1,5 +1,6 @@
 package com.gooludou.shadowplanner.presentation.dashboard
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import com.gooludou.shadowplanner.R
@@ -72,6 +75,7 @@ internal fun ShadowPlannerSceneView(
     uiState: ShadowMapUiState,
     state: ShadowPlannerSceneState,
     actions: ShadowPlannerSceneActions,
+    mapSnapshotOverlay: ImageBitmap? = null,
     modifier: Modifier = Modifier
 ) {
     val viewport = state.viewport
@@ -188,6 +192,15 @@ internal fun ShadowPlannerSceneView(
             if (displayMode.isDomeVisible && isSkyViewportReady) {
                 SceneSkyModelLayers(skyState)
             }
+        }
+
+        mapSnapshotOverlay?.let { snapshot ->
+            Image(
+                bitmap = snapshot,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
         }
 
         MapControls(
