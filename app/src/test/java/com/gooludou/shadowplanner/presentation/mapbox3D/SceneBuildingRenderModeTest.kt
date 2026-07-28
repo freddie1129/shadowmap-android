@@ -2,7 +2,6 @@ package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SceneBuildingRenderModeTest {
@@ -62,13 +61,7 @@ class SceneBuildingRenderModeTest {
     }
 
     @Test
-    fun `only drawn buildings allow basemap selection`() {
-        assertTrue(SceneBuildingSelection.DRAWN.allowsBasemapSelection)
-        assertFalse(SceneBuildingSelection.MAPBOX.allowsBasemapSelection)
-    }
-
-    @Test
-    fun `selecting Mapbox buildings switches to standard basemap`() {
+    fun `explicitly selecting Mapbox buildings starts on standard basemap`() {
         assertEquals(
             MapboxBasemapStyle.STANDARD,
             basemapStyleAfterBuildingSelection(

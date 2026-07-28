@@ -1,7 +1,6 @@
 package com.gooludou.shadowplanner.presentation.mapbox3D
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -76,7 +75,6 @@ internal fun MapboxScene3DControls(
     buildingSelection: SceneBuildingSelection,
     onBuildingSelectionChanged: (SceneBuildingSelection) -> Unit,
     shadowAppearance: ShadowAppearance,
-    showShadowColorControl: Boolean,
     onOpenShadowColor: () -> Unit,
     onToggleDome: () -> Unit,
     sceneMode: MapboxSceneMode,
@@ -128,7 +126,6 @@ internal fun MapboxScene3DControls(
                     buildingSelection = buildingSelection,
                     onBuildingSelectionChanged = onBuildingSelectionChanged,
                     shadowAppearance = shadowAppearance,
-                    showShadowColorControl = showShadowColorControl,
                     onOpenShadowColor = onOpenShadowColor,
                     onToggleDome = onToggleDome,
                     onStartEditing = onStartEditing
@@ -244,7 +241,6 @@ private fun MapboxScene3DBottomControls(
     buildingSelection: SceneBuildingSelection,
     onBuildingSelectionChanged: (SceneBuildingSelection) -> Unit,
     shadowAppearance: ShadowAppearance,
-    showShadowColorControl: Boolean,
     onOpenShadowColor: () -> Unit,
     onToggleDome: () -> Unit,
     onStartEditing: () -> Unit
@@ -259,18 +255,14 @@ private fun MapboxScene3DBottomControls(
             horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AnimatedVisibility(visible = showShadowColorControl) {
-                ShadowColorButton(
-                    appearance = shadowAppearance,
-                    onClick = onOpenShadowColor
-                )
-            }
-            if (buildingSelection.allowsBasemapSelection) {
-                MapboxScene3DBasemapSelectionButton(
-                    basemapStyle = basemapStyle,
-                    onBasemapStyleSelected = onBasemapStyleSelected
-                )
-            }
+            ShadowColorButton(
+                appearance = shadowAppearance,
+                onClick = onOpenShadowColor
+            )
+            MapboxScene3DBasemapSelectionButton(
+                basemapStyle = basemapStyle,
+                onBasemapStyleSelected = onBasemapStyleSelected
+            )
             MapboxScene3DToggleButton(
                 isSelected = showDome,
                 contentDescription = stringResource(
@@ -551,7 +543,6 @@ private fun MapboxScene3DControlsPreviewContent(
                 buildingSelection = SceneBuildingSelection.DRAWN,
                 onBuildingSelectionChanged = {},
                 shadowAppearance = ShadowAppearance.DEFAULT,
-                showShadowColorControl = true,
                 onOpenShadowColor = {},
                 onToggleDome = {},
                 sceneMode = sceneMode,

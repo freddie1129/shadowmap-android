@@ -73,21 +73,12 @@ internal object Scene3DCamera {
 }
 
 /** Building source behavior selected from the 3D controls. */
-internal enum class SceneBuildingSelection(
-    val menuIndex: Int,
-    val allowsBasemapSelection: Boolean
-) {
+internal enum class SceneBuildingSelection(val menuIndex: Int) {
     /** App buildings rendered according to the selected basemap and camera view. */
-    DRAWN(
-        menuIndex = 0,
-        allowsBasemapSelection = true
-    ),
+    DRAWN(menuIndex = 0),
 
-    /** Mapbox Standard buildings supplied by the basemap. */
-    MAPBOX(
-        menuIndex = 1,
-        allowsBasemapSelection = false
-    );
+    /** Buildings supplied by the selected Mapbox basemap. */
+    MAPBOX(menuIndex = 1);
 
     companion object {
         fun fromMenuIndex(index: Int): SceneBuildingSelection =
@@ -180,7 +171,7 @@ internal fun sceneBuildingRenderMode(
     else -> SceneBuildingRenderMode.DRAWN_3D
 }
 
-/** Mapbox buildings require Standard; drawn buildings preserve the user's basemap choice. */
+/** Applies Standard when Mapbox buildings are explicitly selected; later map changes remain free. */
 internal fun basemapStyleAfterBuildingSelection(
     buildingSelection: SceneBuildingSelection,
     currentBasemapStyle: MapboxBasemapStyle

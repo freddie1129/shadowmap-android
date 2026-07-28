@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.SatelliteAlt
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,6 +43,8 @@ fun Map2DTopControls(
     onShowLocationInfo: () -> Unit,
     onRecenterCurrentLocation: () -> Unit,
     canRecenterCurrentLocation: Boolean,
+    isSatelliteMap: Boolean = false,
+    onToggleMapStyle: (() -> Unit)? = null,
     onOpenProjects: () -> Unit,
     onSaveProject: () -> Unit,
     modifier: Modifier = Modifier
@@ -76,6 +80,28 @@ fun Map2DTopControls(
                 ),
             verticalAlignment = Alignment.Companion.CenterVertically
         ) {
+            if (onToggleMapStyle != null) {
+                MapRoundIconButton(
+                    onClick = onToggleMapStyle,
+                    contentDescription = stringResource(
+                        if (isSatelliteMap) {
+                            R.string.switch_to_standard_map
+                        } else {
+                            R.string.switch_to_satellite_map
+                        }
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (isSatelliteMap) {
+                            Icons.Outlined.Map
+                        } else {
+                            Icons.Outlined.SatelliteAlt
+                        },
+                        contentDescription = null
+                    )
+                }
+                Spacer(modifier = Modifier.width(dimensions.spacingSmall))
+            }
             MapRoundIconButton(
                 onClick = onRecenterCurrentLocation,
                 contentDescription = stringResource(R.string.center_on_current_location),
@@ -152,6 +178,8 @@ private fun Map2DTopControlsPreview() {
             onShowLocationInfo = {},
             onRecenterCurrentLocation = {},
             canRecenterCurrentLocation = true,
+            isSatelliteMap = true,
+            onToggleMapStyle = {},
             onOpenProjects = {},
             onSaveProject = {}
         )

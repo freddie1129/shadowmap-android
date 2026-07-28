@@ -231,6 +231,13 @@ internal fun MapboxScene3DView(
             onShowLocationInfo = onShowLocationInfo,
             onRecenterCurrentLocation = onRecenterCurrentLocation,
             canRecenterCurrentLocation = canRecenterCurrentLocation,
+            isSatelliteMap = basemapStyle == MapboxBasemapStyle.SATELLITE,
+            onToggleMapStyle = {
+                basemapStyle = when (basemapStyle) {
+                    MapboxBasemapStyle.STANDARD -> MapboxBasemapStyle.SATELLITE
+                    MapboxBasemapStyle.SATELLITE -> MapboxBasemapStyle.STANDARD
+                }
+            },
             onOpenProjects = onOpenProjects,
             onSaveProject = onSaveProject,
             modifier = Modifier
@@ -259,8 +266,6 @@ internal fun MapboxScene3DView(
                 )
             },
             shadowAppearance = uiState.shadowAppearance,
-            showShadowColorControl = buildingRenderMode ==
-                SceneBuildingRenderMode.DRAWN_TOP_DOWN,
             onOpenShadowColor = onOpenShadowColor,
             onToggleDome = {
                 if (!showDome) {
