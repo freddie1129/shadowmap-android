@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "199375337175",
+    "project_id": "shadowplanner-59554",
+    "storage_bucket": "shadowplanner-59554.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:199375337175:android:6dae4552e656216bf96292",
+        "android_client_info": {
+          "package_name": "com.gooludou.shadowplanner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDU1X6qqc89EFHVGmiwUV3Uwd8KDiua9yo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
