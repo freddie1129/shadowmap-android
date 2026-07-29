@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
-import com.gooludou.shadowplanner.ShadowMapRoute
+import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapRoute
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchScreen
