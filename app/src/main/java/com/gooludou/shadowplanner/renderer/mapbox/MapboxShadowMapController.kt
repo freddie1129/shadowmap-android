@@ -2,11 +2,8 @@ package com.gooludou.shadowplanner.renderer.mapbox
 
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
 import com.gooludou.shadowplanner.core.model.Building
-import com.gooludou.shadowplanner.core.model.BuildingSource
-import com.gooludou.shadowplanner.core.model.DEFAULT_BUILDING_HEIGHT_METERS
 import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
-import com.gooludou.shadowplanner.core.model.DrawnObjectType
 import com.gooludou.shadowplanner.core.model.DrawnTree
 import com.gooludou.shadowplanner.core.model.DrawnWall
 import com.gooludou.shadowplanner.core.model.GeoPoint
@@ -14,19 +11,12 @@ import com.gooludou.shadowplanner.core.model.GeoPolygon
 import com.gooludou.shadowplanner.core.model.PendingDrawing
 import com.gooludou.shadowplanner.core.model.SceneObjectSource
 import com.gooludou.shadowplanner.core.model.ShadowAppearance
-import com.mapbox.common.Cancelable
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
-import com.mapbox.geojson.Geometry
 import com.mapbox.geojson.LineString
-import com.mapbox.geojson.MultiPolygon
 import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
 import com.mapbox.maps.MapView
-import com.mapbox.maps.MapboxExperimental
-import com.mapbox.maps.RenderedQueryGeometry
-import com.mapbox.maps.RenderedQueryOptions
-import com.mapbox.maps.Style
 import com.mapbox.maps.extension.style.expressions.generated.Expression
 import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.generated.circleLayer
@@ -37,21 +27,12 @@ import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.GeoJsonSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.extension.style.sources.getSourceAs
-import com.mapbox.maps.interactions.standard.generated.StandardBuildings
-import com.mapbox.maps.interactions.standard.generated.StandardBuildingsFeature
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
-import kotlin.coroutines.resume
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
 
 @Suppress("TooManyFunctions")
 class MapboxShadowMapController
@@ -59,75 +40,15 @@ class MapboxShadowMapController
 constructor(
     @Assisted private val mapView: MapView
 ) {
+    private val drawingQuery = MapboxDrawingQuery(mapView)
+    private val buildingLoader = MapboxBuildingLoader(mapView)
+
     fun queryDrawing(point: Point, callback: (DrawnObjectSelection?) -> Unit) {
-        val screenCoordinate = mapView.mapboxMap.pixelForCoordinate(point)
-        mapView.mapboxMap.queryRenderedFeatures(
-            RenderedQueryGeometry(screenCoordinate),
-            RenderedQueryOptions(
-                listOf(
-                    SELECTED_LINE_LAYER_ID,
-                    SELECTED_FILL_LAYER_ID,
-                    LOADED_BUILDINGS_LINE_LAYER_ID,
-                    LOADED_BUILDINGS_FILL_LAYER_ID,
-                    DRAWN_TREES_CENTER_LAYER_ID,
-                    DRAWN_TREES_LINE_LAYER_ID,
-                    DRAWN_TREES_FILL_LAYER_ID,
-                    DRAWN_WALLS_LAYER_ID,
-                    DRAWN_BUILDINGS_LINE_LAYER_ID,
-                    DRAWN_BUILDINGS_FILL_LAYER_ID
-                ),
-                null
-            )
-        ) { result ->
-            val feature = result.value?.firstOrNull()?.queriedFeature?.feature
-            val id = feature?.getStringProperty(PROPERTY_ID)
-            val type = when (feature?.getStringProperty(PROPERTY_TYPE)) {
-                TYPE_LOADED_BUILDING, TYPE_DRAWN_BUILDING -> DrawnObjectType.BUILDING
-                TYPE_WALL -> DrawnObjectType.WALL
-                TYPE_TREE, TYPE_TREE_CENTER -> DrawnObjectType.TREE
-                else -> null
-            }
-            val source = if (feature?.getStringProperty(PROPERTY_TYPE) == TYPE_LOADED_BUILDING) {
-                SceneObjectSource.AUTOMATIC
-            } else {
-                SceneObjectSource.MANUAL
-            }
-            callback(
-                if (id != null &&
-                    type != null
-                ) {
-                    DrawnObjectSelection(id, type, source)
-                } else {
-                    null
-                }
-            )
-        }
+        drawingQuery.query(point, callback)
     }
 
-    @OptIn(MapboxExperimental::class)
     suspend fun fetchBuildings(loadType: BuildingLoadType): List<Building> =
-        withContext(Dispatchers.Main.immediate) {
-            var switchedToStandard = false
-            try {
-                withTimeout(STYLE_OPERATION_TIMEOUT_MILLIS) {
-                    awaitStyle(Style.STANDARD)
-                    switchedToStandard = true
-                    awaitMapIdle()
-                    queryBuildings(loadType)
-                }
-            } finally {
-                if (switchedToStandard) {
-                    withContext(NonCancellable) {
-                        val restored =
-                            withTimeoutOrNull(STYLE_OPERATION_TIMEOUT_MILLIS) {
-                                awaitStyle(Style.STANDARD_SATELLITE)
-                                awaitMapIdle()
-                            }
-                        checkNotNull(restored) { "Timed out restoring the satellite style" }
-                    }
-                }
-            }
-        }
+        buildingLoader.fetch(loadType)
 
     @Suppress("LongMethod", "LongParameterList")
     fun render(
@@ -440,73 +361,6 @@ constructor(
         Expression.literal(true)
     )
 
-    private suspend fun awaitStyle(styleUri: String) {
-        suspendCancellableCoroutine { continuation ->
-            mapView.mapboxMap.loadStyle(styleUri) {
-                if (continuation.isActive) continuation.resume(Unit)
-            }
-        }
-    }
-
-    private suspend fun awaitMapIdle() {
-        suspendCancellableCoroutine { continuation ->
-            var subscription: Cancelable? = null
-            subscription =
-                mapView.mapboxMap.subscribeMapIdle {
-                    subscription?.cancel()
-                    if (continuation.isActive) continuation.resume(Unit)
-                }
-            continuation.invokeOnCancellation { subscription?.cancel() }
-        }
-    }
-
-    @OptIn(MapboxExperimental::class)
-    private suspend fun queryBuildings(loadType: BuildingLoadType): List<Building> =
-        suspendCancellableCoroutine { continuation ->
-            val queryGeometry = loadType.toQueryGeometry(mapView.width, mapView.height)
-            mapView.mapboxMap.queryRenderedFeatures(
-                StandardBuildings(),
-                queryGeometry
-            ) { features ->
-                if (continuation.isActive) {
-                    continuation.resume(features.flatMap { it.toDomainFootprints() })
-                }
-            }
-        }
-
-    private fun StandardBuildingsFeature.toDomainFootprints(): List<Building> {
-        val featureHeight = height?.takeIf { it > 0.0 } ?: DEFAULT_BUILDING_HEIGHT_METERS
-        val featureId = this.id?.featureId ?: originalFeature.id()
-        val featureNamespace = this.id?.featureNamespace
-        return geometry.toGeoPolygons().map { polygon ->
-            Building(
-                id = featureId,
-                polygon = polygon,
-                heightMeters = featureHeight,
-                minHeightMeters = minHeight ?: 0.0,
-                source = BuildingSource.AUTOMATIC,
-                automaticIdentity = AutomaticBuildingMatcher.identity(
-                    featureId = featureId,
-                    featureNamespace = featureNamespace,
-                    polygon = polygon
-                )
-            )
-        }
-    }
-
-    private fun Geometry.toGeoPolygons(): List<GeoPolygon> = when (this) {
-        is Polygon -> listOf(coordinates().toDomainPolygon())
-        is MultiPolygon -> coordinates().map { it.toDomainPolygon() }
-        else -> emptyList()
-    }
-
-    private fun List<List<Point>>.toDomainPolygon(): GeoPolygon = GeoPolygon(
-        rings =
-            map { ring ->
-                ring.map { point -> GeoPoint(point.longitude(), point.latitude()) }
-            }
-    )
-
     private fun List<GeoPolygon>.toFeatureCollection(): FeatureCollection =
         FeatureCollection.fromFeatures(
             map { polygon -> Feature.fromGeometry(polygon.toMapboxPolygon()) }
@@ -519,7 +373,6 @@ constructor(
     )
 
     companion object {
-        private const val STYLE_OPERATION_TIMEOUT_MILLIS = 20_000L
         private const val SCENE_SOURCE_ID = "scene-objects-source"
         private const val PREVIEW_SOURCE_ID = "drawing-preview-source"
         private const val LOADED_BUILDINGS_FILL_LAYER_ID = "loaded-buildings-fill"
