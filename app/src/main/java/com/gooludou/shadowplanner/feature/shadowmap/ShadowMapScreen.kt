@@ -6,11 +6,7 @@ import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -22,9 +18,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -37,18 +31,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
@@ -61,10 +49,8 @@ import com.gooludou.shadowplanner.core.model.DrawnObjectType
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.PendingDrawing
 import com.gooludou.shadowplanner.core.model.SceneObjectSource
-import com.gooludou.shadowplanner.location.LocationSearchResult
-import com.gooludou.shadowplanner.renderer.filament.SceneViewport
-import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadArea
 import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadType
+import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadArea
 import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 import com.gooludou.shadowplanner.feature.locationsearch.SelectedLocationSheet
 import com.gooludou.shadowplanner.feature.projects.SaveProjectDialog
@@ -92,9 +78,7 @@ import com.gooludou.shadowplanner.feature.shadowmap.drawing.ActiveDrawingControl
 import com.gooludou.shadowplanner.feature.shadowmap.drawing.DrawingCrosshair
 import com.gooludou.shadowplanner.feature.shadowmap.drawing.DrawingPropertiesSheet
 import com.gooludou.shadowplanner.feature.shadowmap.drawing.ShadowColorSheet
-import com.gooludou.shadowplanner.project.ProjectViewport
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
-import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
 import com.mapbox.maps.ScreenCoordinate
@@ -125,92 +109,8 @@ private val FALLBACK_MAPBOX_SCENE_VIEWPORT = MapboxScene3DViewport(
 )
 
 @Composable
-internal fun ShadowMapRoute(
-    mapControllerFactory: MapboxShadowMapController.Factory,
-    modifier: Modifier = Modifier,
-    pendingLocation: LocationSearchResult? = null,
-    pendingProjectId: String? = null,
-    onLocationApplied: () -> Unit = {},
-    onProjectApplied: () -> Unit = {},
-    onOpenLocationSearch: () -> Unit = {},
-    onOpenProjects: () -> Unit = {},
-    onOpenSettings: () -> Unit = {},
-    viewModel: ShadowMapViewModel = hiltViewModel()
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(pendingLocation) {
-        val latitude = pendingLocation?.latitude
-        val longitude = pendingLocation?.longitude
-        if (latitude != null && longitude != null) {
-            viewModel.onLocationSelected(
-                location = GeoPoint(latitude = latitude, longitude = longitude),
-                label = pendingLocation.address.ifBlank { pendingLocation.name }
-            )
-        }
-    }
-    LaunchedEffect(pendingProjectId) {
-        pendingProjectId?.let {
-            viewModel.loadProject(it)
-            onProjectApplied()
-        }
-    }
-    ShadowMapScreen(
-        uiState = uiState,
-        dependencies = MapScreenDependencies(mapControllerFactory),
-        actions = ShadowMapActions(
-            map = MapActions(
-                onDateTimeChanged = viewModel::onDateTimeChanged,
-                onNowSelected = viewModel::onNowSelected,
-                onLoadStarted = viewModel::onBuildingLoadStarted,
-                onBuildingsLoaded = viewModel::onBuildingsLoaded,
-                onLoadFailed = viewModel::onBuildingLoadFailed,
-                onViewportChanged = viewModel::onViewportChanged,
-                onShadowAppearanceChanged = viewModel::onShadowAppearanceChanged,
-                onCurrentLocationReceived = viewModel::onCurrentLocationReceived
-            ),
-            drawing = DrawingActions(
-                onSelectDrawMode = viewModel::selectDrawMode,
-                onStopDrawing = viewModel::stopDrawing,
-                onAddVertex = viewModel::addVertex,
-                onUndo = viewModel::undoLastVertex,
-                onDrawingError = viewModel::setDrawingError,
-                onFinishBuilding = viewModel::finishBuilding,
-                onFinishWall = viewModel::finishWall,
-                onStartTree = viewModel::startTree,
-                onReturnPendingToDrawing = viewModel::returnPendingToDrawing,
-                onCommitPendingDrawing = viewModel::commitPendingDrawing,
-                onUpdateSelectedDrawing = viewModel::updateSelectedDrawing,
-                onDeleteSelectedDrawing = viewModel::deleteSelectedDrawing,
-                onRestoreDeletedObject = viewModel::restoreLastDeletedObject,
-                onSelectDrawing = viewModel::selectDrawing,
-                onStartMoving = viewModel::startMoving,
-                onMoveSelectedObject = viewModel::moveSelectedObject,
-                onFinishMoving = viewModel::finishMoving,
-                onCancelMoving = viewModel::cancelMoving
-            ),
-            scene = SceneActions(
-                onClearScene = viewModel::clearScene,
-                onRestoreClearedScene = viewModel::restoreClearedScene
-            ),
-            project = ProjectActions(
-                onSaveProject = viewModel::saveProject,
-                onSaveProjectAsNew = viewModel::saveProjectAsNew
-            )
-        ),
-        navigation = ShadowMapNavigation(
-            pendingLocation = pendingLocation,
-            onLocationApplied = onLocationApplied,
-            onOpenProjects = onOpenProjects,
-            onOpenLocationSearch = onOpenLocationSearch,
-            onOpenSettings = onOpenSettings
-        ),
-        modifier = modifier
-    )
-}
-
-@Composable
 @Suppress("LongMethod", "CyclomaticComplexMethod")
-private fun ShadowMapScreen(
+internal fun ShadowMapScreen(
     uiState: ShadowMapUiState,
     dependencies: MapScreenDependencies,
     actions: ShadowMapActions,
@@ -1038,152 +938,7 @@ private fun ShadowMapScreen(
     }
 }
 
-@Composable
-private fun MoveModeOverlay(
-    onDrag: (androidx.compose.ui.geometry.Offset, androidx.compose.ui.geometry.Offset) -> Unit,
-    onDone: () -> Unit,
-    onCancel: () -> Unit
-) {
-    val dimensions = ShadowMapDesign.dimensions
-    var dragStart by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { dragStart = it },
-                    onDragCancel = { dragStart = null },
-                    onDragEnd = { dragStart = null },
-                    onDrag = { change, amount ->
-                        val start = dragStart ?: change.position
-                        onDrag(start, change.position)
-                    }
-                )
-            }
-    ) {
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(
-                    start = dimensions.spacingLarge,
-                    end = dimensions.spacingLarge,
-                    bottom = 96.dp
-                ),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            shape = MaterialTheme.shapes.large,
-            shadowElevation = 8.dp
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.move_object_hint),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = dimensions.spacingMedium),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
-                TextButton(onClick = onDone) { Text(stringResource(R.string.done)) }
-            }
-        }
-    }
-}
-
-@Preview(name = "Move mode light", showBackground = true, widthDp = 360, heightDp = 180)
-@Composable
-private fun MoveModeOverlayLightPreview() {
-    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
-        Box(modifier = Modifier.fillMaxSize().background(Color(0xFF71856B))) {
-            MoveModeOverlay(onDrag = { _, _ -> }, onDone = {}, onCancel = {})
-        }
-    }
-}
-
-@Preview(name = "Move mode dark", showBackground = true, widthDp = 360, heightDp = 180)
-@Composable
-private fun MoveModeOverlayDarkPreview() {
-    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
-        Box(modifier = Modifier.fillMaxSize().background(Color(0xFF263326))) {
-            MoveModeOverlay(onDrag = { _, _ -> }, onDone = {}, onCancel = {})
-        }
-    }
-}
-
 private val THREE_D_BOTTOM_CONTROL_CLEARANCE = 156.dp
-
-private fun MapView.toSceneViewport(): SceneViewport? {
-    if (width <= 0 || height <= 0) return null
-    val center = mapboxMap.coordinateForPixel(ScreenCoordinate(width / 2.0, height / 2.0))
-    val topLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, 0.0))
-    val topRight = mapboxMap.coordinateForPixel(ScreenCoordinate(width.toDouble(), 0.0))
-    val bottomLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, height.toDouble()))
-    return SceneViewport.fromScreenCoordinates(
-        center.longitude(),
-        center.latitude(),
-        topLeft.longitude(),
-        topLeft.latitude(),
-        topRight.longitude(),
-        topRight.latitude(),
-        bottomLeft.longitude(),
-        bottomLeft.latitude()
-    )
-}
-
-private fun MapView.toProjectViewport(): ProjectViewport? {
-    if (width <= 0 || height <= 0) return null
-    val camera = mapboxMap.cameraState
-    val center = camera.center
-    val topLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, 0.0))
-    val topRight = mapboxMap.coordinateForPixel(ScreenCoordinate(width.toDouble(), 0.0))
-    val bottomRight = mapboxMap.coordinateForPixel(
-        ScreenCoordinate(width.toDouble(), height.toDouble())
-    )
-    val bottomLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, height.toDouble()))
-    return ProjectViewport(
-        center = GeoPoint(center.longitude(), center.latitude()),
-        zoom = camera.zoom,
-        bearing = camera.bearing,
-        pitch = camera.pitch,
-        boundary = com.gooludou.shadowplanner.core.model.GeoPolygon(
-            listOf(
-                listOf(
-                    GeoPoint(topLeft.longitude(), topLeft.latitude()),
-                    GeoPoint(topRight.longitude(), topRight.latitude()),
-                    GeoPoint(bottomRight.longitude(), bottomRight.latitude()),
-                    GeoPoint(bottomLeft.longitude(), bottomLeft.latitude()),
-                    GeoPoint(topLeft.longitude(), topLeft.latitude())
-                )
-            )
-        )
-    )
-}
-
-private fun MapView.isFarEnoughFrom(
-    first: GeoPoint,
-    second: GeoPoint,
-    thresholdPixels: Float
-): Boolean {
-    val firstPixel = mapboxMap.pixelForCoordinate(Point.fromLngLat(first.longitude, first.latitude))
-    val secondPixel = mapboxMap.pixelForCoordinate(
-        Point.fromLngLat(second.longitude, second.latitude)
-    )
-    val dx = firstPixel.x - secondPixel.x
-    val dy = firstPixel.y - secondPixel.y
-    return dx * dx + dy * dy >= thresholdPixels * thresholdPixels
-}
-
-private fun MapView.toBuildingLoadArea(): BuildingLoadArea? = toSceneViewport()?.let { viewport ->
-    BuildingLoadArea(
-        widthMeters = viewport.widthMeters,
-        heightMeters = viewport.heightMeters
-    )
-}
 
 private const val MIN_POINT_SPACING_DP = 12f
 private const val MAX_AUTO_LOAD_METERS = 500.0
