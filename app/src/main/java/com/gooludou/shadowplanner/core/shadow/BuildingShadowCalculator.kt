@@ -3,7 +3,6 @@ package com.gooludou.shadowplanner.core.shadow
 import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.GeoPolygon
-
 import javax.inject.Inject
 import kotlin.math.PI
 import kotlin.math.cos

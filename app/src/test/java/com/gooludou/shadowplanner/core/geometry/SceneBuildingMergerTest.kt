@@ -4,7 +4,6 @@ import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.BuildingSource
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.GeoPolygon
-
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

@@ -20,14 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
 import com.gooludou.shadowplanner.feature.shadowmap.components.AutoToolState
 import com.gooludou.shadowplanner.feature.shadowmap.components.DateTimeSpinner
 import com.gooludou.shadowplanner.feature.shadowmap.components.DateTimeSpinnerCollapsed
 import com.gooludou.shadowplanner.feature.shadowmap.components.MapToolBar
 import com.gooludou.shadowplanner.feature.shadowmap.components.PitchSlider
-import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
-import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import com.mapbox.maps.extension.compose.animation.viewport.MapViewportState
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import kotlin.math.abs

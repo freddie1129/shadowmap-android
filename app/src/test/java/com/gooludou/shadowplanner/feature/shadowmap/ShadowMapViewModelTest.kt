@@ -3,7 +3,6 @@ package com.gooludou.shadowplanner.feature.shadowmap
 import androidx.lifecycle.SavedStateHandle
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
 import com.gooludou.shadowplanner.core.model.Building
-import com.gooludou.shadowplanner.core.shadow.BuildingShadowCalculator
 import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
 import com.gooludou.shadowplanner.core.model.DrawnObjectType
@@ -11,8 +10,9 @@ import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.GeoPolygon
 import com.gooludou.shadowplanner.core.model.PendingDrawing
 import com.gooludou.shadowplanner.core.model.SceneObjectSource
-import com.gooludou.shadowplanner.core.solar.SolarPositionCalculator
+import com.gooludou.shadowplanner.core.shadow.BuildingShadowCalculator
 import com.gooludou.shadowplanner.core.shadow.UserObjectShadowCalculator
+import com.gooludou.shadowplanner.core.solar.SolarPositionCalculator
 import com.gooludou.shadowplanner.location.CurrentLocationResolver
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.project.ProjectRepository

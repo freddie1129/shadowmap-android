@@ -1,7 +1,8 @@
 package com.gooludou.shadowplanner.feature.shadowmap
 
-import com.gooludou.shadowplanner.core.model.AutomaticBuildingIdentity
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
+import com.gooludou.shadowplanner.core.geometry.SceneBuildingMerger
+import com.gooludou.shadowplanner.core.model.AutomaticBuildingIdentity
 import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
@@ -12,7 +13,6 @@ import com.gooludou.shadowplanner.core.model.GeoPolygon
 import com.gooludou.shadowplanner.core.model.LoadedBuildingOverride
 import com.gooludou.shadowplanner.core.model.MoveSession
 import com.gooludou.shadowplanner.core.model.PendingDrawing
-import com.gooludou.shadowplanner.core.geometry.SceneBuildingMerger
 import com.gooludou.shadowplanner.core.model.ShadowAppearance
 import com.gooludou.shadowplanner.core.solar.SolarPosition
 import com.gooludou.shadowplanner.project.ProjectViewport

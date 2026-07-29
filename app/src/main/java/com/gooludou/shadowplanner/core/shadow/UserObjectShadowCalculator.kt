@@ -4,7 +4,6 @@ import com.gooludou.shadowplanner.core.model.DrawnTree
 import com.gooludou.shadowplanner.core.model.DrawnWall
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.GeoPolygon
-
 import javax.inject.Inject
 import kotlin.math.PI
 import kotlin.math.cos

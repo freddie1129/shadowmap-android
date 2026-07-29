@@ -49,9 +49,7 @@ import com.gooludou.shadowplanner.core.model.DrawnObjectType
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.PendingDrawing
 import com.gooludou.shadowplanner.core.model.SceneObjectSource
-import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadType
-import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadArea
-import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.feature.locationsearch.SelectedLocationSheet
 import com.gooludou.shadowplanner.feature.projects.SaveProjectDialog
 import com.gooludou.shadowplanner.feature.shadowmap.BuildingLoadState
@@ -78,7 +76,9 @@ import com.gooludou.shadowplanner.feature.shadowmap.drawing.ActiveDrawingControl
 import com.gooludou.shadowplanner.feature.shadowmap.drawing.DrawingCrosshair
 import com.gooludou.shadowplanner.feature.shadowmap.drawing.DrawingPropertiesSheet
 import com.gooludou.shadowplanner.feature.shadowmap.drawing.ShadowColorSheet
-import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadArea
+import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadType
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
 import com.mapbox.maps.ScreenCoordinate

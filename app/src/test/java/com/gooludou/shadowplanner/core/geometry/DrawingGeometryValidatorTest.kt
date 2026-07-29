@@ -1,7 +1,6 @@
 package com.gooludou.shadowplanner.core.geometry
 
 import com.gooludou.shadowplanner.core.model.GeoPoint
-
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

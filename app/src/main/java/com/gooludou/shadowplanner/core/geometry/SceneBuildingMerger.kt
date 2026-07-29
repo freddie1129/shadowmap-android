@@ -2,7 +2,6 @@ package com.gooludou.shadowplanner.core.geometry
 
 import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.GeoPolygon
-
 import kotlin.math.min
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory

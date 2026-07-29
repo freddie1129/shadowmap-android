@@ -16,10 +16,14 @@ internal fun MapView.toSceneViewport(): SceneViewport? {
     val topRight = mapboxMap.coordinateForPixel(ScreenCoordinate(width.toDouble(), 0.0))
     val bottomLeft = mapboxMap.coordinateForPixel(ScreenCoordinate(0.0, height.toDouble()))
     return SceneViewport.fromScreenCoordinates(
-        center.longitude(), center.latitude(),
-        topLeft.longitude(), topLeft.latitude(),
-        topRight.longitude(), topRight.latitude(),
-        bottomLeft.longitude(), bottomLeft.latitude()
+        center.longitude(),
+        center.latitude(),
+        topLeft.longitude(),
+        topLeft.latitude(),
+        topRight.longitude(),
+        topRight.latitude(),
+        bottomLeft.longitude(),
+        bottomLeft.latitude()
     )
 }
 

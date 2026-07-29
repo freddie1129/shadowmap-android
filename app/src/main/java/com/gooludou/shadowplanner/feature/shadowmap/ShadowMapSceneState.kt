@@ -13,33 +13,31 @@ import com.gooludou.shadowplanner.core.model.LoadedBuildingOverride
 import com.gooludou.shadowplanner.core.model.SceneObjectGeometry
 import com.gooludou.shadowplanner.core.model.SceneObjectSource
 
-internal fun ShadowMapUiState.withRefreshedAutomaticOverlapSuppression(): ShadowMapUiState =
-    copy(
-        automaticBuildingKeysCoveredByManual =
-            SceneBuildingMerger.automaticKeysCoveredByManualBuildings(
-                automaticBuildings = loadedBuildings,
-                manualBuildings = drawnBuildings
-            )
-    )
+internal fun ShadowMapUiState.withRefreshedAutomaticOverlapSuppression(): ShadowMapUiState = copy(
+    automaticBuildingKeysCoveredByManual =
+        SceneBuildingMerger.automaticKeysCoveredByManualBuildings(
+            automaticBuildings = loadedBuildings,
+            manualBuildings = drawnBuildings
+        )
+)
 
-internal fun ShadowMapUiState.geometryFor(
-    selection: DrawnObjectSelection
-): SceneObjectGeometry? = if (selection.source == SceneObjectSource.AUTOMATIC) {
-    visibleLoadedBuildings.firstOrNull { building ->
-        AutomaticBuildingMatcher.identity(building).selectionId == selection.id
-    }?.let { SceneObjectGeometry.Building(it.polygon) }
-} else {
-    when (selection.type) {
-        DrawnObjectType.BUILDING -> drawnBuildings.firstOrNull { it.id == selection.id }
-            ?.let { SceneObjectGeometry.Building(it.polygon) }
+internal fun ShadowMapUiState.geometryFor(selection: DrawnObjectSelection): SceneObjectGeometry? =
+    if (selection.source == SceneObjectSource.AUTOMATIC) {
+        visibleLoadedBuildings.firstOrNull { building ->
+            AutomaticBuildingMatcher.identity(building).selectionId == selection.id
+        }?.let { SceneObjectGeometry.Building(it.polygon) }
+    } else {
+        when (selection.type) {
+            DrawnObjectType.BUILDING -> drawnBuildings.firstOrNull { it.id == selection.id }
+                ?.let { SceneObjectGeometry.Building(it.polygon) }
 
-        DrawnObjectType.WALL -> drawnWalls.firstOrNull { it.id == selection.id }
-            ?.let { SceneObjectGeometry.Wall(it.points) }
+            DrawnObjectType.WALL -> drawnWalls.firstOrNull { it.id == selection.id }
+                ?.let { SceneObjectGeometry.Wall(it.points) }
 
-        DrawnObjectType.TREE -> drawnTrees.firstOrNull { it.id == selection.id }
-            ?.let { SceneObjectGeometry.Tree(it.center) }
+            DrawnObjectType.TREE -> drawnTrees.firstOrNull { it.id == selection.id }
+                ?.let { SceneObjectGeometry.Tree(it.center) }
+        }
     }
-}
 
 @Suppress("ReturnCount")
 internal fun ShadowMapUiState.applyGeometry(
@@ -145,24 +143,23 @@ internal fun reconcileLoadedSuppressions(
     return result
 }
 
-internal fun ShadowMapUiState.deletedObject(
-    selection: DrawnObjectSelection
-): DeletedSceneObject? = if (selection.source == SceneObjectSource.AUTOMATIC) {
-    visibleLoadedBuildings.firstOrNull { building ->
-        AutomaticBuildingMatcher.identity(building).selectionId == selection.id
-    }?.let(DeletedSceneObject::AutomaticBuilding)
-} else {
-    when (selection.type) {
-        DrawnObjectType.BUILDING -> drawnBuildings.firstOrNull { it.id == selection.id }
-            ?.let(DeletedSceneObject::ManualBuilding)
+internal fun ShadowMapUiState.deletedObject(selection: DrawnObjectSelection): DeletedSceneObject? =
+    if (selection.source == SceneObjectSource.AUTOMATIC) {
+        visibleLoadedBuildings.firstOrNull { building ->
+            AutomaticBuildingMatcher.identity(building).selectionId == selection.id
+        }?.let(DeletedSceneObject::AutomaticBuilding)
+    } else {
+        when (selection.type) {
+            DrawnObjectType.BUILDING -> drawnBuildings.firstOrNull { it.id == selection.id }
+                ?.let(DeletedSceneObject::ManualBuilding)
 
-        DrawnObjectType.WALL -> drawnWalls.firstOrNull { it.id == selection.id }
-            ?.let(DeletedSceneObject::Wall)
+            DrawnObjectType.WALL -> drawnWalls.firstOrNull { it.id == selection.id }
+                ?.let(DeletedSceneObject::Wall)
 
-        DrawnObjectType.TREE -> drawnTrees.firstOrNull { it.id == selection.id }
-            ?.let(DeletedSceneObject::Tree)
+            DrawnObjectType.TREE -> drawnTrees.firstOrNull { it.id == selection.id }
+                ?.let(DeletedSceneObject::Tree)
+        }
     }
-}
 
 internal sealed interface DeletedSceneObject {
     data class AutomaticBuilding(val building: Building) : DeletedSceneObject

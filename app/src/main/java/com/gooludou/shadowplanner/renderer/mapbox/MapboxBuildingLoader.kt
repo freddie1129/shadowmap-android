@@ -72,7 +72,10 @@ internal class MapboxBuildingLoader(private val mapView: MapView) {
     private suspend fun queryBuildings(loadType: BuildingLoadType): List<Building> =
         suspendCancellableCoroutine { continuation ->
             val queryGeometry = loadType.toQueryGeometry(mapView.width, mapView.height)
-            mapView.mapboxMap.queryRenderedFeatures(StandardBuildings(), queryGeometry) { features ->
+            mapView.mapboxMap.queryRenderedFeatures(
+                StandardBuildings(),
+                queryGeometry
+            ) { features ->
                 if (continuation.isActive) {
                     continuation.resume(features.flatMap { it.toDomainFootprints() })
                 }

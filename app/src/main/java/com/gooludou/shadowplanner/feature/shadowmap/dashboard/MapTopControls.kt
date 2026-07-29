@@ -26,12 +26,12 @@ import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.BuildingSource
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.GeoPolygon
-import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
 import com.gooludou.shadowplanner.core.ui.components.MapRoundIconButton
-import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchEntry
-import com.gooludou.shadowplanner.feature.settings.SettingsIconButton
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchEntry
+import com.gooludou.shadowplanner.feature.settings.SettingsIconButton
+import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
 
 @Composable
 fun MapTopControls(

@@ -4,7 +4,6 @@ import com.gooludou.shadowplanner.core.model.AutomaticBuildingIdentity
 import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.GeoPolygon
-
 import java.security.MessageDigest
 import java.util.Locale
 import kotlin.math.min

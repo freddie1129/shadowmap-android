@@ -1,7 +1,6 @@
 package com.gooludou.shadowplanner.core.solar
 
 import com.gooludou.shadowplanner.core.model.GeoPoint
-
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId

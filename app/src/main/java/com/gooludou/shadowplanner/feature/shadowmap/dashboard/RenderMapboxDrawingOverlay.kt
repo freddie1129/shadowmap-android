@@ -1,8 +1,8 @@
 package com.gooludou.shadowplanner.feature.shadowmap.dashboard
 
 import com.gooludou.shadowplanner.core.model.GeoPoint
-import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 import com.mapbox.maps.MapView
 
 /** Reuses the 2D map renderer so outlines and calculated shadows stay visually identical. */

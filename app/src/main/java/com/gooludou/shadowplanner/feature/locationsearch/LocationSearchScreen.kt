@@ -38,9 +38,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.R
-import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.location.LocationSearchResult
 
 @Composable
 fun LocationSearchScreen(

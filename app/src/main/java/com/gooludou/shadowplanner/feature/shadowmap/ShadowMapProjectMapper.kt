@@ -5,29 +5,25 @@ import com.gooludou.shadowplanner.project.ProjectSnapshot
 import java.time.Clock
 
 internal class ShadowMapProjectMapper(private val clock: Clock) {
-    fun toSnapshot(
-        state: ShadowMapUiState,
-        id: String,
-        name: String,
-        createdAt: Long
-    ) = ProjectSnapshot(
-        id = id,
-        name = name,
-        createdAt = createdAt,
-        updatedAt = clock.millis(),
-        selectedEpochMillis = state.selectedEpochMillis,
-        displayTimeZoneId = state.displayTimeZoneId,
-        calculationLocation = state.calculationLocation,
-        selectedLocationLabel = state.selectedLocationLabel,
-        viewport = state.viewport,
-        drawnBuildings = state.drawnBuildings,
-        drawnWalls = state.drawnWalls,
-        drawnTrees = state.drawnTrees,
-        loadedBuildings = state.loadedBuildings,
-        loadedBuildingOverrides = state.loadedBuildingOverrides,
-        suppressedLoadedBuildings = state.suppressedLoadedBuildings,
-        shadowAppearance = state.shadowAppearance
-    )
+    fun toSnapshot(state: ShadowMapUiState, id: String, name: String, createdAt: Long) =
+        ProjectSnapshot(
+            id = id,
+            name = name,
+            createdAt = createdAt,
+            updatedAt = clock.millis(),
+            selectedEpochMillis = state.selectedEpochMillis,
+            displayTimeZoneId = state.displayTimeZoneId,
+            calculationLocation = state.calculationLocation,
+            selectedLocationLabel = state.selectedLocationLabel,
+            viewport = state.viewport,
+            drawnBuildings = state.drawnBuildings,
+            drawnWalls = state.drawnWalls,
+            drawnTrees = state.drawnTrees,
+            loadedBuildings = state.loadedBuildings,
+            loadedBuildingOverrides = state.loadedBuildingOverrides,
+            suppressedLoadedBuildings = state.suppressedLoadedBuildings,
+            shadowAppearance = state.shadowAppearance
+        )
 
     fun toUiState(project: ProjectSnapshot, previous: ShadowMapUiState): ShadowMapUiState {
         val state = previous.copy(
