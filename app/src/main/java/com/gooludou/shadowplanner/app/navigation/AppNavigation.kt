@@ -15,11 +15,11 @@ import androidx.navigation3.ui.NavDisplay
 import com.gooludou.shadowplanner.ShadowMapRoute
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
-import com.gooludou.shadowplanner.presentation.LocationSearchViewModel
-import com.gooludou.shadowplanner.presentation.ProjectListViewModel
-import com.gooludou.shadowplanner.presentation.locationsearch.LocationSearchScreen
-import com.gooludou.shadowplanner.presentation.projectview.ProjectListScreen
-import com.gooludou.shadowplanner.presentation.settings.SettingsScreen
+import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchScreen
+import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchViewModel
+import com.gooludou.shadowplanner.feature.projects.ProjectListScreen
+import com.gooludou.shadowplanner.feature.projects.ProjectListViewModel
+import com.gooludou.shadowplanner.feature.settings.SettingsScreen
 
 @Composable
 fun AppNavigation(
