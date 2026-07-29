@@ -1,11 +1,13 @@
 package com.gooludou.shadowplanner.feature.shadowmap.dashboard
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,12 +16,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.PanoramaPhotosphere
 import androidx.compose.material.icons.outlined.SatelliteAlt
-import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
@@ -38,12 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.model.ShadowAppearance
 import com.gooludou.shadowplanner.core.ui.components.MapRoundIconButton
 import com.gooludou.shadowplanner.core.ui.theme.Map3DActionBlue
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import com.gooludou.shadowplanner.feature.shadowmap.components.ShadowColorButton
 
 @Composable
@@ -56,6 +61,13 @@ internal fun MapBottomControls(
     onStartEditing: () -> Unit
 ) {
     val isTopDown = displayMode.cameraMode == MapCameraMode.TOP_DOWN
+    val topDownLabel = stringResource(R.string.top_down_view)
+    val threeDimensionalLabel = stringResource(R.string.view_3d_button)
+    val cameraDescription = stringResource(
+        R.string.setting_current_value,
+        stringResource(R.string.camera_view),
+        if (isTopDown) topDownLabel else threeDimensionalLabel
+    )
     Column(
         modifier = Modifier.Companion.fillMaxWidth(),
         horizontalAlignment = Alignment.Companion.CenterHorizontally,
@@ -68,27 +80,6 @@ internal fun MapBottomControls(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.Companion.CenterVertically
         ) {
-            MapboxScene3DModeButton(
-                onStartEditing = onStartEditing
-            )
-        }
-        Row(
-            modifier = Modifier.Companion
-                .fillMaxWidth()
-                .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
-            horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall),
-            verticalAlignment = Alignment.Companion.CenterVertically
-        ) {
-            ShadowColorButton(
-                appearance = shadowAppearance,
-                onClick = onOpenShadowColor
-            )
-            MapboxScene3DBasemapSelectionButton(
-                basemapStyle = displayMode.basemapStyle,
-                onBasemapStyleSelected = { selectedStyle ->
-                    onDisplayModeChanged(displayMode.copy(basemapStyle = selectedStyle))
-                }
-            )
             MapboxScene3DToggleButton(
                 isSelected = displayMode.isDomeVisible,
                 contentDescription = stringResource(
@@ -102,51 +93,19 @@ internal fun MapBottomControls(
                     onDisplayModeChanged(
                         displayMode.copy(isDomeVisible = !displayMode.isDomeVisible)
                     )
-                }
+                },
+                showSlashWhenUnselected = true
             ) {
-                Icon(Icons.Outlined.WbSunny, contentDescription = null)
+                Icon(Icons.Outlined.PanoramaPhotosphere, contentDescription = null)
             }
-            val buildingsTitle = stringResource(R.string.map_display)
-            val drawingBuildingsLabel = stringResource(R.string.my_drawings)
-            val mapboxBuildingsLabel = stringResource(R.string.built_in_map_buildings)
-            val buildingOptions = listOf(
-                drawingBuildingsLabel,
-                mapboxBuildingsLabel
-            )
-            val selectedBuildingsIndex = displayMode.content.menuIndex
-            MapboxScene3DSelectionButton(
-                isSelected = displayMode.content == SceneBuildingSelection.MAPBOX,
-                contentDescription = stringResource(
-                    R.string.setting_current_value,
-                    buildingsTitle,
-                    buildingOptions[selectedBuildingsIndex]
-                ),
-                menuTitle = buildingsTitle,
-                options = buildingOptions,
-                selectedOptionIndex = selectedBuildingsIndex,
-                onOptionSelected = { index ->
-                    val selectedContent = SceneBuildingSelection.fromMenuIndex(index)
-                    onDisplayModeChanged(
-                        displayMode.copy(
-                            content = selectedContent,
-                            basemapStyle = basemapStyleAfterBuildingSelection(
-                                buildingSelection = selectedContent,
-                                currentBasemapStyle = displayMode.basemapStyle
-                            )
-                        )
-                    )
-                }
-            ) {
-                Icon(Icons.Outlined.Apartment, contentDescription = null)
-            }
-            Spacer(modifier = Modifier.Companion.weight(1f))
-            val topDownLabel = stringResource(R.string.top_down_view)
-            val threeDimensionalLabel = stringResource(R.string.view_3d_button)
-            val cameraDescription = stringResource(
-                R.string.setting_current_value,
-                stringResource(R.string.camera_view),
-                if (isTopDown) topDownLabel else threeDimensionalLabel
-            )
+        }
+        Row(
+            modifier = Modifier.Companion
+                .fillMaxWidth()
+                .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.Companion.CenterVertically
+        ) {
             MapboxScene3DToggleButton(
                 isSelected = !isTopDown,
                 contentDescription = cameraDescription,
@@ -174,6 +133,65 @@ internal fun MapBottomControls(
                 )
             }
         }
+        Row(
+            modifier = Modifier.Companion
+                .fillMaxWidth()
+                .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
+            horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall),
+            verticalAlignment = Alignment.Companion.CenterVertically
+        ) {
+            ShadowColorButton(
+                appearance = shadowAppearance,
+                onClick = onOpenShadowColor
+            )
+            MapboxScene3DBasemapSelectionButton(
+                basemapStyle = displayMode.basemapStyle,
+                onBasemapStyleSelected = { selectedStyle ->
+                    onDisplayModeChanged(displayMode.copy(basemapStyle = selectedStyle))
+                }
+            )
+            val buildingsTitle = stringResource(R.string.map_display)
+            val drawingBuildingsLabel = stringResource(R.string.my_drawings)
+            val mapboxBuildingsLabel = stringResource(R.string.built_in_map_buildings)
+            val buildingOptions = listOf(
+                drawingBuildingsLabel,
+                mapboxBuildingsLabel
+            )
+            val selectedBuildingsIndex = displayMode.content.menuIndex
+            MapboxScene3DSelectionButton(
+                isSelected = displayMode.content == SceneBuildingSelection.MAPBOX,
+                contentDescription = stringResource(
+                    R.string.setting_current_value,
+                    buildingsTitle,
+                    buildingOptions[selectedBuildingsIndex]
+                ),
+                options = buildingOptions,
+                selectedOptionIndex = selectedBuildingsIndex,
+                onOptionSelected = { index ->
+                    val selectedContent = SceneBuildingSelection.fromMenuIndex(index)
+                    onDisplayModeChanged(
+                        displayMode.copy(
+                            content = selectedContent,
+                            basemapStyle = basemapStyleAfterBuildingSelection(
+                                buildingSelection = selectedContent,
+                                currentBasemapStyle = displayMode.basemapStyle
+                            )
+                        )
+                    )
+                }
+            ) {
+                Icon(
+                    imageVector = if (displayMode.content == SceneBuildingSelection.DRAWN) {
+                        Icons.Outlined.Home
+                    } else {
+                        Icons.Outlined.Apartment
+                    },
+                    contentDescription = null
+                )
+            }
+            Spacer(modifier = Modifier.Companion.weight(1f))
+            MapboxScene3DModeButton(onStartEditing = onStartEditing)
+        }
     }
 }
 
@@ -182,6 +200,7 @@ fun MapboxScene3DToggleButton(
     isSelected: Boolean,
     contentDescription: String,
     onClick: () -> Unit,
+    showSlashWhenUnselected: Boolean = false,
     icon: @Composable () -> Unit
 ) {
     MapboxScene3DTooltip(tooltip = contentDescription) {
@@ -196,6 +215,7 @@ fun MapboxScene3DToggleButton(
                 )
             },
             contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+            showIconSlash = showSlashWhenUnselected && !isSelected,
             border = if (isSelected) {
                 null
             } else {
@@ -228,7 +248,6 @@ fun MapboxScene3DTooltip(tooltip: String, content: @Composable () -> Unit) {
 fun MapboxScene3DSelectionButton(
     isSelected: Boolean,
     contentDescription: String,
-    menuTitle: String,
     options: List<String>,
     selectedOptionIndex: Int,
     onOptionSelected: (Int) -> Unit,
@@ -247,16 +266,6 @@ fun MapboxScene3DSelectionButton(
             onDismissRequest = { isMenuExpanded = false },
             modifier = Modifier.widthIn(min = 208.dp)
         ) {
-            Text(
-                text = menuTitle,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(
-                    horizontal = ShadowMapDesign.dimensions.screenPadding,
-                    vertical = ShadowMapDesign.dimensions.spacingSmall
-                )
-            )
-            HorizontalDivider()
             options.forEachIndexed { index, label ->
                 DropdownMenuItem(
                     text = { Text(label) },
@@ -301,7 +310,6 @@ private fun MapboxScene3DBasemapSelectionButton(
             menuTitle,
             options[selectedIndex]
         ),
-        menuTitle = menuTitle,
         options = options,
         selectedOptionIndex = selectedIndex,
         onOptionSelected = { index ->
@@ -310,7 +318,14 @@ private fun MapboxScene3DBasemapSelectionButton(
             )
         }
     ) {
-        Icon(Icons.Outlined.SatelliteAlt, contentDescription = null)
+        Icon(
+            imageVector = if (basemapStyle == MapboxBasemapStyle.STANDARD) {
+                Icons.Outlined.Map
+            } else {
+                Icons.Outlined.SatelliteAlt
+            },
+            contentDescription = null
+        )
     }
 }
 
@@ -322,5 +337,65 @@ private fun MapboxScene3DModeButton(onStartEditing: () -> Unit) {
         onClick = onStartEditing
     ) {
         Icon(Icons.Outlined.Edit, contentDescription = null)
+    }
+}
+
+@Preview(
+    name = "Map bottom controls",
+    widthDp = 400,
+    heightDp = 176,
+    showBackground = true,
+    backgroundColor = 0xFF6B8064
+)
+@Composable
+private fun MapBottomControlsLightPreview() {
+    ShadowMapTheme(darkTheme = false, dynamicColor = false) {
+        MapBottomControlsPreviewContent(
+            backgroundColor = Color(0xFF6B8064),
+            isDomeVisible = true
+        )
+    }
+}
+
+@Preview(
+    name = "Map bottom controls (dark)",
+    widthDp = 400,
+    heightDp = 176,
+    showBackground = true,
+    backgroundColor = 0xFF263238
+)
+@Composable
+private fun MapBottomControlsDarkPreview() {
+    ShadowMapTheme(darkTheme = true, dynamicColor = false) {
+        MapBottomControlsPreviewContent(
+            backgroundColor = Color(0xFF263238),
+            isDomeVisible = false
+        )
+    }
+}
+
+@Composable
+private fun MapBottomControlsPreviewContent(
+    backgroundColor: Color,
+    isDomeVisible: Boolean
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        MapBottomControls(
+            displayMode = MapDisplayMode(
+                basemapStyle = MapboxBasemapStyle.STANDARD,
+                isDomeVisible = isDomeVisible,
+                content = SceneBuildingSelection.MAPBOX,
+                cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
+            ),
+            onDisplayModeChanged = {},
+            shadowAppearance = ShadowAppearance.DEFAULT,
+            onOpenShadowColor = {},
+            onStartEditing = {}
+        )
     }
 }

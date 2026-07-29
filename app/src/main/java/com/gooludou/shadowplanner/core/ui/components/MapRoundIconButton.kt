@@ -1,6 +1,8 @@
 package com.gooludou.shadowplanner.core.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -9,11 +11,15 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -35,6 +41,7 @@ fun MapRoundIconButton(
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     disabledContentColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f),
     shadowElevation: Dp? = null,
+    showIconSlash: Boolean = false,
     border: BorderStroke? = BorderStroke(
         width = 1.dp,
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
@@ -61,7 +68,30 @@ fun MapRoundIconButton(
                 disabledContentColor = disabledContentColor
             )
         ) {
-            icon()
+            Box(
+                modifier = Modifier.size(dimensions.iconSize),
+                contentAlignment = Alignment.Center
+            ) {
+                icon()
+                if (showIconSlash) {
+                    val slashColor = LocalContentColor.current
+                    Canvas(modifier = Modifier.matchParentSize()) {
+                        drawLine(
+                            color = slashColor,
+                            start = Offset(
+                                this.size.width * 0.18f,
+                                this.size.height * 0.18f
+                            ),
+                            end = Offset(
+                                this.size.width * 0.82f,
+                                this.size.height * 0.82f
+                            ),
+                            strokeWidth = 2.25.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+                    }
+                }
+            }
         }
     }
 }
