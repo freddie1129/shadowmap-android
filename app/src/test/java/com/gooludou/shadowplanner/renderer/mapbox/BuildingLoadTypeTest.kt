@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.map
+package com.gooludou.shadowplanner.renderer.mapbox
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

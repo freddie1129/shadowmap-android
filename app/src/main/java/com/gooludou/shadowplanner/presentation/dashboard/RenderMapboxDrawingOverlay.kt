@@ -1,7 +1,7 @@
 package com.gooludou.shadowplanner.presentation.dashboard
 
 import com.gooludou.shadowplanner.core.model.GeoPoint
-import com.gooludou.shadowplanner.map.MapboxShadowMapController
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.mapbox.maps.MapView
 

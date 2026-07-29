@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
 import com.gooludou.shadowplanner.presentation.components.SceneViewSwitchButton
-import com.gooludou.shadowplanner.scene.SceneCameraView
+import com.gooludou.shadowplanner.renderer.filament.SceneCameraView
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 

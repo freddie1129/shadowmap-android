@@ -1,6 +1,6 @@
 package com.gooludou.shadowplanner
 
-import com.gooludou.shadowplanner.map.BuildingLoadType
+import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadType
 
 /** App-wide feature configuration. */
 object Config {

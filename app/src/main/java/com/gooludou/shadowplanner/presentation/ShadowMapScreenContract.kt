@@ -6,7 +6,7 @@ import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.ShadowAppearance
 import com.gooludou.shadowplanner.location.LocationSearchResult
-import com.gooludou.shadowplanner.map.MapboxShadowMapController
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 import com.gooludou.shadowplanner.project.ProjectViewport
 
 data class MapScreenDependencies(val mapControllerFactory: MapboxShadowMapController.Factory)

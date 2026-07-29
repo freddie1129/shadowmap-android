@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.scene
+package com.gooludou.shadowplanner.renderer.mapbox
 
 import com.gooludou.shadowplanner.core.solar.SolarPosition
 import org.junit.Assert.assertEquals

@@ -29,7 +29,7 @@ import com.gooludou.shadowplanner.core.model.GeoPolygon
 import com.gooludou.shadowplanner.core.solar.SolarPosition
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.components.mapboxNative3dConfig
-import com.gooludou.shadowplanner.scene.SceneViewport
+import com.gooludou.shadowplanner.renderer.filament.SceneViewport
 import com.mapbox.bindgen.Value
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.LineString

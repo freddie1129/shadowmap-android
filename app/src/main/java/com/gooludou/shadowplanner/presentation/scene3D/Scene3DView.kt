@@ -14,10 +14,10 @@ import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.DrawnTree
 import com.gooludou.shadowplanner.core.model.DrawnWall
 import com.gooludou.shadowplanner.core.solar.SolarPosition
-import com.gooludou.shadowplanner.scene.FilamentBuildingView
-import com.gooludou.shadowplanner.scene.SceneCameraView
-import com.gooludou.shadowplanner.scene.SceneSkyPadding
-import com.gooludou.shadowplanner.scene.SceneViewport
+import com.gooludou.shadowplanner.renderer.filament.FilamentBuildingView
+import com.gooludou.shadowplanner.renderer.filament.SceneCameraView
+import com.gooludou.shadowplanner.renderer.filament.SceneSkyPadding
+import com.gooludou.shadowplanner.renderer.filament.SceneViewport
 
 @Composable
 fun Scene3DView(

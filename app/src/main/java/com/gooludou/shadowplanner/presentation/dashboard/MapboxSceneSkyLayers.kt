@@ -10,11 +10,11 @@ import androidx.compose.ui.platform.LocalDensity
 import com.google.gson.JsonArray
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.solar.SolarPosition
-import com.gooludou.shadowplanner.scene.MapboxSceneSkyGeometry
-import com.gooludou.shadowplanner.scene.MapboxSkyMetrics
-import com.gooludou.shadowplanner.scene.MapboxSkyPoint
-import com.gooludou.shadowplanner.scene.MapboxSkySegment
-import com.gooludou.shadowplanner.scene.MapboxSkySegmentKind
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxSceneSkyGeometry
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxSkyMetrics
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxSkyPoint
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxSkySegment
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxSkySegmentKind
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapboxExperimental

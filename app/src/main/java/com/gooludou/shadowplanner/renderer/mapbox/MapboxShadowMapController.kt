@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.map
+package com.gooludou.shadowplanner.renderer.mapbox
 
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
 import com.gooludou.shadowplanner.core.model.Building

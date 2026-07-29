@@ -14,7 +14,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.gooludou.shadowplanner.ShadowMapRoute
 import com.gooludou.shadowplanner.location.LocationSearchResult
-import com.gooludou.shadowplanner.map.MapboxShadowMapController
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 import com.gooludou.shadowplanner.presentation.LocationSearchViewModel
 import com.gooludou.shadowplanner.presentation.ProjectListViewModel
 import com.gooludou.shadowplanner.presentation.locationsearch.LocationSearchScreen

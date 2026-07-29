@@ -1,4 +1,4 @@
-package com.gooludou.shadowplanner.scene
+package com.gooludou.shadowplanner.renderer.filament
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
