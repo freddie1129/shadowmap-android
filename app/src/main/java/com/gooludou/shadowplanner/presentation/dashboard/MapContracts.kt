@@ -1,7 +1,7 @@
 package com.gooludou.shadowplanner.presentation.dashboard
 
-import com.gooludou.shadowplanner.domain.DrawMode
-import com.gooludou.shadowplanner.domain.GeoPoint
+import com.gooludou.shadowplanner.core.model.DrawMode
+import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView

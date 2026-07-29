@@ -1,8 +1,8 @@
 package com.gooludou.shadowplanner.scene
 
-import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.DrawnTree
-import com.gooludou.shadowplanner.domain.DrawnWall
+import com.gooludou.shadowplanner.core.model.Building
+import com.gooludou.shadowplanner.core.model.DrawnTree
+import com.gooludou.shadowplanner.core.model.DrawnWall
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos

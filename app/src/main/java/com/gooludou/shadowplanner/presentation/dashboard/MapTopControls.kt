@@ -22,16 +22,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.R
-import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.BuildingSource
-import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.GeoPolygon
+import com.gooludou.shadowplanner.core.model.Building
+import com.gooludou.shadowplanner.core.model.BuildingSource
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.model.GeoPolygon
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
-import com.gooludou.shadowplanner.presentation.components.MapRoundIconButton
+import com.gooludou.shadowplanner.core.ui.components.MapRoundIconButton
 import com.gooludou.shadowplanner.presentation.locationsearch.LocationSearchEntry
 import com.gooludou.shadowplanner.presentation.settings.SettingsIconButton
-import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
-import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 
 @Composable
 fun MapTopControls(

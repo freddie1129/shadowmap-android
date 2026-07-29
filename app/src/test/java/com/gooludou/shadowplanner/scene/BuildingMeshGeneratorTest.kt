@@ -1,10 +1,10 @@
 package com.gooludou.shadowplanner.scene
 
-import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.DrawnTree
-import com.gooludou.shadowplanner.domain.DrawnWall
-import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.GeoPolygon
+import com.gooludou.shadowplanner.core.model.Building
+import com.gooludou.shadowplanner.core.model.DrawnTree
+import com.gooludou.shadowplanner.core.model.DrawnWall
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.model.GeoPolygon
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

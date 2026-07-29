@@ -62,11 +62,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gooludou.shadowplanner.R
-import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.SunriseSunset
-import com.gooludou.shadowplanner.domain.SunriseSunsetCalculator
-import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
-import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.solar.SunriseSunset
+import com.gooludou.shadowplanner.core.solar.SunriseSunsetCalculator
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime

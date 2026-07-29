@@ -54,21 +54,21 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.gooludou.shadowplanner.domain.AutomaticBuildingMatcher
-import com.gooludou.shadowplanner.domain.DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
-import com.gooludou.shadowplanner.domain.DEFAULT_DRAWN_TREE_HEIGHT_METERS
-import com.gooludou.shadowplanner.domain.DEFAULT_DRAWN_TREE_RADIUS_METERS
-import com.gooludou.shadowplanner.domain.DEFAULT_DRAWN_WALL_HEIGHT_METERS
-import com.gooludou.shadowplanner.domain.DrawMode
-import com.gooludou.shadowplanner.domain.DrawnObjectType
-import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.PendingDrawing
-import com.gooludou.shadowplanner.domain.SceneObjectSource
+import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
+import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
+import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_TREE_HEIGHT_METERS
+import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_TREE_RADIUS_METERS
+import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_WALL_HEIGHT_METERS
+import com.gooludou.shadowplanner.core.model.DrawMode
+import com.gooludou.shadowplanner.core.model.DrawnObjectType
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.model.PendingDrawing
+import com.gooludou.shadowplanner.core.model.SceneObjectSource
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.map.BuildingLoadArea
 import com.gooludou.shadowplanner.map.BuildingLoadType
 import com.gooludou.shadowplanner.map.MapboxShadowMapController
-import com.gooludou.shadowplanner.navigation.AppNavigation
+import com.gooludou.shadowplanner.app.navigation.AppNavigation
 import com.gooludou.shadowplanner.presentation.BuildingLoadState
 import com.gooludou.shadowplanner.presentation.DrawingActions
 import com.gooludou.shadowplanner.presentation.MapActions
@@ -97,8 +97,8 @@ import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSh
 import com.gooludou.shadowplanner.presentation.projectview.SaveProjectDialog
 import com.gooludou.shadowplanner.project.ProjectViewport
 import com.gooludou.shadowplanner.scene.SceneViewport
-import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
-import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
 import com.mapbox.maps.ScreenCoordinate
@@ -1180,7 +1180,7 @@ private fun MapView.toProjectViewport(): ProjectViewport? {
         zoom = camera.zoom,
         bearing = camera.bearing,
         pitch = camera.pitch,
-        boundary = com.gooludou.shadowplanner.domain.GeoPolygon(
+        boundary = com.gooludou.shadowplanner.core.model.GeoPolygon(
             listOf(
                 listOf(
                     GeoPoint(topLeft.longitude(), topLeft.latitude()),

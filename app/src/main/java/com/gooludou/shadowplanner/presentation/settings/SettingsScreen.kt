@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
-import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {

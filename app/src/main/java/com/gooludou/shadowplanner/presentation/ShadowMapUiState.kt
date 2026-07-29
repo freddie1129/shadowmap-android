@@ -1,20 +1,20 @@
 package com.gooludou.shadowplanner.presentation
 
-import com.gooludou.shadowplanner.domain.AutomaticBuildingIdentity
-import com.gooludou.shadowplanner.domain.AutomaticBuildingMatcher
-import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.DrawMode
-import com.gooludou.shadowplanner.domain.DrawnObjectSelection
-import com.gooludou.shadowplanner.domain.DrawnTree
-import com.gooludou.shadowplanner.domain.DrawnWall
-import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.GeoPolygon
-import com.gooludou.shadowplanner.domain.LoadedBuildingOverride
-import com.gooludou.shadowplanner.domain.MoveSession
-import com.gooludou.shadowplanner.domain.PendingDrawing
-import com.gooludou.shadowplanner.domain.SceneBuildingMerger
-import com.gooludou.shadowplanner.domain.ShadowAppearance
-import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.core.model.AutomaticBuildingIdentity
+import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
+import com.gooludou.shadowplanner.core.model.Building
+import com.gooludou.shadowplanner.core.model.DrawMode
+import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
+import com.gooludou.shadowplanner.core.model.DrawnTree
+import com.gooludou.shadowplanner.core.model.DrawnWall
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.model.GeoPolygon
+import com.gooludou.shadowplanner.core.model.LoadedBuildingOverride
+import com.gooludou.shadowplanner.core.model.MoveSession
+import com.gooludou.shadowplanner.core.model.PendingDrawing
+import com.gooludou.shadowplanner.core.geometry.SceneBuildingMerger
+import com.gooludou.shadowplanner.core.model.ShadowAppearance
+import com.gooludou.shadowplanner.core.solar.SolarPosition
 import com.gooludou.shadowplanner.project.ProjectViewport
 
 data class ShadowMapUiState(

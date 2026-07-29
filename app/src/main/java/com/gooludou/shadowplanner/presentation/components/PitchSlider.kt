@@ -23,8 +23,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
-import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

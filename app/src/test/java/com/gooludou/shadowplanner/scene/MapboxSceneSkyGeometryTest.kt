@@ -1,6 +1,6 @@
 package com.gooludou.shadowplanner.scene
 
-import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.core.solar.SolarPosition
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

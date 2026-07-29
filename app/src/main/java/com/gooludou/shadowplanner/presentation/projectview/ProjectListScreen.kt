@@ -47,10 +47,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.R
-import com.gooludou.shadowplanner.presentation.components.ShadowMapDialog
+import com.gooludou.shadowplanner.core.ui.components.ShadowMapDialog
 import com.gooludou.shadowplanner.project.ProjectSummary
-import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
-import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import java.text.DateFormat
 import java.util.Date
 

@@ -18,8 +18,8 @@ import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.presentation.components.DateTimeSpinner
 import com.gooludou.shadowplanner.presentation.components.SceneViewSwitchButton
 import com.gooludou.shadowplanner.scene.SceneCameraView
-import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
-import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 
 @Composable
 fun Scene3DControlsOverlay(

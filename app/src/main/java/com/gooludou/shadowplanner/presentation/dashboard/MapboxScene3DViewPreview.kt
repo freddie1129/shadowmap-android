@@ -2,11 +2,11 @@ package com.gooludou.shadowplanner.presentation.dashboard
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.solar.SolarPosition
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
-import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 
 @Preview(name = "Mapbox 3D view - light", showBackground = true)
 @Composable

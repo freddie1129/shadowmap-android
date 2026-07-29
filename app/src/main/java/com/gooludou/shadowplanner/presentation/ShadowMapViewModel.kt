@@ -4,29 +4,29 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gooludou.shadowplanner.di.DefaultDispatcher
-import com.gooludou.shadowplanner.domain.AutomaticBuildingIdentity
-import com.gooludou.shadowplanner.domain.AutomaticBuildingMatcher
-import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.BuildingShadowCalculator
-import com.gooludou.shadowplanner.domain.BuildingSource
-import com.gooludou.shadowplanner.domain.DrawMode
-import com.gooludou.shadowplanner.domain.DrawingGeometryValidator
-import com.gooludou.shadowplanner.domain.DrawnObjectSelection
-import com.gooludou.shadowplanner.domain.DrawnObjectType
-import com.gooludou.shadowplanner.domain.DrawnTree
-import com.gooludou.shadowplanner.domain.DrawnWall
-import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.LoadedBuildingOverride
-import com.gooludou.shadowplanner.domain.MoveSession
-import com.gooludou.shadowplanner.domain.PendingDrawing
-import com.gooludou.shadowplanner.domain.SceneBuildingMerger
-import com.gooludou.shadowplanner.domain.SceneObjectGeometry
-import com.gooludou.shadowplanner.domain.SceneObjectSource
-import com.gooludou.shadowplanner.domain.ShadowAppearance
-import com.gooludou.shadowplanner.domain.SolarPosition
-import com.gooludou.shadowplanner.domain.SolarPositionCalculator
-import com.gooludou.shadowplanner.domain.UserObjectShadowCalculator
-import com.gooludou.shadowplanner.domain.translatedBy
+import com.gooludou.shadowplanner.core.model.AutomaticBuildingIdentity
+import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
+import com.gooludou.shadowplanner.core.model.Building
+import com.gooludou.shadowplanner.core.shadow.BuildingShadowCalculator
+import com.gooludou.shadowplanner.core.model.BuildingSource
+import com.gooludou.shadowplanner.core.model.DrawMode
+import com.gooludou.shadowplanner.core.geometry.DrawingGeometryValidator
+import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
+import com.gooludou.shadowplanner.core.model.DrawnObjectType
+import com.gooludou.shadowplanner.core.model.DrawnTree
+import com.gooludou.shadowplanner.core.model.DrawnWall
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.model.LoadedBuildingOverride
+import com.gooludou.shadowplanner.core.model.MoveSession
+import com.gooludou.shadowplanner.core.model.PendingDrawing
+import com.gooludou.shadowplanner.core.geometry.SceneBuildingMerger
+import com.gooludou.shadowplanner.core.model.SceneObjectGeometry
+import com.gooludou.shadowplanner.core.model.SceneObjectSource
+import com.gooludou.shadowplanner.core.model.ShadowAppearance
+import com.gooludou.shadowplanner.core.solar.SolarPosition
+import com.gooludou.shadowplanner.core.solar.SolarPositionCalculator
+import com.gooludou.shadowplanner.core.shadow.UserObjectShadowCalculator
+import com.gooludou.shadowplanner.core.model.translatedBy
 import com.gooludou.shadowplanner.location.CurrentLocationResolver
 import com.gooludou.shadowplanner.project.ProjectRepository
 import com.gooludou.shadowplanner.project.ProjectSnapshot
@@ -923,8 +923,8 @@ constructor(
 
     private fun reconcileLoadedSuppressions(
         incoming: List<Building>,
-        suppressions: Map<AutomaticBuildingIdentity, com.gooludou.shadowplanner.domain.GeoPolygon>
-    ): Map<AutomaticBuildingIdentity, com.gooludou.shadowplanner.domain.GeoPolygon> {
+        suppressions: Map<AutomaticBuildingIdentity, com.gooludou.shadowplanner.core.model.GeoPolygon>
+    ): Map<AutomaticBuildingIdentity, com.gooludou.shadowplanner.core.model.GeoPolygon> {
         if (suppressions.isEmpty()) return emptyMap()
         val result = suppressions.toMutableMap()
         val candidates = suppressions.toList()
@@ -986,6 +986,6 @@ private data class ClearedSceneSnapshot(
     val drawnWalls: List<DrawnWall>,
     val drawnTrees: List<DrawnTree>,
     val suppressedLoadedBuildings:
-    Map<AutomaticBuildingIdentity, com.gooludou.shadowplanner.domain.GeoPolygon>,
+    Map<AutomaticBuildingIdentity, com.gooludou.shadowplanner.core.model.GeoPolygon>,
     val selectedDrawing: DrawnObjectSelection?
 )

@@ -1,10 +1,10 @@
 package com.gooludou.shadowplanner.presentation
 
-import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.DrawMode
-import com.gooludou.shadowplanner.domain.DrawnObjectSelection
-import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.ShadowAppearance
+import com.gooludou.shadowplanner.core.model.Building
+import com.gooludou.shadowplanner.core.model.DrawMode
+import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.model.ShadowAppearance
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.map.MapboxShadowMapController
 import com.gooludou.shadowplanner.project.ProjectViewport

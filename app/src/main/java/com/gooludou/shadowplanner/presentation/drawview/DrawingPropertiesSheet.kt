@@ -43,10 +43,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
-import com.gooludou.shadowplanner.domain.DrawnObjectType
-import com.gooludou.shadowplanner.domain.SceneObjectSource
-import com.gooludou.shadowplanner.ui.theme.ShadowMapDesign
-import com.gooludou.shadowplanner.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.core.model.DrawnObjectType
+import com.gooludou.shadowplanner.core.model.SceneObjectSource
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import java.util.Locale
 import kotlin.math.abs
 

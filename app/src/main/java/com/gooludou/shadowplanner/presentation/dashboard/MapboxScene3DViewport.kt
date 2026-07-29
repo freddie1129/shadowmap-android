@@ -1,6 +1,6 @@
 package com.gooludou.shadowplanner.presentation.dashboard
 
-import com.gooludou.shadowplanner.domain.GeoPoint
+import com.gooludou.shadowplanner.core.model.GeoPoint
 
 /**
  * Snapshot of the Mapbox camera and the visible ground footprint used by the 3D scene.

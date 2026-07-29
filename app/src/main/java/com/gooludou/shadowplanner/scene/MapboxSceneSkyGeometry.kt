@@ -1,6 +1,6 @@
 package com.gooludou.shadowplanner.scene
 
-import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.core.solar.SolarPosition
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot

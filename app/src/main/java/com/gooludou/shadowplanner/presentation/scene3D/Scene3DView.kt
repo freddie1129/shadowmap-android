@@ -10,10 +10,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.DrawnTree
-import com.gooludou.shadowplanner.domain.DrawnWall
-import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.core.model.Building
+import com.gooludou.shadowplanner.core.model.DrawnTree
+import com.gooludou.shadowplanner.core.model.DrawnWall
+import com.gooludou.shadowplanner.core.solar.SolarPosition
 import com.gooludou.shadowplanner.scene.FilamentBuildingView
 import com.gooludou.shadowplanner.scene.SceneCameraView
 import com.gooludou.shadowplanner.scene.SceneSkyPadding

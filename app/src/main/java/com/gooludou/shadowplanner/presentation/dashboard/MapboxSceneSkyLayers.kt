@@ -8,8 +8,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import com.google.gson.JsonArray
-import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.solar.SolarPosition
 import com.gooludou.shadowplanner.scene.MapboxSceneSkyGeometry
 import com.gooludou.shadowplanner.scene.MapboxSkyMetrics
 import com.gooludou.shadowplanner.scene.MapboxSkyPoint

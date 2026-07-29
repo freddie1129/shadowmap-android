@@ -33,10 +33,10 @@ import com.google.android.filament.android.DisplayHelper
 import com.google.android.filament.android.TextureHelper
 import com.google.android.filament.android.UiHelper
 import com.google.android.filament.filamat.MaterialBuilder
-import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.DrawnTree
-import com.gooludou.shadowplanner.domain.DrawnWall
-import com.gooludou.shadowplanner.domain.SolarPosition
+import com.gooludou.shadowplanner.core.model.Building
+import com.gooludou.shadowplanner.core.model.DrawnTree
+import com.gooludou.shadowplanner.core.model.DrawnWall
+import com.gooludou.shadowplanner.core.solar.SolarPosition
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.cos
