@@ -105,28 +105,29 @@ constructor(
     }
 
     @OptIn(MapboxExperimental::class)
-    suspend fun fetchBuildings(): List<Building> = withContext(Dispatchers.Main.immediate) {
-        var switchedToStandard = false
-        try {
-            withTimeout(STYLE_OPERATION_TIMEOUT_MILLIS) {
-                awaitStyle(Style.STANDARD)
-                switchedToStandard = true
-                awaitMapIdle()
-                queryBuildings()
-            }
-        } finally {
-            if (switchedToStandard) {
-                withContext(NonCancellable) {
-                    val restored =
-                        withTimeoutOrNull(STYLE_OPERATION_TIMEOUT_MILLIS) {
-                            awaitStyle(Style.STANDARD_SATELLITE)
-                            awaitMapIdle()
-                        }
-                    checkNotNull(restored) { "Timed out restoring the satellite style" }
+    suspend fun fetchBuildings(loadType: BuildingLoadType): List<Building> =
+        withContext(Dispatchers.Main.immediate) {
+            var switchedToStandard = false
+            try {
+                withTimeout(STYLE_OPERATION_TIMEOUT_MILLIS) {
+                    awaitStyle(Style.STANDARD)
+                    switchedToStandard = true
+                    awaitMapIdle()
+                    queryBuildings(loadType)
+                }
+            } finally {
+                if (switchedToStandard) {
+                    withContext(NonCancellable) {
+                        val restored =
+                            withTimeoutOrNull(STYLE_OPERATION_TIMEOUT_MILLIS) {
+                                awaitStyle(Style.STANDARD_SATELLITE)
+                                awaitMapIdle()
+                            }
+                        checkNotNull(restored) { "Timed out restoring the satellite style" }
+                    }
                 }
             }
         }
-    }
 
     @Suppress("LongMethod", "LongParameterList")
     fun render(
@@ -460,9 +461,13 @@ constructor(
     }
 
     @OptIn(MapboxExperimental::class)
-    private suspend fun queryBuildings(): List<Building> =
+    private suspend fun queryBuildings(loadType: BuildingLoadType): List<Building> =
         suspendCancellableCoroutine { continuation ->
-            mapView.mapboxMap.queryRenderedFeatures(StandardBuildings(), null) { features ->
+            val queryGeometry = loadType.toQueryGeometry(mapView.width, mapView.height)
+            mapView.mapboxMap.queryRenderedFeatures(
+                StandardBuildings(),
+                queryGeometry
+            ) { features ->
                 if (continuation.isActive) {
                     continuation.resume(features.flatMap { it.toDomainFootprints() })
                 }

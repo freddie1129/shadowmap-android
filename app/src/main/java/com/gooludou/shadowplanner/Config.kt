@@ -1,8 +1,13 @@
 package com.gooludou.shadowplanner
 
+import com.gooludou.shadowplanner.map.BuildingLoadType
+
 /** App-wide feature configuration. */
 object Config {
     const val ALLOW_LOAD_BUILDING = true
+
+    /** Loads only the building under the crosshair; use ALL to load the visible viewport. */
+    val BUILDING_LOAD_TYPE = BuildingLoadType.CENTRE_ONLY
 
     /** Neutral longitude used while permission is pending or location is unavailable. */
     const val FALLBACK_MAP_CENTER_LONGITUDE = 0.0

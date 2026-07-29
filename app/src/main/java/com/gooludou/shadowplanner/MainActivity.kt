@@ -66,6 +66,7 @@ import com.gooludou.shadowplanner.domain.PendingDrawing
 import com.gooludou.shadowplanner.domain.SceneObjectSource
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.map.BuildingLoadArea
+import com.gooludou.shadowplanner.map.BuildingLoadType
 import com.gooludou.shadowplanner.map.MapboxShadowMapController
 import com.gooludou.shadowplanner.navigation.AppNavigation
 import com.gooludou.shadowplanner.presentation.BuildingLoadState
@@ -542,7 +543,9 @@ private fun ShadowMapScreen(
         val calculationLocation = buildingQueryLocation ?: return@LaunchedEffect
         withFrameNanos { }
         try {
-            val result = runCatching { buildingController.fetchBuildings() }
+            val result = runCatching {
+                buildingController.fetchBuildings(Config.BUILDING_LOAD_TYPE)
+            }
             val failure = result.exceptionOrNull()
             if (failure is CancellationException) throw failure
             result.fold(
@@ -600,7 +603,11 @@ private fun ShadowMapScreen(
         } ?: return
         val currentLoadArea = currentMapView.toBuildingLoadArea()
         buildingLoadArea = currentLoadArea
-        if (currentLoadArea?.isWithinLimit != true) return
+        if (Config.BUILDING_LOAD_TYPE == BuildingLoadType.ALL &&
+            currentLoadArea?.isWithinLimit != true
+        ) {
+            return
+        }
         val mapCenter = currentMapView.mapboxMap.cameraState.center
         buildingQueryLocation = GeoPoint(
             longitude = mapCenter.longitude(),
@@ -646,7 +653,9 @@ private fun ShadowMapScreen(
     }
 
     fun requestAutoLoad() {
-        if (buildingLoadArea?.isWithinLimit == true) {
+        if (Config.BUILDING_LOAD_TYPE == BuildingLoadType.CENTRE_ONLY ||
+            buildingLoadArea?.isWithinLimit == true
+        ) {
             startBuildingLoad()
         } else {
             coroutineScope.launch {
@@ -706,8 +715,10 @@ private fun ShadowMapScreen(
         propertyType != null && propertyInitialHeight != null
     val autoToolState = when {
         uiState.buildingLoadState is BuildingLoadState.Loading -> AutoToolState.LOADING
-        buildingLoadArea == null -> AutoToolState.CHECKING
-        buildingLoadArea?.isWithinLimit == false -> AutoToolState.TOO_LARGE
+        Config.BUILDING_LOAD_TYPE == BuildingLoadType.ALL &&
+            buildingLoadArea == null -> AutoToolState.CHECKING
+        Config.BUILDING_LOAD_TYPE == BuildingLoadType.ALL &&
+            buildingLoadArea?.isWithinLimit == false -> AutoToolState.TOO_LARGE
         uiState.buildingLoadState is BuildingLoadState.Error -> AutoToolState.ERROR
         uiState.buildingLoadState is BuildingLoadState.Loaded -> AutoToolState.LOADED
         else -> AutoToolState.READY
@@ -858,10 +869,7 @@ private fun ShadowMapScreen(
             )
         }
 
-        if (mapboxSceneMode == MapboxSceneMode.EDIT &&
-            uiState.activeDrawMode != null &&
-            uiState.pendingDrawing == null
-        ) {
+        if (mapboxSceneMode == MapboxSceneMode.EDIT) {
             DrawingCrosshair(modifier = Modifier.align(Alignment.Center))
         }
 
