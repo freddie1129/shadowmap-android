@@ -19,7 +19,6 @@ import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.LoadedBuildingOverride
 import com.gooludou.shadowplanner.core.model.MoveSession
 import com.gooludou.shadowplanner.core.model.PendingDrawing
-import com.gooludou.shadowplanner.core.geometry.SceneBuildingMerger
 import com.gooludou.shadowplanner.core.model.SceneObjectGeometry
 import com.gooludou.shadowplanner.core.model.SceneObjectSource
 import com.gooludou.shadowplanner.core.model.ShadowAppearance
@@ -29,7 +28,6 @@ import com.gooludou.shadowplanner.core.shadow.UserObjectShadowCalculator
 import com.gooludou.shadowplanner.core.model.translatedBy
 import com.gooludou.shadowplanner.location.CurrentLocationResolver
 import com.gooludou.shadowplanner.project.ProjectRepository
-import com.gooludou.shadowplanner.project.ProjectSnapshot
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
 import java.time.Instant
@@ -63,6 +61,7 @@ constructor(
     @param:DefaultDispatcher
     private val computationDispatcher: CoroutineDispatcher
 ) : ViewModel() {
+    private val projectMapper = ShadowMapProjectMapper(clock)
     private var shadowJob: Job? = null
     private var lastDeletedObject: DeletedSceneObject? = null
     private var lastClearedScene: ClearedSceneSnapshot? = null
@@ -130,7 +129,8 @@ constructor(
         name: String,
         createdAt: Long
     ) {
-        val snapshot = state.toProjectSnapshot(
+        val snapshot = projectMapper.toSnapshot(
+            state = state,
             id = projectId,
             name = name,
             createdAt = createdAt
@@ -156,7 +156,7 @@ constructor(
         viewModelScope.launch(computationDispatcher) {
             runCatching { projectRepository.loadProject(id) }
                 .onSuccess { project ->
-                    val restored = project.toUiState(_uiState.value)
+                    val restored = projectMapper.toUiState(project, _uiState.value)
                     _uiState.value = restored
                     savedStateHandle[SELECTED_TIME_KEY] = project.selectedEpochMillis
                     savedStateHandle[TIME_ZONE_KEY] = project.displayTimeZoneId
@@ -170,61 +170,6 @@ constructor(
                     _uiState.value = _uiState.value.copy(projectError = error.message)
                 }
         }
-    }
-
-    private fun ShadowMapUiState.toProjectSnapshot(id: String, name: String, createdAt: Long) =
-        ProjectSnapshot(
-            id = id,
-            name = name,
-            createdAt = createdAt,
-            updatedAt = clock.millis(),
-            selectedEpochMillis = selectedEpochMillis,
-            displayTimeZoneId = displayTimeZoneId,
-            calculationLocation = calculationLocation,
-            selectedLocationLabel = selectedLocationLabel,
-            viewport = viewport,
-            drawnBuildings = drawnBuildings,
-            drawnWalls = drawnWalls,
-            drawnTrees = drawnTrees,
-            loadedBuildings = loadedBuildings,
-            loadedBuildingOverrides = loadedBuildingOverrides,
-            suppressedLoadedBuildings = suppressedLoadedBuildings,
-            shadowAppearance = shadowAppearance
-        )
-
-    private fun ProjectSnapshot.toUiState(previous: ShadowMapUiState): ShadowMapUiState {
-        val state = previous.copy(
-            selectedEpochMillis = selectedEpochMillis,
-            displayTimeZoneId = displayTimeZoneId,
-            calculationLocation = calculationLocation,
-            selectedLocationLabel = selectedLocationLabel,
-            viewport = viewport,
-            activeProjectId = id,
-            activeProjectName = name,
-            activeProjectCreatedAt = createdAt,
-            projectLoadRevision = previous.projectLoadRevision + 1L,
-            isProjectDirty = false,
-            projectError = null,
-            loadedBuildings = loadedBuildings,
-            loadedBuildingOverrides = loadedBuildingOverrides,
-            suppressedLoadedBuildings = suppressedLoadedBuildings,
-            shadowAppearance = shadowAppearance ?: ShadowAppearance.DEFAULT,
-            automaticBuildingKeysCoveredByManual = emptySet(),
-            drawnBuildings = drawnBuildings,
-            drawnWalls = drawnWalls,
-            drawnTrees = drawnTrees,
-            activeDrawMode = null,
-            inProgressVertices = emptyList(),
-            pendingDrawing = null,
-            selectedDrawing = null,
-            shadows = emptyList(),
-            buildingLoadState = if (loadedBuildings.isEmpty()) {
-                BuildingLoadState.Idle
-            } else {
-                BuildingLoadState.Loaded
-            }
-        )
-        return state.withRefreshedAutomaticOverlapSuppression()
     }
 
     fun onNowSelected() {
@@ -806,158 +751,6 @@ constructor(
     private fun Long.roundToTimeStep(): Long =
         ((this + TIME_STEP_MILLIS / 2) / TIME_STEP_MILLIS) * TIME_STEP_MILLIS
 
-    private fun ShadowMapUiState.withRefreshedAutomaticOverlapSuppression(): ShadowMapUiState =
-        copy(
-            automaticBuildingKeysCoveredByManual =
-                SceneBuildingMerger.automaticKeysCoveredByManualBuildings(
-                    automaticBuildings = loadedBuildings,
-                    manualBuildings = drawnBuildings
-                )
-        )
-
-    private fun ShadowMapUiState.geometryFor(
-        selection: DrawnObjectSelection
-    ): SceneObjectGeometry? = if (selection.source == SceneObjectSource.AUTOMATIC) {
-        visibleLoadedBuildings.firstOrNull { building ->
-            AutomaticBuildingMatcher.identity(building).selectionId == selection.id
-        }?.let { SceneObjectGeometry.Building(it.polygon) }
-    } else {
-        when (selection.type) {
-            DrawnObjectType.BUILDING -> drawnBuildings.firstOrNull { it.id == selection.id }
-                ?.let { SceneObjectGeometry.Building(it.polygon) }
-
-            DrawnObjectType.WALL -> drawnWalls.firstOrNull { it.id == selection.id }
-                ?.let { SceneObjectGeometry.Wall(it.points) }
-
-            DrawnObjectType.TREE -> drawnTrees.firstOrNull { it.id == selection.id }
-                ?.let { SceneObjectGeometry.Tree(it.center) }
-        }
-    }
-
-    @Suppress("ReturnCount")
-    private fun ShadowMapUiState.applyGeometry(
-        selection: DrawnObjectSelection,
-        geometry: SceneObjectGeometry
-    ): ShadowMapUiState? {
-        if (selection.source == SceneObjectSource.AUTOMATIC) {
-            val building = loadedBuildings.firstOrNull { loaded ->
-                AutomaticBuildingMatcher.identity(loaded).selectionId == selection.id
-            } ?: return null
-            val identity = AutomaticBuildingMatcher.identity(building)
-            val existing = loadedBuildingOverrides[identity]
-            val polygon = (geometry as? SceneObjectGeometry.Building)?.polygon ?: return null
-            return copy(
-                loadedBuildingOverrides = loadedBuildingOverrides + (
-                    identity to LoadedBuildingOverride(
-                        heightMeters = existing?.heightMeters ?: building.heightMeters,
-                        referencePolygon = existing?.referencePolygon ?: building.polygon,
-                        adjustedPolygon = polygon
-                    )
-                    )
-            )
-        }
-        return when (geometry) {
-            is SceneObjectGeometry.Building -> copy(
-                drawnBuildings = drawnBuildings.map {
-                    if (it.id == selection.id) it.copy(polygon = geometry.polygon) else it
-                }
-            )
-
-            is SceneObjectGeometry.Wall -> copy(
-                drawnWalls = drawnWalls.map {
-                    if (it.id == selection.id) it.copy(points = geometry.points) else it
-                }
-            )
-
-            is SceneObjectGeometry.Tree -> copy(
-                drawnTrees = drawnTrees.map {
-                    if (it.id == selection.id) it.copy(center = geometry.center) else it
-                }
-            )
-        }
-    }
-
-    private fun reconcileLoadedOverrides(
-        incoming: List<Building>,
-        overrides: Map<AutomaticBuildingIdentity, LoadedBuildingOverride>
-    ): Map<AutomaticBuildingIdentity, LoadedBuildingOverride> {
-        if (overrides.isEmpty()) return emptyMap()
-        val result = overrides.toMutableMap()
-        val candidates = overrides.map { (identity, override) ->
-            identity to
-                override.referencePolygon
-        }
-        incoming.forEach { building ->
-            val newIdentity = AutomaticBuildingMatcher.identity(building)
-            val oldIdentity = AutomaticBuildingMatcher.findMatch(building, candidates)
-            if (oldIdentity != null && oldIdentity != newIdentity) {
-                val override = result.remove(oldIdentity) ?: overrides.getValue(oldIdentity)
-                result[newIdentity] = override.copy(referencePolygon = building.polygon)
-            }
-        }
-        return result
-    }
-
-    private fun mergeLoadedBuildings(
-        existing: List<Building>,
-        incoming: List<Building>
-    ): List<Building> {
-        val remainingExisting = existing.toMutableList()
-        incoming.forEach { building ->
-            val candidates = remainingExisting.map { candidate ->
-                AutomaticBuildingMatcher.identity(candidate) to candidate.polygon
-            }
-            val matchedIdentity = AutomaticBuildingMatcher.findMatch(building, candidates)
-            remainingExisting.removeAll { candidate ->
-                val sameMatchedObject = matchedIdentity != null &&
-                    AutomaticBuildingMatcher.identity(candidate) == matchedIdentity
-                sameMatchedObject || SceneBuildingMerger.automaticKey(candidate) ==
-                    SceneBuildingMerger.automaticKey(building)
-            }
-        }
-        return (remainingExisting + incoming)
-            .associateBy(SceneBuildingMerger::automaticKey)
-            .values
-            .toList()
-    }
-
-    private fun reconcileLoadedSuppressions(
-        incoming: List<Building>,
-        suppressions: Map<AutomaticBuildingIdentity, com.gooludou.shadowplanner.core.model.GeoPolygon>
-    ): Map<AutomaticBuildingIdentity, com.gooludou.shadowplanner.core.model.GeoPolygon> {
-        if (suppressions.isEmpty()) return emptyMap()
-        val result = suppressions.toMutableMap()
-        val candidates = suppressions.toList()
-        incoming.forEach { building ->
-            val newIdentity = AutomaticBuildingMatcher.identity(building)
-            val oldIdentity = AutomaticBuildingMatcher.findMatch(building, candidates)
-            if (oldIdentity != null && oldIdentity != newIdentity) {
-                result.remove(oldIdentity)
-                result[newIdentity] = building.polygon
-            }
-        }
-        return result
-    }
-
-    private fun ShadowMapUiState.deletedObject(
-        selection: DrawnObjectSelection
-    ): DeletedSceneObject? = if (selection.source == SceneObjectSource.AUTOMATIC) {
-        visibleLoadedBuildings.firstOrNull { building ->
-            AutomaticBuildingMatcher.identity(building).selectionId == selection.id
-        }?.let(DeletedSceneObject::AutomaticBuilding)
-    } else {
-        when (selection.type) {
-            DrawnObjectType.BUILDING -> drawnBuildings.firstOrNull { it.id == selection.id }
-                ?.let(DeletedSceneObject::ManualBuilding)
-
-            DrawnObjectType.WALL -> drawnWalls.firstOrNull { it.id == selection.id }
-                ?.let(DeletedSceneObject::Wall)
-
-            DrawnObjectType.TREE -> drawnTrees.firstOrNull { it.id == selection.id }
-                ?.let(DeletedSceneObject::Tree)
-        }
-    }
-
     companion object {
         private const val SELECTED_TIME_KEY = "selected_time"
         private const val TIME_ZONE_KEY = "time_zone"
@@ -970,13 +763,6 @@ constructor(
         // Property fields display one decimal place, so half a tenth represents the loaded value.
         private const val HEIGHT_EQUALITY_TOLERANCE_METERS = 0.051
     }
-}
-
-private sealed interface DeletedSceneObject {
-    data class AutomaticBuilding(val building: Building) : DeletedSceneObject
-    data class ManualBuilding(val building: Building) : DeletedSceneObject
-    data class Wall(val wall: DrawnWall) : DeletedSceneObject
-    data class Tree(val tree: DrawnTree) : DeletedSceneObject
 }
 
 private data class ClearedSceneSnapshot(
