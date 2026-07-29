@@ -15,6 +15,7 @@ internal fun BuildingLoadType.toQueryGeometry(
     heightPixels: Int
 ): RenderedQueryGeometry? = when (this) {
     BuildingLoadType.ALL -> null
+
     BuildingLoadType.CENTRE_ONLY -> RenderedQueryGeometry(
         ScreenCoordinate(
             widthPixels / 2.0,

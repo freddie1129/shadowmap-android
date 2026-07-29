@@ -80,20 +80,20 @@ import com.gooludou.shadowplanner.presentation.ShadowMapNavigation
 import com.gooludou.shadowplanner.presentation.ShadowMapUiState
 import com.gooludou.shadowplanner.presentation.ShadowMapViewModel
 import com.gooludou.shadowplanner.presentation.components.AutoToolState
+import com.gooludou.shadowplanner.presentation.dashboard.MapDateTimeActions
+import com.gooludou.shadowplanner.presentation.dashboard.MapEditingActions
+import com.gooludou.shadowplanner.presentation.dashboard.MapNavigationActions
+import com.gooludou.shadowplanner.presentation.dashboard.MapboxScene3DViewport
+import com.gooludou.shadowplanner.presentation.dashboard.MapboxSceneMode
+import com.gooludou.shadowplanner.presentation.dashboard.ShadowPlannerSceneActions
+import com.gooludou.shadowplanner.presentation.dashboard.ShadowPlannerSceneState
+import com.gooludou.shadowplanner.presentation.dashboard.ShadowPlannerSceneView
+import com.gooludou.shadowplanner.presentation.dashboard.currentScene3DViewport
 import com.gooludou.shadowplanner.presentation.drawview.ActiveDrawingControls
 import com.gooludou.shadowplanner.presentation.drawview.DrawingCrosshair
 import com.gooludou.shadowplanner.presentation.drawview.DrawingPropertiesSheet
 import com.gooludou.shadowplanner.presentation.drawview.ShadowColorSheet
 import com.gooludou.shadowplanner.presentation.locationsearch.SelectedLocationSheet
-import com.gooludou.shadowplanner.presentation.dashboard.MapboxScene3DViewport
-import com.gooludou.shadowplanner.presentation.dashboard.MapboxSceneMode
-import com.gooludou.shadowplanner.presentation.dashboard.MapDateTimeActions
-import com.gooludou.shadowplanner.presentation.dashboard.MapEditingActions
-import com.gooludou.shadowplanner.presentation.dashboard.MapNavigationActions
-import com.gooludou.shadowplanner.presentation.dashboard.ShadowPlannerSceneActions
-import com.gooludou.shadowplanner.presentation.dashboard.ShadowPlannerSceneState
-import com.gooludou.shadowplanner.presentation.dashboard.ShadowPlannerSceneView
-import com.gooludou.shadowplanner.presentation.dashboard.currentScene3DViewport
 import com.gooludou.shadowplanner.presentation.projectview.SaveProjectDialog
 import com.gooludou.shadowplanner.project.ProjectViewport
 import com.gooludou.shadowplanner.scene.SceneViewport
@@ -715,12 +715,17 @@ private fun ShadowMapScreen(
         propertyType != null && propertyInitialHeight != null
     val autoToolState = when {
         uiState.buildingLoadState is BuildingLoadState.Loading -> AutoToolState.LOADING
+
         Config.BUILDING_LOAD_TYPE == BuildingLoadType.ALL &&
             buildingLoadArea == null -> AutoToolState.CHECKING
+
         Config.BUILDING_LOAD_TYPE == BuildingLoadType.ALL &&
             buildingLoadArea?.isWithinLimit == false -> AutoToolState.TOO_LARGE
+
         uiState.buildingLoadState is BuildingLoadState.Error -> AutoToolState.ERROR
+
         uiState.buildingLoadState is BuildingLoadState.Loaded -> AutoToolState.LOADED
+
         else -> AutoToolState.READY
     }
     val mode = uiState.activeDrawMode

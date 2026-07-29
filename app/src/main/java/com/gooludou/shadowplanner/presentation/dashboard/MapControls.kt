@@ -196,15 +196,6 @@ private fun MapEditingControls(
     )
 }
 
-
-
-
-
-
-
-
-
-
 @Preview(name = "Mapbox 3D controls - light", showBackground = true)
 @Composable
 private fun MapboxScene3DControlsLightPreview() {

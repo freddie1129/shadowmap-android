@@ -283,7 +283,6 @@ fun MapboxScene3DSelectionButton(
     }
 }
 
-
 @Composable
 private fun MapboxScene3DBasemapSelectionButton(
     basemapStyle: MapboxBasemapStyle,

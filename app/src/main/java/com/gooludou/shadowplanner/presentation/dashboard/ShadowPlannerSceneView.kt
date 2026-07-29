@@ -75,8 +75,8 @@ internal fun ShadowPlannerSceneView(
     uiState: ShadowMapUiState,
     state: ShadowPlannerSceneState,
     actions: ShadowPlannerSceneActions,
-    mapSnapshotOverlay: ImageBitmap? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    mapSnapshotOverlay: ImageBitmap? = null
 ) {
     val viewport = state.viewport
     val solarPosition = uiState.solarPosition

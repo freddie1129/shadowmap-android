@@ -73,7 +73,7 @@ fun MapTopControls(
                     top = dimensions.spacingSmall,
                     start = dimensions.spacingLarge,
                     end = dimensions.spacingLarge
-            ),
+                ),
             verticalAlignment = Alignment.Companion.CenterVertically
         ) {
             MapRoundIconButton(
