@@ -26,6 +26,7 @@ import com.gooludou.shadowplanner.core.model.DrawnTree
 import com.gooludou.shadowplanner.core.model.DrawnWall
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.solar.SolarPosition
+import com.gooludou.shadowplanner.core.ui.theme.LightSurfaceVariant
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
 import com.gooludou.shadowplanner.feature.shadowmap.components.mapboxNative3dConfig
 import com.mapbox.bindgen.Value
@@ -150,7 +151,7 @@ internal fun ShadowPlannerSceneView(
         withFrameNanos { }
         isSkyViewportReady = true
     }
-    val buildingColor = MaterialTheme.colorScheme.surfaceVariant
+    val buildingColor = LightSurfaceVariant
     val wallColor = MaterialTheme.colorScheme.tertiary
     val trunkColor = Color(0xFF75543A)
     val canopyColor = Color(0xFF3F7D48)
