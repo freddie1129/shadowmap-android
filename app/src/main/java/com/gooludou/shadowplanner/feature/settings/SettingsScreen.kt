@@ -34,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,11 +63,16 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onBack)
+    val dimensions = ShadowMapDesign.dimensions
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings)) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background
+                ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -80,15 +86,16 @@ fun SettingsScreen(
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = innerPadding
+            contentPadding = innerPadding,
+            verticalArrangement = Arrangement.spacedBy(dimensions.spacingSmall)
         ) {
             item {
                 PremiumCard(
                     isPremium = isPremium,
                     onClick = onPremiumClick,
                     modifier = Modifier.padding(
-                        horizontal = ShadowMapDesign.dimensions.screenPadding,
-                        vertical = ShadowMapDesign.dimensions.spacingSmall
+                        horizontal = dimensions.screenPadding,
+                        vertical = dimensions.spacingSmall
                     )
                 )
             }
@@ -315,7 +322,13 @@ private fun SettingsMenuItem(
     modifier: Modifier = Modifier
 ) {
     val dimensions = ShadowMapDesign.dimensions
-    Surface(modifier = modifier.fillMaxWidth()) {
+    Surface(
+        modifier = modifier
+            .padding(horizontal = dimensions.screenPadding)
+            .fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface
+    ) {
         Row(
             modifier = Modifier
                 .clickable(onClick = onClick)
