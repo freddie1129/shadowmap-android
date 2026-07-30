@@ -89,6 +89,7 @@ fun AppNavigation(
                     }
 
                     AppDestination.Settings -> NavEntry(key) {
+                        val context = LocalContext.current
                         SettingsScreen(
                             isPremium = purchaseViewModel.effectiveEntitlement(
                                 purchaseState.entitlement,
@@ -98,6 +99,8 @@ fun AppNavigation(
                             onDeveloperClick = {
                                 backStack.add(AppDestination.DeveloperSettings)
                             },
+                            onRateClick = context::rateApp,
+                            onShareClick = context::shareApp,
                             onAboutClick = { backStack.add(AppDestination.About) },
                             onBack = { backStack.removeLastOrNull() }
                         )
@@ -169,22 +172,26 @@ private fun aboutActions(context: Context, isPremium: Boolean) = AboutActions(
     onContactUsClick = {
         context.startActivity(FeedbackEmailHelper.buildIntent(context, isPremium))
     },
-    onShareClick = {
-        val text = context.getString(R.string.about_share_text, WEBSITE_URL)
-        context.startActivity(
-            Intent.createChooser(
-                Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, text)
-                },
-                null
-            )
-        )
-    },
-    onRateClick = {
-        context.openUri("https://play.google.com/store/apps/details?id=${BuildConfig.APPLICATION_ID}")
-    }
+    onShareClick = context::shareApp,
+    onRateClick = context::rateApp
 )
+
+private fun Context.shareApp() {
+    val text = getString(R.string.about_share_text, WEBSITE_URL)
+    startActivity(
+        Intent.createChooser(
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+            },
+            null
+        )
+    )
+}
+
+private fun Context.rateApp() {
+    openUri("https://play.google.com/store/apps/details?id=${BuildConfig.APPLICATION_ID}")
+}
 
 private fun Context.openUri(uri: String) {
     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))

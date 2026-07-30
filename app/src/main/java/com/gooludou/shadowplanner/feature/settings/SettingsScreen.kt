@@ -21,6 +21,8 @@ import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,6 +55,8 @@ fun SettingsScreen(
     isPremium: Boolean,
     onPremiumClick: () -> Unit,
     onDeveloperClick: () -> Unit,
+    onRateClick: () -> Unit,
+    onShareClick: () -> Unit,
     onAboutClick: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -88,6 +92,30 @@ fun SettingsScreen(
                     )
                 )
             }
+            item {
+                SettingsMenuItem(
+                    icon = Icons.Outlined.Star,
+                    title = stringResource(R.string.rate_on_google_play),
+                    supportingText = stringResource(R.string.rate_on_google_play_summary),
+                    onClick = onRateClick
+                )
+            }
+            item {
+                SettingsMenuItem(
+                    icon = Icons.Outlined.Share,
+                    title = stringResource(R.string.share_shadow_planner),
+                    supportingText = stringResource(R.string.share_shadow_planner_summary),
+                    onClick = onShareClick
+                )
+            }
+            item {
+                SettingsMenuItem(
+                    icon = Icons.Outlined.Info,
+                    title = stringResource(R.string.about),
+                    supportingText = stringResource(R.string.about_settings_summary),
+                    onClick = onAboutClick
+                )
+            }
             if (BuildConfig.DEBUG) {
                 item {
                     SettingsMenuItem(
@@ -97,14 +125,6 @@ fun SettingsScreen(
                         onClick = onDeveloperClick
                     )
                 }
-            }
-            item {
-                SettingsMenuItem(
-                    icon = Icons.Outlined.Info,
-                    title = stringResource(R.string.about),
-                    supportingText = stringResource(R.string.about_settings_summary),
-                    onClick = onAboutClick
-                )
             }
         }
     }
@@ -335,6 +355,8 @@ private fun SettingsScreenLightPreview() {
             isPremium = false,
             onPremiumClick = {},
             onDeveloperClick = {},
+            onRateClick = {},
+            onShareClick = {},
             onAboutClick = {},
             onBack = {}
         )
@@ -349,6 +371,8 @@ private fun SettingsScreenDarkPreview() {
             isPremium = true,
             onPremiumClick = {},
             onDeveloperClick = {},
+            onRateClick = {},
+            onShareClick = {},
             onAboutClick = {},
             onBack = {}
         )
