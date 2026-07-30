@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -311,7 +310,6 @@ fun DateTimeSpinner(
                             onLockedInteraction()
                         }
                     },
-                    isDateTimeChangeEnabled = isDateTimeChangeEnabled,
                     colors = spinnerColors
                 )
                 DateRuler(
@@ -503,7 +501,6 @@ private fun SpinnerHeader(
     selectedTime: LocalTime,
     onReset: () -> Unit,
     onCalendar: () -> Unit,
-    isDateTimeChangeEnabled: Boolean,
     colors: SpinnerColors
 ) {
     val dimensions = ShadowMapDesign.dimensions
@@ -531,21 +528,12 @@ private fun SpinnerHeader(
                 )
             }
             IconButton(onClick = onCalendar) {
-                if (isDateTimeChangeEnabled) {
-                    Icon(
-                        painter = painterResource(R.drawable.baseline_calendar_month_24),
-                        contentDescription = stringResource(R.string.choose_date),
-                        tint = colors.content,
-                        modifier = Modifier.size(dimensions.iconSize)
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Outlined.Lock,
-                        contentDescription = stringResource(R.string.premium),
-                        tint = colors.content,
-                        modifier = Modifier.size(dimensions.iconSize)
-                    )
-                }
+                Icon(
+                    painter = painterResource(R.drawable.baseline_calendar_month_24),
+                    contentDescription = stringResource(R.string.choose_date),
+                    tint = colors.content,
+                    modifier = Modifier.size(dimensions.iconSize)
+                )
             }
         }
     }
