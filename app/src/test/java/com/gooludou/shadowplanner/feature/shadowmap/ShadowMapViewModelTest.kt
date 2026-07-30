@@ -528,8 +528,26 @@ class ShadowMapViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, resolveCalls)
+        assertEquals(TEST_LOCATION, viewModel.uiState.value.currentLocation)
         assertEquals(TEST_LOCATION, viewModel.uiState.value.calculationLocation)
         assertEquals("Brisbane QLD, Australia", viewModel.uiState.value.selectedLocationLabel)
+    }
+
+    @Test
+    fun searchedLocation_remainsSeparateFromLaterDeviceLocationUpdates() = runTest(dispatcher) {
+        val updatedDeviceLocation = GeoPoint(153.1, -27.1)
+        val searchedLocation = GeoPoint(151.2093, -33.8688)
+        val viewModel = createViewModel()
+
+        viewModel.onCurrentLocationReceived(TEST_LOCATION, "Current location")
+        viewModel.onLocationSelected(searchedLocation, "Sydney NSW, Australia")
+        viewModel.onCurrentLocationReceived(updatedDeviceLocation, "Current location")
+
+        assertEquals(updatedDeviceLocation, viewModel.uiState.value.currentLocation)
+        assertEquals(searchedLocation, viewModel.uiState.value.selectedMapLocation)
+        assertEquals(searchedLocation, viewModel.uiState.value.calculationLocation)
+        assertEquals("Sydney NSW, Australia", viewModel.uiState.value.selectedLocationLabel)
+        assertEquals(1L, viewModel.uiState.value.locationSelectionRevision)
     }
 
     @Test

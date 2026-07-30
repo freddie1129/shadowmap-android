@@ -65,6 +65,7 @@ constructor(
     private val projectMapper = ShadowMapProjectMapper(clock)
     private val sunriseSunsetCalculator = SunriseSunsetCalculator(solarPositionCalculator)
     private var shadowJob: Job? = null
+    private var currentLocationResolutionJob: Job? = null
     private var lastDeletedObject: DeletedSceneObject? = null
     private var lastClearedScene: ClearedSceneSnapshot? = null
     private var moveSnapshot: ShadowMapUiState? = null
@@ -205,6 +206,15 @@ constructor(
     }
 
     fun onLocationSelected(location: GeoPoint, label: String) {
+        currentLocationResolutionJob?.cancel()
+        applySelectedLocation(location, label, incrementSelectionRevision = true)
+    }
+
+    private fun applySelectedLocation(
+        location: GeoPoint,
+        label: String,
+        incrementSelectionRevision: Boolean
+    ) {
         val selectedEpochMillis = if (shouldApplyInitialDaylightTime) {
             shouldApplyInitialDaylightTime = false
             daylightAwareInitialTime(location).also {
@@ -218,19 +228,37 @@ constructor(
         savedStateHandle[LOCATION_LABEL_KEY] = label
         _uiState.value = _uiState.value.copy(
             selectedEpochMillis = selectedEpochMillis,
+            selectedMapLocation = if (incrementSelectionRevision) {
+                location
+            } else {
+                _uiState.value.selectedMapLocation
+            },
             calculationLocation = location,
-            selectedLocationLabel = label
+            selectedLocationLabel = label,
+            locationSelectionRevision = _uiState.value.locationSelectionRevision +
+                if (incrementSelectionRevision) 1L else 0L
         )
         recalculateSunAndShadows()
     }
 
     fun onCurrentLocationReceived(location: GeoPoint, fallbackLabel: String) {
+        _uiState.value = _uiState.value.copy(
+            currentLocation = location,
+            currentLocationLabel = _uiState.value.currentLocationLabel ?: fallbackLabel
+        )
         if (hasResolvedCurrentLocation) return
         hasResolvedCurrentLocation = true
         // The initial map time must not depend on reverse geocoding, which can finish well
         // after the date/time ruler has initialized itself at the current time.
-        onLocationSelected(location, fallbackLabel)
-        viewModelScope.launch(computationDispatcher) {
+        val initializedMapFromCurrentLocation = _uiState.value.calculationLocation == null
+        if (initializedMapFromCurrentLocation) {
+            applySelectedLocation(
+                location = location,
+                label = fallbackLabel,
+                incrementSelectionRevision = false
+            )
+        }
+        currentLocationResolutionJob = viewModelScope.launch(computationDispatcher) {
             val resolvedLocation = currentLocationResolver.resolve(location)
                 .getOrElse {
                     com.gooludou.shadowplanner.location.LocationSearchResult(
@@ -241,12 +269,17 @@ constructor(
                         longitude = location.longitude
                     )
                 }
-            onLocationSelected(
-                location = GeoPoint(
-                    longitude = resolvedLocation.longitude ?: location.longitude,
-                    latitude = resolvedLocation.latitude ?: location.latitude
-                ),
-                label = resolvedLocation.address.ifBlank { resolvedLocation.name }
+            val resolvedLabel = resolvedLocation.address.ifBlank { resolvedLocation.name }
+            _uiState.value = _uiState.value.copy(
+                currentLocationLabel = resolvedLabel,
+                selectedLocationLabel = if (
+                    initializedMapFromCurrentLocation &&
+                    _uiState.value.locationSelectionRevision == 0L
+                ) {
+                    resolvedLabel
+                } else {
+                    _uiState.value.selectedLocationLabel
+                }
             )
         }
     }

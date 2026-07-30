@@ -174,6 +174,7 @@ fun AppNavigation(
                         LaunchedEffect(uiState.selectedLocation) {
                             uiState.selectedLocation?.let { selected ->
                                 pendingLocation = selected
+                                viewModel.clear()
                                 backStack.removeLastOrNull()
                             }
                         }

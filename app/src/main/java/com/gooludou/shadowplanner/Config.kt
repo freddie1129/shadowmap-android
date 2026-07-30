@@ -15,11 +15,8 @@ object Config {
     /** Neutral latitude used while permission is pending or location is unavailable. */
     const val FALLBACK_MAP_CENTER_LATITUDE = 0.0
 
-    /** World-level zoom used until a useful local location is available. */
-    const val FALLBACK_MAP_ZOOM = 10.0
-
-    /** Local zoom used after the device provides a current location. */
-    const val DEVICE_LOCATION_MAP_ZOOM = 17.0
+    /** Zoom shared by the initial camera and all location-based camera moves. */
+    const val DEFAULT_MAP_ZOOM = 17.0
 
     /** Neutral camera bearing used for the world fallback. */
     const val FALLBACK_MAP_BEARING_DEGREES = 0.0

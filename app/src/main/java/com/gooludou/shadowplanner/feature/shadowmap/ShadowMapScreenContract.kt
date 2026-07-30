@@ -5,15 +5,12 @@ import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.ShadowAppearance
-import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.project.ProjectViewport
 import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 
 data class MapScreenDependencies(val mapControllerFactory: MapboxShadowMapController.Factory)
 
 data class ShadowMapNavigation(
-    val pendingLocation: LocationSearchResult?,
-    val onLocationApplied: () -> Unit,
     val onOpenProjects: () -> Unit,
     val onOpenLocationSearch: () -> Unit,
     val onOpenSettings: () -> Unit

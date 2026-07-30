@@ -112,7 +112,7 @@ private val FALLBACK_MAPBOX_SCENE_VIEWPORT = MapboxScene3DViewport(
         longitude = Config.FALLBACK_MAP_CENTER_LONGITUDE,
         latitude = Config.FALLBACK_MAP_CENTER_LATITUDE
     ),
-    zoom = Config.FALLBACK_MAP_ZOOM,
+    zoom = Config.DEFAULT_MAP_ZOOM,
     bearing = Config.FALLBACK_MAP_BEARING_DEGREES,
     widthMeters = Config.MAPBOX_3D_FALLBACK_WIDTH_METERS,
     heightMeters = Config.MAPBOX_3D_FALLBACK_HEIGHT_METERS,
@@ -173,8 +173,6 @@ internal fun ShadowMapScreen(
     val onSaveProject = actions.project.onSaveProject
     val onSaveProjectAsNew = actions.project.onSaveProjectAsNew
     val mapControllerFactory = dependencies.mapControllerFactory
-    val pendingLocation = navigation.pendingLocation
-    val onLocationApplied = navigation.onLocationApplied
     val onOpenProjects = navigation.onOpenProjects
     val onOpenLocationSearch = navigation.onOpenLocationSearch
     val onOpenSettings = navigation.onOpenSettings
@@ -232,7 +230,7 @@ internal fun ShadowMapScreen(
                     Config.FALLBACK_MAP_CENTER_LATITUDE
                 )
             )
-            zoom(Config.FALLBACK_MAP_ZOOM)
+            zoom(Config.DEFAULT_MAP_ZOOM)
             bearing(Config.FALLBACK_MAP_BEARING_DEGREES)
         }
     }
@@ -253,19 +251,24 @@ internal fun ShadowMapScreen(
         mapboxSceneMode = MapboxSceneMode.VIEW
     }
     var mapboxSceneViewport by remember { mutableStateOf<MapboxScene3DViewport?>(null) }
-    LaunchedEffect(pendingLocation) {
-        val latitude = pendingLocation?.latitude ?: return@LaunchedEffect
-        val longitude = pendingLocation.longitude ?: return@LaunchedEffect
-        val center = Point.fromLngLat(longitude, latitude)
+    LaunchedEffect(uiState.locationSelectionRevision, mapboxSceneMapView) {
+        if (uiState.locationSelectionRevision == 0L) return@LaunchedEffect
+        val selectedLocation = uiState.selectedMapLocation ?: return@LaunchedEffect
+        val center = Point.fromLngLat(selectedLocation.longitude, selectedLocation.latitude)
         mapViewportState.setCameraOptions {
             center(center)
-            zoom(15.0)
+            zoom(Config.DEFAULT_MAP_ZOOM)
         }
-        mapboxSceneViewport = (mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT).copy(
-            center = GeoPoint(longitude, latitude),
-            zoom = 15.0
+        mapboxSceneMapView?.mapboxMap?.setCamera(
+            com.mapbox.maps.CameraOptions.Builder()
+                .center(center)
+                .zoom(Config.DEFAULT_MAP_ZOOM)
+                .build()
         )
-        onLocationApplied()
+        mapboxSceneViewport = (mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT).copy(
+            center = selectedLocation,
+            zoom = Config.DEFAULT_MAP_ZOOM
+        )
     }
     LaunchedEffect(uiState.projectLoadRevision) {
         if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
@@ -409,7 +412,7 @@ internal fun ShadowMapScreen(
         }
     }
 
-    DisposableEffect(mapView, hasLocationPermission) {
+    DisposableEffect(mapView, hasLocationPermission, uiState.locationSelectionRevision) {
         val currentMapView = mapView
         if (currentMapView == null || !hasLocationPermission) {
             onDispose { }
@@ -418,24 +421,26 @@ internal fun ShadowMapScreen(
             var firstLocationReceived = false
             val positionListener = OnIndicatorPositionChangedListener { point ->
                 currentLocationPoint = point
+                onCurrentLocationReceived(
+                    GeoPoint(point.longitude(), point.latitude()),
+                    currentLocationLabel
+                )
                 if (!firstLocationReceived) {
                     firstLocationReceived = true
-                    mapViewportState.setCameraOptions {
-                        center(point)
-                        zoom(Config.DEVICE_LOCATION_MAP_ZOOM)
-                        bearing(Config.FALLBACK_MAP_BEARING_DEGREES)
+                    if (uiState.locationSelectionRevision == 0L) {
+                        mapViewportState.setCameraOptions {
+                            center(point)
+                            zoom(Config.DEFAULT_MAP_ZOOM)
+                            bearing(Config.FALLBACK_MAP_BEARING_DEGREES)
+                        }
+                        mapboxSceneViewport = (
+                            mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
+                            ).copy(
+                            center = GeoPoint(point.longitude(), point.latitude()),
+                            zoom = Config.DEFAULT_MAP_ZOOM,
+                            bearing = Config.FALLBACK_MAP_BEARING_DEGREES
+                        )
                     }
-                    mapboxSceneViewport = (
-                        mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
-                        ).copy(
-                        center = GeoPoint(point.longitude(), point.latitude()),
-                        zoom = Config.DEVICE_LOCATION_MAP_ZOOM,
-                        bearing = Config.FALLBACK_MAP_BEARING_DEGREES
-                    )
-                    onCurrentLocationReceived(
-                        GeoPoint(point.longitude(), point.latitude()),
-                        currentLocationLabel
-                    )
                 }
             }
             locationComponent.updateSettings {

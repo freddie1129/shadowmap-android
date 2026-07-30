@@ -39,6 +39,7 @@ internal fun ShadowMapRoute(
                 location = GeoPoint(latitude = latitude, longitude = longitude),
                 label = pendingLocation.address.ifBlank { pendingLocation.name }
             )
+            onLocationApplied()
         }
     }
     LaunchedEffect(pendingProjectId) {
@@ -93,8 +94,6 @@ internal fun ShadowMapRoute(
             )
         ),
         navigation = ShadowMapNavigation(
-            pendingLocation = pendingLocation,
-            onLocationApplied = onLocationApplied,
             onOpenProjects = onOpenProjects,
             onOpenLocationSearch = onOpenLocationSearch,
             onOpenSettings = onOpenSettings

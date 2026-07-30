@@ -20,8 +20,12 @@ import com.gooludou.shadowplanner.project.ProjectViewport
 data class ShadowMapUiState(
     val selectedEpochMillis: Long,
     val displayTimeZoneId: String,
+    val currentLocation: GeoPoint? = null,
+    val currentLocationLabel: String? = null,
+    val selectedMapLocation: GeoPoint? = null,
     val calculationLocation: GeoPoint? = null,
     val selectedLocationLabel: String? = null,
+    val locationSelectionRevision: Long = 0L,
     val viewport: ProjectViewport? = null,
     val activeProjectId: String? = null,
     val activeProjectName: String? = null,
