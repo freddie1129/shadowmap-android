@@ -15,13 +15,13 @@ class SunriseSunsetCalculator(
         val dayStart = date.atStartOfDay(zoneId).toInstant()
         val dayEnd = date.plusDays(1).atStartOfDay(zoneId).toInstant()
         var previous = dayStart
-        var wasAboveHorizon = isAboveHorizon(previous, location)
+        var wasAboveHorizon = isAboveApparentHorizon(previous, location)
         var sunrise: Instant? = null
         var sunset: Instant? = null
         var current = previous.plusSeconds(SAMPLE_INTERVAL_SECONDS)
 
         while (current <= dayEnd) {
-            val isAboveHorizon = isAboveHorizon(current, location)
+            val isAboveHorizon = isAboveApparentHorizon(current, location)
             if (!wasAboveHorizon && isAboveHorizon && sunrise == null) {
                 sunrise = horizonCrossing(previous, current, location)
             } else if (wasAboveHorizon && !isAboveHorizon && sunset == null) {
@@ -38,12 +38,12 @@ class SunriseSunsetCalculator(
     private fun horizonCrossing(start: Instant, end: Instant, location: GeoPoint): Instant {
         var lower = start
         var upper = end
-        val lowerIsAboveHorizon = isAboveHorizon(lower, location)
-        while (upper.toEpochMilli() - lower.toEpochMilli() > MILLIS_PER_MINUTE) {
+        val lowerIsAboveHorizon = isAboveApparentHorizon(lower, location)
+        while (upper.toEpochMilli() - lower.toEpochMilli() > CROSSING_PRECISION_MILLIS) {
             val midpoint = Instant.ofEpochMilli(
                 (lower.toEpochMilli() + upper.toEpochMilli()) / 2
             )
-            if (isAboveHorizon(midpoint, location) == lowerIsAboveHorizon) {
+            if (isAboveApparentHorizon(midpoint, location) == lowerIsAboveHorizon) {
                 lower = midpoint
             } else {
                 upper = midpoint
@@ -52,15 +52,17 @@ class SunriseSunsetCalculator(
         return upper
     }
 
-    private fun isAboveHorizon(instant: Instant, location: GeoPoint): Boolean =
+    private fun isAboveApparentHorizon(instant: Instant, location: GeoPoint): Boolean =
         solarPositionCalculator.calculate(
             epochMillis = instant.toEpochMilli(),
             latitudeDegrees = location.latitude,
             longitudeDegrees = location.longitude
-        ).isAboveHorizon
+        ).zenithDegrees < APPARENT_HORIZON_ZENITH_DEGREES
 
     private companion object {
+        // Includes the Sun's apparent radius and atmospheric refraction at the horizon.
+        const val APPARENT_HORIZON_ZENITH_DEGREES = 90.833
         const val SAMPLE_INTERVAL_SECONDS = 5 * 60L
-        const val MILLIS_PER_MINUTE = 60_000L
+        const val CROSSING_PRECISION_MILLIS = 1_000L
     }
 }
