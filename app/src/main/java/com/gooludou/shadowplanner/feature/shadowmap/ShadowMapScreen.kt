@@ -697,8 +697,17 @@ internal fun ShadowMapScreen(
                         },
                         onOpenProjects = onOpenProjects,
                         onSaveProject = {
-                            projectNameDraft = uiState.activeProjectName.orEmpty()
-                            showSaveProjectDialog = true
+                            when (entitlementState) {
+                                EntitlementState.Premium -> {
+                                    projectNameDraft = uiState.activeProjectName.orEmpty()
+                                    showSaveProjectDialog = true
+                                }
+
+                                EntitlementState.Free,
+                                is EntitlementState.Unavailable -> onPremiumRequired()
+
+                                EntitlementState.Checking -> Unit
+                            }
                         }
                     ),
                     editing = MapEditingActions(
