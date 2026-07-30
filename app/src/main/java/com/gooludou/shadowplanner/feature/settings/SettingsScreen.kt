@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Button
@@ -52,6 +53,7 @@ fun SettingsScreen(
     isPremium: Boolean,
     onPremiumClick: () -> Unit,
     onDeveloperClick: () -> Unit,
+    onAboutClick: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -89,11 +91,20 @@ fun SettingsScreen(
             if (BuildConfig.DEBUG) {
                 item {
                     SettingsMenuItem(
+                        icon = Icons.Outlined.Build,
                         title = stringResource(R.string.developer),
                         supportingText = stringResource(R.string.developer_settings_summary),
                         onClick = onDeveloperClick
                     )
                 }
+            }
+            item {
+                SettingsMenuItem(
+                    icon = Icons.Outlined.Info,
+                    title = stringResource(R.string.about),
+                    supportingText = stringResource(R.string.about_settings_summary),
+                    onClick = onAboutClick
+                )
             }
         }
     }
@@ -277,6 +288,7 @@ private fun ActiveBadge(modifier: Modifier = Modifier) {
 
 @Composable
 private fun SettingsMenuItem(
+    icon: ImageVector,
     title: String,
     supportingText: String,
     onClick: () -> Unit,
@@ -295,7 +307,7 @@ private fun SettingsMenuItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Outlined.Build,
+                imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(dimensions.iconSize)
             )
@@ -323,6 +335,7 @@ private fun SettingsScreenLightPreview() {
             isPremium = false,
             onPremiumClick = {},
             onDeveloperClick = {},
+            onAboutClick = {},
             onBack = {}
         )
     }
@@ -336,6 +349,7 @@ private fun SettingsScreenDarkPreview() {
             isPremium = true,
             onPremiumClick = {},
             onDeveloperClick = {},
+            onAboutClick = {},
             onBack = {}
         )
     }
@@ -362,6 +376,7 @@ private fun PremiumActiveCardPreview() {
 private fun SettingsMenuItemPreview() {
     ShadowMapTheme(dynamicColor = false) {
         SettingsMenuItem(
+            icon = Icons.Outlined.Info,
             title = "Developer",
             supportingText = "Testing and premium overrides",
             onClick = {}

@@ -5,6 +5,7 @@ sealed interface AppDestination {
     data object Map : AppDestination
     data object Settings : AppDestination
     data object DeveloperSettings : AppDestination
+    data object About : AppDestination
     data object LocationSearch : AppDestination
     data object Projects : AppDestination
 }

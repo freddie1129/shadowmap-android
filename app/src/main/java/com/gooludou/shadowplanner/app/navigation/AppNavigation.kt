@@ -3,6 +3,8 @@ package com.gooludou.shadowplanner.app.navigation
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -29,6 +31,11 @@ import com.gooludou.shadowplanner.feature.projects.ProjectListScreen
 import com.gooludou.shadowplanner.feature.projects.ProjectListViewModel
 import com.gooludou.shadowplanner.feature.settings.SettingsScreen
 import com.gooludou.shadowplanner.feature.settings.DeveloperSettingsScreen
+import com.gooludou.shadowplanner.BuildConfig
+import com.gooludou.shadowplanner.R
+import com.gooludou.shadowplanner.feature.settings.AboutActions
+import com.gooludou.shadowplanner.feature.settings.AboutScreen
+import com.gooludou.shadowplanner.feature.settings.FeedbackEmailHelper
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapRoute
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.purchase.model.EntitlementState
@@ -91,6 +98,7 @@ fun AppNavigation(
                             onDeveloperClick = {
                                 backStack.add(AppDestination.DeveloperSettings)
                             },
+                            onAboutClick = { backStack.add(AppDestination.About) },
                             onBack = { backStack.removeLastOrNull() }
                         )
                     }
@@ -99,6 +107,19 @@ fun AppNavigation(
                         DeveloperSettingsScreen(
                             forcePremium = forcePremium,
                             onForcePremiumChange = purchaseViewModel::setForcePremium,
+                            onBack = { backStack.removeLastOrNull() }
+                        )
+                    }
+
+                    AppDestination.About -> NavEntry(key) {
+                        val context = LocalContext.current
+                        val isPremium = purchaseViewModel.effectiveEntitlement(
+                            purchaseState.entitlement,
+                            forcePremium
+                        ) == EntitlementState.Premium
+                        AboutScreen(
+                            versionName = BuildConfig.VERSION_NAME,
+                            actions = aboutActions(context, isPremium),
                             onBack = { backStack.removeLastOrNull() }
                         )
                     }
@@ -141,6 +162,36 @@ fun AppNavigation(
         PurchasePaywallHost(showPaywall, purchaseState, purchaseViewModel)
     }
 }
+
+private fun aboutActions(context: Context, isPremium: Boolean) = AboutActions(
+    onWebsiteClick = { context.openUri(WEBSITE_URL) },
+    onPrivacyPolicyClick = { context.openUri(PRIVACY_URL) },
+    onContactUsClick = {
+        context.startActivity(FeedbackEmailHelper.buildIntent(context, isPremium))
+    },
+    onShareClick = {
+        val text = context.getString(R.string.about_share_text, WEBSITE_URL)
+        context.startActivity(
+            Intent.createChooser(
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, text)
+                },
+                null
+            )
+        )
+    },
+    onRateClick = {
+        context.openUri("https://play.google.com/store/apps/details?id=${BuildConfig.APPLICATION_ID}")
+    }
+)
+
+private fun Context.openUri(uri: String) {
+    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+}
+
+private const val WEBSITE_URL = "https://sunfinderapps.com"
+private const val PRIVACY_URL = "https://sunfinderapps.com/privacy.html"
 
 @Composable
 private fun RefreshPurchasesOnResume(onResume: () -> Unit) {
