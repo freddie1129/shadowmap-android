@@ -27,6 +27,7 @@ import com.gooludou.shadowplanner.core.model.BuildingSource
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.GeoPolygon
 import com.gooludou.shadowplanner.core.ui.components.MapRoundIconButton
+import com.gooludou.shadowplanner.core.ui.components.PremiumFeatureIndicator
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchEntry
@@ -43,7 +44,8 @@ fun MapTopControls(
     canRecenterCurrentLocation: Boolean,
     modifier: Modifier = Modifier,
     onOpenProjects: () -> Unit,
-    onSaveProject: () -> Unit
+    onSaveProject: () -> Unit,
+    isSaveProjectPremiumLocked: Boolean
 ) {
     val dimensions = ShadowMapDesign.dimensions
     Column(
@@ -91,11 +93,19 @@ fun MapTopControls(
                 Icon(Icons.Outlined.FolderOpen, contentDescription = null)
             }
             Spacer(modifier = Modifier.width(ShadowMapDesign.dimensions.spacingSmall))
-            MapRoundIconButton(
-                onClick = onSaveProject,
-                contentDescription = stringResource(R.string.save_project)
-            ) {
-                Icon(Icons.Outlined.Save, contentDescription = null)
+            PremiumFeatureIndicator(showIndicator = isSaveProjectPremiumLocked) {
+                MapRoundIconButton(
+                    onClick = onSaveProject,
+                    contentDescription = stringResource(
+                        if (isSaveProjectPremiumLocked) {
+                            R.string.save_project_premium_feature
+                        } else {
+                            R.string.save_project
+                        }
+                    )
+                ) {
+                    Icon(Icons.Outlined.Save, contentDescription = null)
+                }
             }
         }
     }
@@ -153,7 +163,8 @@ private fun Map2DTopControlsPreview() {
             onRecenterCurrentLocation = {},
             canRecenterCurrentLocation = true,
             onOpenProjects = {},
-            onSaveProject = {}
+            onSaveProject = {},
+            isSaveProjectPremiumLocked = true
         )
     }
 }

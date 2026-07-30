@@ -67,6 +67,9 @@ internal fun MapControls(
             canRecenterCurrentLocation = state.canRecenterCurrentLocation,
             onOpenProjects = actions.navigation.onOpenProjects,
             onSaveProject = actions.navigation.onSaveProject,
+            isSaveProjectPremiumLocked =
+                actions.dateTime.entitlementState == EntitlementState.Free ||
+                    actions.dateTime.entitlementState is EntitlementState.Unavailable,
             modifier = Modifier.align(Alignment.TopCenter)
         )
         if (state.sceneMode == MapboxSceneMode.VIEW) {
