@@ -4,6 +4,8 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gooludou.shadowplanner.purchase.billing.InAppPurchaseManager
+import com.gooludou.shadowplanner.purchase.developer.DeveloperSettings
+import com.gooludou.shadowplanner.purchase.developer.DeveloperEntitlementOverride
 import com.gooludou.shadowplanner.purchase.model.EntitlementState
 import com.gooludou.shadowplanner.purchase.model.InAppPurchaseState
 import com.gooludou.shadowplanner.purchase.model.PurchaseCatalogState
@@ -19,9 +21,11 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class PurchaseViewModel @Inject constructor(
     private val remoteConfigManager: RemoteConfigManager,
-    private val inAppPurchaseManager: InAppPurchaseManager
+    private val inAppPurchaseManager: InAppPurchaseManager,
+    private val developerSettings: DeveloperSettings
 ) : ViewModel() {
     val purchaseState: StateFlow<InAppPurchaseState> = inAppPurchaseManager.state
+    val forcePremium: StateFlow<Boolean> = developerSettings.forcePremium
 
     private val _showPaywall = MutableStateFlow(false)
     val showPaywall: StateFlow<Boolean> = _showPaywall.asStateFlow()
@@ -47,6 +51,11 @@ class PurchaseViewModel @Inject constructor(
     }
 
     fun requestPaywall() {
+        if (effectiveEntitlement(purchaseState.value.entitlement, forcePremium.value) ==
+            EntitlementState.Premium
+        ) {
+            return
+        }
         if (
             purchaseState.value.entitlement == EntitlementState.Free ||
             purchaseState.value.entitlement is EntitlementState.Unavailable
@@ -54,6 +63,19 @@ class PurchaseViewModel @Inject constructor(
             _showPaywall.value = true
         }
     }
+
+    fun setForcePremium(enabled: Boolean) {
+        developerSettings.setForcePremium(enabled)
+        if (enabled) _showPaywall.value = false
+    }
+
+    fun effectiveEntitlement(
+        entitlement: EntitlementState,
+        forcePremium: Boolean
+    ): EntitlementState = DeveloperEntitlementOverride.resolve(
+        entitlement = entitlement,
+        forcePremium = forcePremium
+    )
 
     fun dismissPaywall() {
         _showPaywall.value = false

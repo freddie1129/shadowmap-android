@@ -28,6 +28,7 @@ import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchViewModel
 import com.gooludou.shadowplanner.feature.projects.ProjectListScreen
 import com.gooludou.shadowplanner.feature.projects.ProjectListViewModel
 import com.gooludou.shadowplanner.feature.settings.SettingsScreen
+import com.gooludou.shadowplanner.feature.settings.DeveloperSettingsScreen
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapRoute
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.purchase.model.InAppPurchaseState
@@ -36,12 +37,14 @@ import com.gooludou.shadowplanner.purchase.ui.PurchaseViewModel
 import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 
 @Composable
+@Suppress("LongMethod")
 fun AppNavigation(
     mapControllerFactory: MapboxShadowMapController.Factory,
     modifier: Modifier = Modifier
 ) {
     val purchaseViewModel: PurchaseViewModel = hiltViewModel()
     val purchaseState by purchaseViewModel.purchaseState.collectAsStateWithLifecycle()
+    val forcePremium by purchaseViewModel.forcePremium.collectAsStateWithLifecycle()
     val showPaywall by purchaseViewModel.showPaywall.collectAsStateWithLifecycle()
     val backStack = remember { mutableStateListOf<Any>(AppDestination.Map) }
     var pendingLocation by remember {
@@ -60,7 +63,10 @@ fun AppNavigation(
                     AppDestination.Map -> NavEntry(key) {
                         ShadowMapRoute(
                             mapControllerFactory = mapControllerFactory,
-                            entitlementState = purchaseState.entitlement,
+                            entitlementState = purchaseViewModel.effectiveEntitlement(
+                                purchaseState.entitlement,
+                                forcePremium
+                            ),
                             onPremiumRequired = purchaseViewModel::requestPaywall,
                             pendingLocation = pendingLocation,
                             pendingProjectId = pendingProjectId,
@@ -75,7 +81,20 @@ fun AppNavigation(
                     }
 
                     AppDestination.Settings -> NavEntry(key) {
-                        SettingsScreen(onBack = { backStack.removeLastOrNull() })
+                        SettingsScreen(
+                            onDeveloperClick = {
+                                backStack.add(AppDestination.DeveloperSettings)
+                            },
+                            onBack = { backStack.removeLastOrNull() }
+                        )
+                    }
+
+                    AppDestination.DeveloperSettings -> NavEntry(key) {
+                        DeveloperSettingsScreen(
+                            forcePremium = forcePremium,
+                            onForcePremiumChange = purchaseViewModel::setForcePremium,
+                            onBack = { backStack.removeLastOrNull() }
+                        )
                     }
 
                     AppDestination.LocationSearch -> NavEntry(key) {
