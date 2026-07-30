@@ -444,6 +444,7 @@ fun DateTimeSpinnerCollapsed(
                 Icon(
                     imageVector = Icons.Outlined.ExpandLess,
                     contentDescription = stringResource(R.string.show_date_time),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
                     modifier = Modifier.size(18.dp)
                 )
             }
