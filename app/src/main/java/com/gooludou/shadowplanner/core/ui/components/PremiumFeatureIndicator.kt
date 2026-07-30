@@ -31,23 +31,30 @@ fun PremiumFeatureIndicator(
     Box(modifier = modifier) {
         content()
         if (showIndicator) {
-            Surface(
+            PremiumFeatureBadge(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .offset(x = dimensions.spacingXs, y = -dimensions.spacingXs)
-                    .size(dimensions.spacingLarge),
-                shape = CircleShape,
-                color = PremiumIndicatorGold,
-                contentColor = PremiumIndicatorContent,
-                shadowElevation = dimensions.spacingXxs
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.outline_crown_24),
-                    contentDescription = null,
-                    modifier = Modifier.padding(dimensions.spacingXxs)
-                )
-            }
+            )
         }
+    }
+}
+
+@Composable
+fun PremiumFeatureBadge(modifier: Modifier = Modifier) {
+    val dimensions = ShadowMapDesign.dimensions
+    Surface(
+        modifier = modifier.size(dimensions.spacingLarge),
+        shape = CircleShape,
+        color = PremiumIndicatorGold,
+        contentColor = PremiumIndicatorContent,
+        shadowElevation = dimensions.spacingXxs
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.outline_crown_24),
+            contentDescription = null,
+            modifier = Modifier.padding(dimensions.spacingXxs)
+        )
     }
 }
 

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -66,6 +67,7 @@ import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.solar.SunriseSunset
 import com.gooludou.shadowplanner.core.solar.SunriseSunsetCalculator
+import com.gooludou.shadowplanner.core.ui.components.PremiumFeatureBadge
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import java.time.Instant
@@ -570,7 +572,14 @@ private fun DateRuler(
         }
         RulerEdgeFades(colors.surface)
         CentreArrow(colors.arrow)
-        if (!userScrollEnabled) LockedRulerOverlay(onLockedInteraction)
+        if (!userScrollEnabled) {
+            PremiumFeatureBadge(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(x = ShadowMapDesign.dimensions.spacingLarge)
+            )
+            LockedRulerOverlay(onLockedInteraction)
+        }
     }
 }
 
@@ -810,7 +819,8 @@ private fun DateTimeSpinnerPreviewContent(darkTheme: Boolean) {
                 location = GeoPoint(longitude = 153.0251, latitude = -27.4698),
                 onCollapse = {},
                 onDateTimeChanged = {},
-                onNowSelected = {}
+                onNowSelected = {},
+                isDateTimeChangeEnabled = false
             )
             DateTimeSpinnerCollapsed(
                 selectedEpochMillis = dateTime.atZone(zoneId).toInstant().toEpochMilli(),
