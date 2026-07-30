@@ -27,13 +27,24 @@ class DataStoreManager @Inject constructor(
     val hasCompletedOnboarding: Flow<Boolean> = preferences
         .map { it[Keys.HasCompletedOnboarding] ?: false }
 
+    val hasRequestedLocationPermission: Flow<Boolean> = preferences
+        .map { it[Keys.HasRequestedLocationPermission] ?: false }
+
     suspend fun markOnboardingCompleted() {
         context.dataStore.edit { preferences ->
             preferences[Keys.HasCompletedOnboarding] = true
         }
     }
 
+    suspend fun markLocationPermissionRequested() {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.HasRequestedLocationPermission] = true
+        }
+    }
+
     private object Keys {
         val HasCompletedOnboarding = booleanPreferencesKey("has_completed_onboarding")
+        val HasRequestedLocationPermission =
+            booleanPreferencesKey("has_requested_location_permission")
     }
 }

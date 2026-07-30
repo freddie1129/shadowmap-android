@@ -1,8 +1,13 @@
 package com.gooludou.shadowplanner.feature.shadowmap
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -37,6 +43,11 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.app.ActivityCompat
+import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
@@ -118,6 +129,8 @@ internal fun ShadowMapScreen(
     dependencies: MapScreenDependencies,
     actions: ShadowMapActions,
     navigation: ShadowMapNavigation,
+    hasRequestedLocationPermission: Boolean?,
+    onLocationPermissionRequested: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val noBuildingsFoundMessage = stringResource(R.string.no_buildings_found)
@@ -166,16 +179,19 @@ internal fun ShadowMapScreen(
     val onOpenLocationSearch = navigation.onOpenLocationSearch
     val onOpenSettings = navigation.onOpenSettings
     val context = androidx.compose.ui.platform.LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val resources = LocalResources.current
     val density = LocalDensity.current
     val dimensions = ShadowMapDesign.dimensions
     var hasLocationPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
+            context.hasLocationPermission()
         )
+    }
+    var requestedLocationPermissionThisSession by remember { mutableStateOf(false) }
+    var hasShownAutomaticLocationPrompt by rememberSaveable { mutableStateOf(false) }
+    var locationPermissionDialogState by remember {
+        mutableStateOf<LocationPermissionDialogState?>(null)
     }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -183,13 +199,27 @@ internal fun ShadowMapScreen(
         hasLocationPermission = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
     }
-    LaunchedEffect(Unit) {
-        if (!hasLocationPermission) {
-            locationPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
+    DisposableEffect(context, lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasLocationPermission = context.hasLocationPermission()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(hasRequestedLocationPermission, hasLocationPermission) {
+        if (
+            !hasLocationPermission &&
+            hasRequestedLocationPermission != null &&
+            !hasShownAutomaticLocationPrompt
+        ) {
+            hasShownAutomaticLocationPrompt = true
+            val shouldShowRationale = context.findActivity()
+                ?.shouldShowLocationPermissionRationale() == true
+            locationPermissionDialogState = resolveLocationPermissionDialogState(
+                wasRequested = hasRequestedLocationPermission == true,
+                shouldShowRationale = shouldShowRationale
             )
         }
     }
@@ -269,6 +299,28 @@ internal fun ShadowMapScreen(
     var exitEditingAfterDiscard by remember { mutableStateOf(false) }
     var currentLocationPoint by remember { mutableStateOf<Point?>(null) }
     var showSelectedLocationSheet by remember { mutableStateOf(false) }
+    val requestOrRecenterCurrentLocation: () -> Unit = {
+        if (hasLocationPermission) {
+            currentLocationPoint?.let { point ->
+                mapViewportState.setCameraOptions { center(point) }
+                mapboxSceneMapView?.mapboxMap?.setCamera(
+                    com.mapbox.maps.CameraOptions.Builder()
+                        .center(point)
+                        .build()
+                )
+            }
+        } else {
+            val activity = context.findActivity()
+            val shouldShowRationale = activity?.shouldShowLocationPermissionRationale() == true
+            val wasRequested = hasRequestedLocationPermission == true ||
+                requestedLocationPermissionThisSession
+            locationPermissionDialogState = resolveLocationPermissionDialogState(
+                wasRequested = wasRequested,
+                shouldShowRationale = shouldShowRationale
+            )
+        }
+        Unit
+    }
     var showShadowColorSheet by remember { mutableStateOf(false) }
     var showSaveProjectDialog by remember { mutableStateOf(false) }
     var projectNameDraft by remember(uiState.activeProjectName) {
@@ -677,7 +729,8 @@ internal fun ShadowMapScreen(
                     viewport = viewport,
                     sceneMode = mapboxSceneMode,
                     autoToolState = autoToolState,
-                    canRecenterCurrentLocation = currentLocationPoint != null,
+                    canRecenterCurrentLocation = !hasLocationPermission ||
+                        currentLocationPoint != null,
                     editingCrosshairPoint = crosshairPoint
                 ),
                 actions = ShadowPlannerSceneActions(
@@ -685,16 +738,7 @@ internal fun ShadowMapScreen(
                         onOpenSettings = onOpenSettings,
                         onOpenLocationSearch = onOpenLocationSearch,
                         onShowLocationInfo = { showSelectedLocationSheet = true },
-                        onRecenterCurrentLocation = {
-                            currentLocationPoint?.let { point ->
-                                mapViewportState.setCameraOptions { center(point) }
-                                mapboxSceneMapView?.mapboxMap?.setCamera(
-                                    com.mapbox.maps.CameraOptions.Builder()
-                                        .center(point)
-                                        .build()
-                                )
-                            }
-                        },
+                        onRecenterCurrentLocation = requestOrRecenterCurrentLocation,
                         onOpenProjects = onOpenProjects,
                         onSaveProject = {
                             when (entitlementState) {
@@ -852,6 +896,23 @@ internal fun ShadowMapScreen(
         }
     }
 
+    locationPermissionDialogState?.let { dialogState ->
+        LocationPermissionDialog(
+            state = dialogState,
+            onDismiss = { locationPermissionDialogState = null },
+            onContinue = {
+                requestedLocationPermissionThisSession = true
+                onLocationPermissionRequested()
+                locationPermissionDialogState = null
+                locationPermissionLauncher.launch(LocationPermissions)
+            },
+            onOpenSettings = {
+                locationPermissionDialogState = null
+                context.openAppSettings()
+            }
+        )
+    }
+
     if (showClearConfirmation) {
         AlertDialog(
             onDismissRequest = { showClearConfirmation = false },
@@ -950,6 +1011,55 @@ internal fun ShadowMapScreen(
             }
         )
     }
+}
+
+private val LocationPermissions = arrayOf(
+    Manifest.permission.ACCESS_FINE_LOCATION,
+    Manifest.permission.ACCESS_COARSE_LOCATION
+)
+
+private fun Context.hasLocationPermission(): Boolean =
+    ContextCompat.checkSelfPermission(
+        this,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+private fun Activity.shouldShowLocationPermissionRationale(): Boolean =
+    ActivityCompat.shouldShowRequestPermissionRationale(
+        this,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) || ActivityCompat.shouldShowRequestPermissionRationale(
+        this,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    )
+
+private fun resolveLocationPermissionDialogState(
+    wasRequested: Boolean,
+    shouldShowRationale: Boolean
+): LocationPermissionDialogState =
+    if (wasRequested && !shouldShowRationale) {
+        LocationPermissionDialogState.SETTINGS
+    } else {
+        LocationPermissionDialogState.RATIONALE
+    }
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+private fun Context.openAppSettings() {
+    startActivity(
+        Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            "package:$packageName".toUri()
+        )
+    )
 }
 
 private val THREE_D_BOTTOM_CONTROL_CLEARANCE = 156.dp
