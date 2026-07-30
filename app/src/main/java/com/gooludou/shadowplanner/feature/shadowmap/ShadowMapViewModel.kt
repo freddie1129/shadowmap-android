@@ -25,6 +25,7 @@ import com.gooludou.shadowplanner.core.shadow.BuildingShadowCalculator
 import com.gooludou.shadowplanner.core.shadow.UserObjectShadowCalculator
 import com.gooludou.shadowplanner.core.solar.SolarPosition
 import com.gooludou.shadowplanner.core.solar.SolarPositionCalculator
+import com.gooludou.shadowplanner.core.solar.SunriseSunsetCalculator
 import com.gooludou.shadowplanner.di.DefaultDispatcher
 import com.gooludou.shadowplanner.location.CurrentLocationResolver
 import com.gooludou.shadowplanner.project.ProjectRepository
@@ -62,11 +63,13 @@ constructor(
     private val computationDispatcher: CoroutineDispatcher
 ) : ViewModel() {
     private val projectMapper = ShadowMapProjectMapper(clock)
+    private val sunriseSunsetCalculator = SunriseSunsetCalculator(solarPositionCalculator)
     private var shadowJob: Job? = null
     private var lastDeletedObject: DeletedSceneObject? = null
     private var lastClearedScene: ClearedSceneSnapshot? = null
     private var moveSnapshot: ShadowMapUiState? = null
     private var hasResolvedCurrentLocation = false
+    private var shouldApplyInitialDaylightTime = !savedStateHandle.contains(SELECTED_TIME_KEY)
 
     private val _uiState =
         MutableStateFlow(
@@ -86,6 +89,7 @@ constructor(
     }
 
     fun onDateTimeChanged(epochMillis: Long) {
+        shouldApplyInitialDaylightTime = false
         savedStateHandle[SELECTED_TIME_KEY] = epochMillis
         _uiState.value =
             _uiState.value.copy(selectedEpochMillis = epochMillis, isProjectDirty = true)
@@ -153,6 +157,7 @@ constructor(
     }
 
     fun loadProject(id: String) {
+        shouldApplyInitialDaylightTime = false
         viewModelScope.launch(computationDispatcher) {
             runCatching { projectRepository.loadProject(id) }
                 .onSuccess { project ->
@@ -200,10 +205,19 @@ constructor(
     }
 
     fun onLocationSelected(location: GeoPoint, label: String) {
+        val selectedEpochMillis = if (shouldApplyInitialDaylightTime) {
+            shouldApplyInitialDaylightTime = false
+            daylightAwareInitialTime(location).also {
+                savedStateHandle[SELECTED_TIME_KEY] = it
+            }
+        } else {
+            _uiState.value.selectedEpochMillis
+        }
         savedStateHandle[LOCATION_LATITUDE_KEY] = location.latitude
         savedStateHandle[LOCATION_LONGITUDE_KEY] = location.longitude
         savedStateHandle[LOCATION_LABEL_KEY] = label
         _uiState.value = _uiState.value.copy(
+            selectedEpochMillis = selectedEpochMillis,
             calculationLocation = location,
             selectedLocationLabel = label
         )
@@ -213,6 +227,9 @@ constructor(
     fun onCurrentLocationReceived(location: GeoPoint, fallbackLabel: String) {
         if (hasResolvedCurrentLocation) return
         hasResolvedCurrentLocation = true
+        // The initial map time must not depend on reverse geocoding, which can finish well
+        // after the date/time ruler has initialized itself at the current time.
+        onLocationSelected(location, fallbackLabel)
         viewModelScope.launch(computationDispatcher) {
             val resolvedLocation = currentLocationResolver.resolve(location)
                 .getOrElse {
@@ -745,6 +762,22 @@ constructor(
             GeoPoint(longitude = longitude, latitude = latitude)
         } else {
             null
+        }
+    }
+
+    private fun daylightAwareInitialTime(location: GeoPoint): Long {
+        val current = clock.instant()
+        val zoneId = ZoneId.of(_uiState.value.displayTimeZoneId)
+        val daylight = sunriseSunsetCalculator.calculate(
+            date = current.atZone(zoneId).toLocalDate(),
+            zoneId = zoneId,
+            location = location
+        ) ?: return current.toEpochMilli().roundToTimeStep()
+        val isDaytime = !current.isBefore(daylight.sunrise) && current.isBefore(daylight.sunset)
+        return if (isDaytime) {
+            current.toEpochMilli().roundToTimeStep()
+        } else {
+            daylight.sunrise.plus(2, ChronoUnit.HOURS).toEpochMilli()
         }
     }
 

@@ -13,6 +13,7 @@ import com.gooludou.shadowplanner.core.model.SceneObjectSource
 import com.gooludou.shadowplanner.core.shadow.BuildingShadowCalculator
 import com.gooludou.shadowplanner.core.shadow.UserObjectShadowCalculator
 import com.gooludou.shadowplanner.core.solar.SolarPositionCalculator
+import com.gooludou.shadowplanner.core.solar.SunriseSunsetCalculator
 import com.gooludou.shadowplanner.location.CurrentLocationResolver
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.project.ProjectRepository
@@ -21,6 +22,8 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -59,6 +62,51 @@ class ShadowMapViewModelTest {
 
         assertEquals(selectedTime, viewModel.uiState.value.selectedEpochMillis)
         assertEquals(selectedTime, savedState.get<Long>("selected_time"))
+    }
+
+    @Test
+    fun initialLocationAtNight_selectsTwoHoursAfterSunrise() {
+        val nighttime = Instant.parse("2026-07-14T10:00:00Z")
+        val zoneId = ZoneId.of("Australia/Brisbane")
+        val viewModel = createViewModel(clock = Clock.fixed(nighttime, ZoneOffset.UTC))
+
+        viewModel.onLocationSelected(TEST_LOCATION, "Brisbane")
+
+        val daylight = requireNotNull(
+            SunriseSunsetCalculator().calculate(
+                date = nighttime.atZone(zoneId).toLocalDate(),
+                zoneId = zoneId,
+                location = TEST_LOCATION
+            )
+        )
+        assertEquals(
+            daylight.sunrise.plus(2, ChronoUnit.HOURS).toEpochMilli(),
+            viewModel.uiState.value.selectedEpochMillis
+        )
+    }
+
+    @Test
+    fun initialLocationDuringDay_keepsCurrentTime() {
+        val viewModel = createViewModel()
+
+        viewModel.onLocationSelected(TEST_LOCATION, "Brisbane")
+
+        assertEquals(DEFAULT_TIME.toEpochMilli(), viewModel.uiState.value.selectedEpochMillis)
+    }
+
+    @Test
+    fun restoredTime_isNotReplacedByDaylightDefault() {
+        val restoredTime = Instant.parse("2026-08-01T04:30:00Z").toEpochMilli()
+        val savedState = SavedStateHandle(mapOf("selected_time" to restoredTime))
+        val nighttime = Instant.parse("2026-07-14T10:00:00Z")
+        val viewModel = createViewModel(
+            savedStateHandle = savedState,
+            clock = Clock.fixed(nighttime, ZoneOffset.UTC)
+        )
+
+        viewModel.onLocationSelected(TEST_LOCATION, "Brisbane")
+
+        assertEquals(restoredTime, viewModel.uiState.value.selectedEpochMillis)
     }
 
     @Test
@@ -484,6 +532,38 @@ class ShadowMapViewModelTest {
         assertEquals("Brisbane QLD, Australia", viewModel.uiState.value.selectedLocationLabel)
     }
 
+    @Test
+    fun currentLocationReceived_appliesDaylightTimeBeforeLocationLabelResolves() =
+        runTest(dispatcher) {
+            val nighttime = Instant.parse("2026-07-14T10:00:00Z")
+            val zoneId = ZoneId.of("Australia/Brisbane")
+            val resolution = CompletableDeferred<Result<LocationSearchResult>>()
+            val viewModel = createViewModel(
+                clock = Clock.fixed(nighttime, ZoneOffset.UTC),
+                currentLocationResolver = object : CurrentLocationResolver {
+                    override suspend fun resolve(location: GeoPoint): Result<LocationSearchResult> =
+                        resolution.await()
+                }
+            )
+
+            viewModel.onCurrentLocationReceived(TEST_LOCATION, "Current location")
+
+            val daylight = requireNotNull(
+                SunriseSunsetCalculator().calculate(
+                    date = nighttime.atZone(zoneId).toLocalDate(),
+                    zoneId = zoneId,
+                    location = TEST_LOCATION
+                )
+            )
+            assertEquals(
+                daylight.sunrise.plus(2, ChronoUnit.HOURS).toEpochMilli(),
+                viewModel.uiState.value.selectedEpochMillis
+            )
+
+            resolution.complete(Result.failure(IllegalStateException("No address")))
+            advanceUntilIdle()
+        }
+
     private fun testBuilding(): Building {
         val ring =
             listOf(
@@ -528,6 +608,7 @@ class ShadowMapViewModelTest {
 
     private fun createViewModel(
         savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        clock: Clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
         projectRepository: ProjectRepository = object : ProjectRepository {
             override fun listProjects() =
                 emptyList<com.gooludou.shadowplanner.project.ProjectSummary>()
@@ -545,7 +626,7 @@ class ShadowMapViewModelTest {
         shadowCalculator = BuildingShadowCalculator(),
         userObjectShadowCalculator = UserObjectShadowCalculator(),
         solarPositionCalculator = SolarPositionCalculator(),
-        clock = Clock.fixed(DEFAULT_TIME, ZoneOffset.UTC),
+        clock = clock,
         systemZoneId = ZoneId.of("Australia/Brisbane"),
         projectRepository = projectRepository,
         currentLocationResolver = currentLocationResolver,

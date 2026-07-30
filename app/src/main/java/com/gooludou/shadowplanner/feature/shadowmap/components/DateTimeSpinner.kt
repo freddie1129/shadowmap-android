@@ -5,6 +5,7 @@ package com.gooludou.shadowplanner.feature.shadowmap.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -41,7 +42,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -80,9 +80,7 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 private const val DATE_RANGE_YEARS = 20L
 private val DAYLIGHT_TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm a")
@@ -165,8 +163,6 @@ fun DateTimeSpinner(
     val density = LocalDensity.current
     val dayWidthPx = with(density) { DateTimeSpinnerDefaults.dayWidth.toPx() }
     val minuteWidthPx = with(density) { DateTimeSpinnerDefaults.minuteWidth.toPx() }
-    val coroutineScope = rememberCoroutineScope()
-
     val selectedDate by remember(dateListState, dateRange, dayWidthPx) {
         derivedStateOf { dateListState.dateAtViewportCentre(dateRange, dayWidthPx) }
     }
@@ -179,42 +175,40 @@ fun DateTimeSpinner(
         location?.let { sunriseSunsetCalculator.calculate(displayedDate, zoneId, it) }
     }
 
-    var suppressDateCallback by remember { mutableStateOf(true) }
-    var suppressTimeCallback by remember { mutableStateOf(true) }
+    var programmaticTargetEpochMillis by remember { mutableStateOf<Long?>(selectedEpochMillis) }
+    var lastRulerSelectedEpochMillis by remember { mutableStateOf<Long?>(null) }
+    var centeredDateRangeYear by remember { mutableStateOf<Int?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
+    val isDateRulerDragged by dateListState.interactionSource.collectIsDraggedAsState()
+    val isTimeRulerDragged by timeListState.interactionSource.collectIsDraggedAsState()
 
-    LaunchedEffect(dateListState, dateRange) {
+    LaunchedEffect(isDateRulerDragged, isTimeRulerDragged) {
+        if (isDateRulerDragged || isTimeRulerDragged) {
+            programmaticTargetEpochMillis = null
+        }
+    }
+
+    LaunchedEffect(selectedEpochMillis, zoneId, dateRange, timeRange) {
+        val originatedFromRuler = selectedEpochMillis == lastRulerSelectedEpochMillis &&
+            centeredDateRangeYear == initialDateTime.year
+        lastRulerSelectedEpochMillis = null
+        if (originatedFromRuler) return@LaunchedEffect
+        programmaticTargetEpochMillis = selectedEpochMillis
         snapshotFlow { dateListState.layoutInfo.viewportSize.width }.filter { it > 0 }.first()
-        dateListState.centerOnDate(initialDateTime.toLocalDate(), dateRange, dayWidthPx)
-        suppressDateCallback = false
-    }
-    LaunchedEffect(timeListState, timeRange) {
         snapshotFlow { timeListState.layoutInfo.viewportSize.width }.filter { it > 0 }.first()
+        dateListState.centerOnDate(initialDateTime.toLocalDate(), dateRange, dayWidthPx)
         timeListState.centerOnTime(initialDateTime.toLocalDateTime(), timeRange, minuteWidthPx)
-        suppressTimeCallback = false
+        centeredDateRangeYear = initialDateTime.year
     }
-    LaunchedEffect(dateListState, zoneId) {
-        snapshotFlow { selectedDate }
-            .filterNotNull()
+    LaunchedEffect(dateListState, timeListState, zoneId) {
+        snapshotFlow { selectedDate to selectedTime }
+            .filter { (date, time) -> date != null && time != null }
             .distinctUntilChanged()
-            .collect { date ->
-                if (!suppressDateCallback) {
-                    onDateTimeChanged(
-                        date.atTime(
-                            selectedTime ?: initialDateTime.toLocalTime()
-                        ).toEpochMillis(zoneId)
-                    )
-                }
-            }
-    }
-    LaunchedEffect(timeListState, zoneId) {
-        snapshotFlow { selectedTime }
-            .filterNotNull()
-            .distinctUntilChanged()
-            .collect { time ->
-                if (!suppressTimeCallback) {
-                    val dateTime = (selectedDate ?: initialDateTime.toLocalDate()).atTime(time)
-                    onDateTimeChanged(dateTime.toEpochMillis(zoneId))
+            .collect { (date, time) ->
+                if (programmaticTargetEpochMillis == null && date != null && time != null) {
+                    val epochMillis = date.atTime(time).toEpochMillis(zoneId)
+                    lastRulerSelectedEpochMillis = epochMillis
+                    onDateTimeChanged(epochMillis)
                 }
             }
     }
@@ -235,11 +229,6 @@ fun DateTimeSpinner(
                             val date = Instant.ofEpochMilli(
                                 millis
                             ).atZone(ZoneOffset.UTC).toLocalDate()
-                            suppressDateCallback = true
-                            coroutineScope.launch {
-                                dateListState.centerOnDate(date, dateRange, dayWidthPx)
-                                suppressDateCallback = false
-                            }
                             onDateTimeChanged(
                                 date.atTime(
                                     selectedTime ?: initialDateTime.toLocalTime()
@@ -288,19 +277,6 @@ fun DateTimeSpinner(
                     selectedDate = displayedDate,
                     selectedTime = selectedTime ?: initialDateTime.toLocalTime(),
                     onReset = {
-                        suppressDateCallback = true
-                        suppressTimeCallback = true
-                        val now = java.time.ZonedDateTime.now(zoneId)
-                        coroutineScope.launch {
-                            dateListState.centerOnDate(now.toLocalDate(), dateRange, dayWidthPx)
-                            timeListState.centerOnTime(
-                                now.toLocalDateTime(),
-                                timeRange,
-                                minuteWidthPx
-                            )
-                            suppressDateCallback = false
-                            suppressTimeCallback = false
-                        }
                         onNowSelected()
                     },
                     onCalendar = {
