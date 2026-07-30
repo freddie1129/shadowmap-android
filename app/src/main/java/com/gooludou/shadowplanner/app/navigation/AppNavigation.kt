@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -27,6 +28,8 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchScreen
 import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchViewModel
+import com.gooludou.shadowplanner.feature.onboarding.OnboardingRoute
+import com.gooludou.shadowplanner.feature.onboarding.OnboardingViewModel
 import com.gooludou.shadowplanner.feature.projects.ProjectListScreen
 import com.gooludou.shadowplanner.feature.projects.ProjectListViewModel
 import com.gooludou.shadowplanner.feature.settings.SettingsScreen
@@ -51,10 +54,22 @@ fun AppNavigation(
     modifier: Modifier = Modifier
 ) {
     val purchaseViewModel: PurchaseViewModel = hiltViewModel()
+    val onboardingViewModel: OnboardingViewModel = hiltViewModel()
     val purchaseState by purchaseViewModel.purchaseState.collectAsStateWithLifecycle()
     val forcePremium by purchaseViewModel.forcePremium.collectAsStateWithLifecycle()
     val showPaywall by purchaseViewModel.showPaywall.collectAsStateWithLifecycle()
-    val backStack = remember { mutableStateListOf<Any>(AppDestination.Map) }
+    val hasCompletedOnboarding by onboardingViewModel.hasCompletedOnboarding
+        .collectAsStateWithLifecycle()
+    if (hasCompletedOnboarding == null) {
+        Surface(modifier = modifier.fillMaxSize()) {}
+        return
+    }
+    val backStack = remember {
+        mutableStateListOf<Any>(
+            if (hasCompletedOnboarding == true) AppDestination.Map
+            else AppDestination.Onboarding()
+        )
+    }
     var pendingLocation by remember {
         androidx.compose.runtime.mutableStateOf<LocationSearchResult?>(null)
     }
@@ -68,6 +83,26 @@ fun AppNavigation(
             onBack = { backStack.removeLastOrNull() },
             entryProvider = { key ->
                 when (key) {
+                    is AppDestination.Onboarding -> NavEntry(key) {
+                        val finishOnboarding: () -> Unit = {
+                            onboardingViewModel.markCompleted()
+                            if (key.isReplay) {
+                                backStack.removeLastOrNull()
+                            } else {
+                                backStack.clear()
+                                backStack.add(AppDestination.Map)
+                            }
+                            Unit
+                        }
+                        OnboardingRoute(
+                            onFinish = finishOnboarding,
+                            onClose = {
+                                if (key.isReplay) backStack.removeLastOrNull()
+                                else finishOnboarding()
+                            }
+                        )
+                    }
+
                     AppDestination.Map -> NavEntry(key) {
                         ShadowMapRoute(
                             mapControllerFactory = mapControllerFactory,
@@ -122,7 +157,13 @@ fun AppNavigation(
                         ) == EntitlementState.Premium
                         AboutScreen(
                             versionName = BuildConfig.VERSION_NAME,
-                            actions = aboutActions(context, isPremium),
+                            actions = aboutActions(
+                                context = context,
+                                isPremium = isPremium,
+                                onViewIntroductionClick = {
+                                    backStack.add(AppDestination.Onboarding(isReplay = true))
+                                }
+                            ),
                             onBack = { backStack.removeLastOrNull() }
                         )
                     }
@@ -166,7 +207,12 @@ fun AppNavigation(
     }
 }
 
-private fun aboutActions(context: Context, isPremium: Boolean) = AboutActions(
+private fun aboutActions(
+    context: Context,
+    isPremium: Boolean,
+    onViewIntroductionClick: () -> Unit
+) = AboutActions(
+    onViewIntroductionClick = onViewIntroductionClick,
     onWebsiteClick = { context.openUri(WEBSITE_URL) },
     onPrivacyPolicyClick = { context.openUri(PRIVACY_URL) },
     onContactUsClick = {

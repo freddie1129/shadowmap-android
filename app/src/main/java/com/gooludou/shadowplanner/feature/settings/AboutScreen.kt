@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.EnergySavingsLeaf
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.PrivacyTip
+import androidx.compose.material.icons.outlined.PlayCircleOutline
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Yard
@@ -185,6 +186,12 @@ private fun ActionCard(actions: AboutActions, modifier: Modifier = Modifier) {
     AboutCard(modifier = modifier) {
         Column(modifier = Modifier.padding(vertical = ShadowMapDesign.dimensions.spacingSmall)) {
             AboutRow(
+                Icons.Outlined.PlayCircleOutline,
+                stringResource(R.string.view_introduction),
+                actions.onViewIntroductionClick
+            )
+            AboutDivider()
+            AboutRow(
                 Icons.Outlined.Language,
                 stringResource(R.string.about_website),
                 actions.onWebsiteClick
@@ -275,7 +282,7 @@ private fun AboutDivider() {
     )
 }
 
-private val PreviewAboutActions = AboutActions({}, {}, {}, {}, {})
+private val PreviewAboutActions = AboutActions({}, {}, {}, {}, {}, {})
 
 @Preview(name = "About screen - light", showBackground = true)
 @Composable

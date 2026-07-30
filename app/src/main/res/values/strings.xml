@@ -64,6 +64,7 @@
     <string name="about_contact_us">Contact us</string>
     <string name="about_share">Share Shadow Planner</string>
     <string name="about_rate">Rate Shadow Planner</string>
+    <string name="view_introduction">View introduction</string>
     <string name="about_share_text">Plan for sunlight and shade with Shadow Planner: %1$s</string>
     <string name="rate_on_google_play">Rate on Google Play</string>
     <string name="rate_on_google_play_summary">Leave a review and help others find the app</string>
@@ -183,6 +184,17 @@
     <string name="buy_for">Buy for %1$s</string>
     <string name="subscribe_for">Subscribe for %1$s</string>
     <string name="continue_label">Continue</string>
+    <string name="skip">Skip</string>
+    <string name="next">Next</string>
+    <string name="explore_the_map">Explore the map</string>
+    <string name="onboarding_page_description">Page %1$d of %2$d</string>
+    <string name="onboarding_artwork_placeholder">Onboarding artwork placeholder</string>
+    <string name="onboarding_shade_title">Know where the shade will be</string>
+    <string name="onboarding_shade_description">See how buildings, walls, and trees cast shadows at any place and time.</string>
+    <string name="onboarding_time_title">Explore any moment</string>
+    <string name="onboarding_time_description">Move through the day or choose another season to see how shadows change.</string>
+    <string name="onboarding_plan_title">Plan your own space</string>
+    <string name="onboarding_plan_description">Use existing buildings or add buildings, walls, and trees to your map.</string>
     <string name="restore_purchases">Restore purchases</string>
     <string name="subscription_disclosure">Subscriptions renew automatically until canceled in Google Play.</string>
     <string name="purchase_pending">Your purchase is pending. Premium will unlock after payment completes.</string>
