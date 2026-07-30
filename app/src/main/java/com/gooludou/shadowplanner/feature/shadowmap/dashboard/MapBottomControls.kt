@@ -375,10 +375,7 @@ private fun MapBottomControlsDarkPreview() {
 }
 
 @Composable
-private fun MapBottomControlsPreviewContent(
-    backgroundColor: Color,
-    isDomeVisible: Boolean
-) {
+private fun MapBottomControlsPreviewContent(backgroundColor: Color, isDomeVisible: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxSize()

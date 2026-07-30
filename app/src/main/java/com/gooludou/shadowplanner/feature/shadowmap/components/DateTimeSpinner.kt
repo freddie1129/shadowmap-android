@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -122,7 +123,9 @@ fun DateTimeSpinner(
     location: GeoPoint? = null,
     onCollapse: (() -> Unit)? = null,
     onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit
+    onNowSelected: () -> Unit,
+    isDateTimeChangeEnabled: Boolean = true,
+    onLockedInteraction: () -> Unit = {}
 ) {
     val dimensions = ShadowMapDesign.dimensions
     val themeSurface = MaterialTheme.colorScheme.surface
@@ -299,15 +302,31 @@ fun DateTimeSpinner(
                         }
                         onNowSelected()
                     },
-                    onCalendar = { showDatePicker = true },
+                    onCalendar = {
+                        if (isDateTimeChangeEnabled) {
+                            showDatePicker = true
+                        } else {
+                            onLockedInteraction()
+                        }
+                    },
+                    isDateTimeChangeEnabled = isDateTimeChangeEnabled,
                     colors = spinnerColors
                 )
-                DateRuler(dateListState, dateRange, DateTimeSpinnerDefaults.dayWidth, spinnerColors)
+                DateRuler(
+                    state = dateListState,
+                    dates = dateRange,
+                    dayWidth = DateTimeSpinnerDefaults.dayWidth,
+                    colors = spinnerColors,
+                    userScrollEnabled = isDateTimeChangeEnabled,
+                    onLockedInteraction = onLockedInteraction
+                )
                 TimeRuler(
                     timeListState,
                     timeRange,
                     DateTimeSpinnerDefaults.minuteWidth,
-                    spinnerColors
+                    spinnerColors,
+                    userScrollEnabled = isDateTimeChangeEnabled,
+                    onLockedInteraction = onLockedInteraction
                 )
             }
         }
@@ -482,6 +501,7 @@ private fun SpinnerHeader(
     selectedTime: LocalTime,
     onReset: () -> Unit,
     onCalendar: () -> Unit,
+    isDateTimeChangeEnabled: Boolean,
     colors: SpinnerColors
 ) {
     val dimensions = ShadowMapDesign.dimensions
@@ -509,12 +529,21 @@ private fun SpinnerHeader(
                 )
             }
             IconButton(onClick = onCalendar) {
-                Icon(
-                    painter = painterResource(R.drawable.baseline_calendar_month_24),
-                    contentDescription = stringResource(R.string.choose_date),
-                    tint = colors.content,
-                    modifier = Modifier.size(dimensions.iconSize)
-                )
+                if (isDateTimeChangeEnabled) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_calendar_month_24),
+                        contentDescription = stringResource(R.string.choose_date),
+                        tint = colors.content,
+                        modifier = Modifier.size(dimensions.iconSize)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.Lock,
+                        contentDescription = stringResource(R.string.premium),
+                        tint = colors.content,
+                        modifier = Modifier.size(dimensions.iconSize)
+                    )
+                }
             }
         }
     }
@@ -525,16 +554,23 @@ private fun DateRuler(
     state: LazyListState,
     dates: List<LocalDate>,
     dayWidth: Dp,
-    colors: SpinnerColors
+    colors: SpinnerColors,
+    userScrollEnabled: Boolean,
+    onLockedInteraction: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxWidth().height(DateTimeSpinnerDefaults.rulerHeight)) {
-        LazyRow(state = state, modifier = Modifier.fillMaxWidth()) {
+        LazyRow(
+            state = state,
+            modifier = Modifier.fillMaxWidth(),
+            userScrollEnabled = userScrollEnabled
+        ) {
             items(count = dates.size, key = { dates[it].toString() }) { index ->
                 MonthRulerItem(dates[index], dayWidth, colors)
             }
         }
         RulerEdgeFades(colors.surface)
         CentreArrow(colors.arrow)
+        if (!userScrollEnabled) LockedRulerOverlay(onLockedInteraction)
     }
 }
 
@@ -543,17 +579,36 @@ private fun TimeRuler(
     state: LazyListState,
     times: List<LocalDateTime>,
     minuteWidth: Dp,
-    colors: SpinnerColors
+    colors: SpinnerColors,
+    userScrollEnabled: Boolean,
+    onLockedInteraction: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxWidth().height(DateTimeSpinnerDefaults.rulerHeight)) {
-        LazyRow(state = state, modifier = Modifier.fillMaxWidth()) {
+        LazyRow(
+            state = state,
+            modifier = Modifier.fillMaxWidth(),
+            userScrollEnabled = userScrollEnabled
+        ) {
             items(count = times.size, key = { times[it].toString() }) { index ->
                 HourRulerItem(times[index], minuteWidth, colors)
             }
         }
         RulerEdgeFades(colors.surface)
         CentreArrow(colors.arrow)
+        if (!userScrollEnabled) LockedRulerOverlay(onLockedInteraction)
     }
+}
+
+@Composable
+private fun BoxScope.LockedRulerOverlay(onClick: () -> Unit) {
+    val description = stringResource(R.string.premium)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight()
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = description }
+    )
 }
 
 @Composable

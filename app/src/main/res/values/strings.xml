@@ -2,6 +2,7 @@
     <string name="app_name">Shadow Planner</string>
     <string name="back">Back</string>
     <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
     <string name="apply">Apply</string>
     <string name="save">Save</string>
     <string name="save_update">Save update</string>
@@ -120,4 +121,48 @@
     <string name="reset_to_now">Reset to now</string>
     <string name="location_search_failed">Unable to search for locations. Check your connection and try again.</string>
     <string name="location_selection_failed">Unable to select that location. Try again.</string>
+    <string name="paywall_title">Unlock Shadow Planner Pro</string>
+    <string name="paywall_subtitle">Explore shadows for any date and time</string>
+    <string name="paywall_benefit_dates">Plan sunlight throughout the year</string>
+    <string name="paywall_benefit_compare">Compare shadows at any hour</string>
+    <string name="paywall_benefit_devices">Restore your purchase on your other devices</string>
+    <string name="featured">Featured</string>
+    <string name="best_value">Best value</string>
+    <string name="daily">Daily</string>
+    <string name="weekly">Weekly</string>
+    <string name="monthly">Monthly Access</string>
+    <string name="yearly">Annual Access</string>
+    <string name="save_percent">Save %1$d%%</string>
+    <string name="free_for">Free for %1$s</string>
+    <string name="intro_price_for">%1$s for %2$s</string>
+    <string name="price_once">%1$s once</string>
+    <string name="price_per_period">%1$s per %2$s</string>
+    <string name="then_price">Then %1$s</string>
+    <string name="price_unavailable">Price unavailable</string>
+    <string name="start_free_trial">Start free trial</string>
+    <string name="buy_for">Buy for %1$s</string>
+    <string name="subscribe_for">Subscribe for %1$s</string>
+    <string name="continue_label">Continue</string>
+    <string name="restore_purchases">Restore purchases</string>
+    <string name="subscription_disclosure">Subscriptions renew automatically until canceled in Google Play.</string>
+    <string name="purchase_pending">Your purchase is pending. Premium will unlock after payment completes.</string>
+    <string name="purchase_options_empty">Purchase options are currently unavailable.</string>
+    <string name="retry">Retry</string>
+    <string name="premium">Premium</string>
+    <plurals name="billing_days">
+        <item quantity="one">day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <plurals name="billing_weeks">
+        <item quantity="one">week</item>
+        <item quantity="other">%d weeks</item>
+    </plurals>
+    <plurals name="billing_months">
+        <item quantity="one">month</item>
+        <item quantity="other">%d months</item>
+    </plurals>
+    <plurals name="billing_years">
+        <item quantity="one">year</item>
+        <item quantity="other">%d years</item>
+    </plurals>
 </resources>

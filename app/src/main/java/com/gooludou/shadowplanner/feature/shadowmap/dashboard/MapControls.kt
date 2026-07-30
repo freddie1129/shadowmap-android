@@ -28,6 +28,7 @@ import com.gooludou.shadowplanner.feature.shadowmap.components.DateTimeSpinner
 import com.gooludou.shadowplanner.feature.shadowmap.components.DateTimeSpinnerCollapsed
 import com.gooludou.shadowplanner.feature.shadowmap.components.MapToolBar
 import com.gooludou.shadowplanner.feature.shadowmap.components.PitchSlider
+import com.gooludou.shadowplanner.purchase.model.EntitlementState
 import com.mapbox.maps.extension.compose.animation.viewport.MapViewportState
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import kotlin.math.abs
@@ -119,7 +120,9 @@ internal fun MapControls(
                     isExpanded = isDateTimeVisible,
                     onExpandedChanged = { isDateTimeVisible = it },
                     onDateTimeChanged = actions.dateTime.onDateTimeChanged,
-                    onNowSelected = actions.dateTime.onNowSelected
+                    onNowSelected = actions.dateTime.onNowSelected,
+                    entitlementState = actions.dateTime.entitlementState,
+                    onPremiumRequired = actions.dateTime.onPremiumRequired
                 )
             }
         }
@@ -134,7 +137,9 @@ private fun MapDateTimeControls(
     isExpanded: Boolean,
     onExpandedChanged: (Boolean) -> Unit,
     onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit
+    onNowSelected: () -> Unit,
+    entitlementState: EntitlementState,
+    onPremiumRequired: () -> Unit
 ) {
     AnimatedContent(
         targetState = isExpanded,
@@ -147,7 +152,16 @@ private fun MapDateTimeControls(
                 location = location,
                 onCollapse = { onExpandedChanged(false) },
                 onDateTimeChanged = onDateTimeChanged,
-                onNowSelected = onNowSelected
+                onNowSelected = onNowSelected,
+                isDateTimeChangeEnabled = entitlementState == EntitlementState.Premium,
+                onLockedInteraction = {
+                    if (
+                        entitlementState == EntitlementState.Free ||
+                        entitlementState is EntitlementState.Unavailable
+                    ) {
+                        onPremiumRequired()
+                    }
+                }
             )
         } else {
             DateTimeSpinnerCollapsed(
@@ -284,7 +298,9 @@ private fun previewMapControlsActions(): MapControlsActions = MapControlsActions
     ),
     dateTime = MapDateTimeActions(
         onDateTimeChanged = {},
-        onNowSelected = {}
+        onNowSelected = {},
+        entitlementState = EntitlementState.Premium,
+        onPremiumRequired = {}
     )
 )
 

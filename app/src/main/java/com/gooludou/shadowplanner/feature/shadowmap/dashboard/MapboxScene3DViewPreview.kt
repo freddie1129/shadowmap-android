@@ -7,6 +7,7 @@ import com.gooludou.shadowplanner.core.solar.SolarPosition
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
 import com.gooludou.shadowplanner.feature.shadowmap.components.AutoToolState
+import com.gooludou.shadowplanner.purchase.model.EntitlementState
 
 @Preview(name = "Mapbox 3D view - light", showBackground = true)
 @Composable
@@ -76,7 +77,9 @@ private fun previewShadowPlannerSceneActions(): ShadowPlannerSceneActions =
         ),
         dateTime = MapDateTimeActions(
             onDateTimeChanged = {},
-            onNowSelected = {}
+            onNowSelected = {},
+            entitlementState = EntitlementState.Premium,
+            onPremiumRequired = {}
         ),
         onOpenShadowColor = {},
         onSceneModeChanged = {},

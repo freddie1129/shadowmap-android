@@ -1,15 +1,26 @@
 package com.gooludou.shadowplanner.app.navigation
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchScreen
@@ -19,6 +30,9 @@ import com.gooludou.shadowplanner.feature.projects.ProjectListViewModel
 import com.gooludou.shadowplanner.feature.settings.SettingsScreen
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapRoute
 import com.gooludou.shadowplanner.location.LocationSearchResult
+import com.gooludou.shadowplanner.purchase.model.InAppPurchaseState
+import com.gooludou.shadowplanner.purchase.ui.PaywallSheet
+import com.gooludou.shadowplanner.purchase.ui.PurchaseViewModel
 import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 
 @Composable
@@ -26,68 +40,117 @@ fun AppNavigation(
     mapControllerFactory: MapboxShadowMapController.Factory,
     modifier: Modifier = Modifier
 ) {
+    val purchaseViewModel: PurchaseViewModel = hiltViewModel()
+    val purchaseState by purchaseViewModel.purchaseState.collectAsStateWithLifecycle()
+    val showPaywall by purchaseViewModel.showPaywall.collectAsStateWithLifecycle()
     val backStack = remember { mutableStateListOf<Any>(AppDestination.Map) }
     var pendingLocation by remember {
         androidx.compose.runtime.mutableStateOf<LocationSearchResult?>(null)
     }
     var pendingProjectId by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    RefreshPurchasesOnResume(purchaseViewModel::onAppResumed)
 
-    NavDisplay(
-        modifier = modifier.fillMaxSize(),
-        backStack = backStack,
-        onBack = { backStack.removeLastOrNull() },
-        entryProvider = { key ->
-            when (key) {
-                AppDestination.Map -> NavEntry(key) {
-                    ShadowMapRoute(
-                        mapControllerFactory = mapControllerFactory,
-                        pendingLocation = pendingLocation,
-                        pendingProjectId = pendingProjectId,
-                        onLocationApplied = { pendingLocation = null },
-                        onProjectApplied = { pendingProjectId = null },
-                        onOpenLocationSearch = { backStack.add(AppDestination.LocationSearch) },
-                        onOpenProjects = { backStack.add(AppDestination.Projects) },
-                        onOpenSettings = { backStack.add(AppDestination.Settings) }
-                    )
-                }
-
-                AppDestination.Settings -> NavEntry(key) {
-                    SettingsScreen(onBack = { backStack.removeLastOrNull() })
-                }
-
-                AppDestination.LocationSearch -> NavEntry(key) {
-                    val viewModel: LocationSearchViewModel = hiltViewModel()
-                    val uiState by viewModel.uiState.collectAsState()
-                    LaunchedEffect(uiState.selectedLocation) {
-                        uiState.selectedLocation?.let { selected ->
-                            pendingLocation = selected
-                            backStack.removeLastOrNull()
-                        }
+    Box(modifier = modifier.fillMaxSize()) {
+        NavDisplay(
+            modifier = Modifier.fillMaxSize(),
+            backStack = backStack,
+            onBack = { backStack.removeLastOrNull() },
+            entryProvider = { key ->
+                when (key) {
+                    AppDestination.Map -> NavEntry(key) {
+                        ShadowMapRoute(
+                            mapControllerFactory = mapControllerFactory,
+                            entitlementState = purchaseState.entitlement,
+                            onPremiumRequired = purchaseViewModel::requestPaywall,
+                            pendingLocation = pendingLocation,
+                            pendingProjectId = pendingProjectId,
+                            onLocationApplied = { pendingLocation = null },
+                            onProjectApplied = { pendingProjectId = null },
+                            onOpenLocationSearch = {
+                                backStack.add(AppDestination.LocationSearch)
+                            },
+                            onOpenProjects = { backStack.add(AppDestination.Projects) },
+                            onOpenSettings = { backStack.add(AppDestination.Settings) }
+                        )
                     }
-                    LocationSearchScreen(
-                        uiState = uiState,
-                        onQueryChanged = viewModel::onQueryChanged,
-                        onResultSelected = viewModel::select,
-                        onBack = { backStack.removeLastOrNull() }
-                    )
-                }
 
-                AppDestination.Projects -> NavEntry(key) {
-                    val viewModel: ProjectListViewModel = hiltViewModel()
-                    val projects by viewModel.projects.collectAsState()
-                    ProjectListScreen(
-                        projects = projects,
-                        onProjectSelected = { id ->
-                            pendingProjectId = id
-                            backStack.removeLastOrNull()
-                        },
-                        onDeleteProject = viewModel::deleteProject,
-                        onBack = { backStack.removeLastOrNull() }
-                    )
-                }
+                    AppDestination.Settings -> NavEntry(key) {
+                        SettingsScreen(onBack = { backStack.removeLastOrNull() })
+                    }
 
-                else -> error("Unknown navigation destination: $key")
+                    AppDestination.LocationSearch -> NavEntry(key) {
+                        val viewModel: LocationSearchViewModel = hiltViewModel()
+                        val uiState by viewModel.uiState.collectAsState()
+                        LaunchedEffect(uiState.selectedLocation) {
+                            uiState.selectedLocation?.let { selected ->
+                                pendingLocation = selected
+                                backStack.removeLastOrNull()
+                            }
+                        }
+                        LocationSearchScreen(
+                            uiState = uiState,
+                            onQueryChanged = viewModel::onQueryChanged,
+                            onResultSelected = viewModel::select,
+                            onBack = { backStack.removeLastOrNull() }
+                        )
+                    }
+
+                    AppDestination.Projects -> NavEntry(key) {
+                        val viewModel: ProjectListViewModel = hiltViewModel()
+                        val projects by viewModel.projects.collectAsState()
+                        ProjectListScreen(
+                            projects = projects,
+                            onProjectSelected = { id ->
+                                pendingProjectId = id
+                                backStack.removeLastOrNull()
+                            },
+                            onDeleteProject = viewModel::deleteProject,
+                            onBack = { backStack.removeLastOrNull() }
+                        )
+                    }
+
+                    else -> error("Unknown navigation destination: $key")
+                }
             }
+        )
+        PurchasePaywallHost(showPaywall, purchaseState, purchaseViewModel)
+    }
+}
+
+@Composable
+private fun RefreshPurchasesOnResume(onResume: () -> Unit) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnResume by rememberUpdatedState(onResume)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) currentOnResume()
         }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+}
+
+@Composable
+private fun PurchasePaywallHost(
+    showPaywall: Boolean,
+    purchaseState: InAppPurchaseState,
+    viewModel: PurchaseViewModel
+) {
+    if (!showPaywall) return
+    val activity = LocalContext.current.findActivity()
+    PaywallSheet(
+        state = purchaseState,
+        onDismiss = viewModel::dismissPaywall,
+        onPurchase = { optionId ->
+            activity?.let { viewModel.purchase(it, optionId) }
+        },
+        onRestore = viewModel::restorePurchases,
+        onRetry = viewModel::refresh
     )
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

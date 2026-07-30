@@ -8,11 +8,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.location.LocationSearchResult
+import com.gooludou.shadowplanner.purchase.model.EntitlementState
 import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 
 @Composable
 internal fun ShadowMapRoute(
     mapControllerFactory: MapboxShadowMapController.Factory,
+    entitlementState: EntitlementState,
+    onPremiumRequired: () -> Unit,
     modifier: Modifier = Modifier,
     pendingLocation: LocationSearchResult? = null,
     pendingProjectId: String? = null,
@@ -42,6 +45,8 @@ internal fun ShadowMapRoute(
     }
     ShadowMapScreen(
         uiState = uiState,
+        entitlementState = entitlementState,
+        onPremiumRequired = onPremiumRequired,
         dependencies = MapScreenDependencies(mapControllerFactory),
         actions = ShadowMapActions(
             map = MapActions(

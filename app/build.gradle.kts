@@ -26,8 +26,8 @@ android {
         applicationId = "com.gooludou.shadowplanner"
         minSdk = 24
         targetSdk = 37
-        versionCode = 4
-        versionName = "0.0.4"
+        versionCode = 5
+        versionName = "0.0.5"
 
         testInstrumentationRunner = "com.gooludou.shadowplanner.HiltTestRunner"
     }
@@ -59,6 +59,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
     lint {
@@ -88,6 +89,8 @@ dependencies {
     implementation(libs.gson)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.config)
+    implementation(libs.play.billing)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)

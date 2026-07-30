@@ -76,6 +76,7 @@ import com.gooludou.shadowplanner.feature.shadowmap.drawing.ActiveDrawingControl
 import com.gooludou.shadowplanner.feature.shadowmap.drawing.DrawingCrosshair
 import com.gooludou.shadowplanner.feature.shadowmap.drawing.DrawingPropertiesSheet
 import com.gooludou.shadowplanner.feature.shadowmap.drawing.ShadowColorSheet
+import com.gooludou.shadowplanner.purchase.model.EntitlementState
 import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadArea
 import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadType
 import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
@@ -112,6 +113,8 @@ private val FALLBACK_MAPBOX_SCENE_VIEWPORT = MapboxScene3DViewport(
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 internal fun ShadowMapScreen(
     uiState: ShadowMapUiState,
+    entitlementState: EntitlementState,
+    onPremiumRequired: () -> Unit,
     dependencies: MapScreenDependencies,
     actions: ShadowMapActions,
     navigation: ShadowMapNavigation,
@@ -706,7 +709,9 @@ internal fun ShadowMapScreen(
                     ),
                     dateTime = MapDateTimeActions(
                         onDateTimeChanged = onDateTimeChanged,
-                        onNowSelected = onNowSelected
+                        onNowSelected = onNowSelected,
+                        entitlementState = entitlementState,
+                        onPremiumRequired = onPremiumRequired
                     ),
                     onOpenShadowColor = { showShadowColorSheet = true },
                     onSceneModeChanged = { mapboxSceneMode = it },

@@ -25,6 +25,7 @@ desugarJdkLibs = "2.1.5"
 gson = "2.13.1"
 firebaseBom = "34.16.0"
 googleServices = "4.5.0"
+playBilling = "9.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -64,6 +65,8 @@ android-desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_li
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+firebase-config = { group = "com.google.firebase", name = "firebase-config" }
+play-billing = { group = "com.android.billingclient", name = "billing", version.ref = "playBilling" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
