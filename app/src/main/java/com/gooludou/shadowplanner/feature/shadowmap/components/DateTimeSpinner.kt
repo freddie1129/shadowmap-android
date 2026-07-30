@@ -324,9 +324,7 @@ fun DateTimeSpinner(
                     timeListState,
                     timeRange,
                     DateTimeSpinnerDefaults.minuteWidth,
-                    spinnerColors,
-                    userScrollEnabled = isDateTimeChangeEnabled,
-                    onLockedInteraction = onLockedInteraction
+                    spinnerColors
                 )
             }
         }
@@ -576,15 +574,12 @@ private fun TimeRuler(
     state: LazyListState,
     times: List<LocalDateTime>,
     minuteWidth: Dp,
-    colors: SpinnerColors,
-    userScrollEnabled: Boolean,
-    onLockedInteraction: () -> Unit
+    colors: SpinnerColors
 ) {
     Box(modifier = Modifier.fillMaxWidth().height(DateTimeSpinnerDefaults.rulerHeight)) {
         LazyRow(
             state = state,
-            modifier = Modifier.fillMaxWidth(),
-            userScrollEnabled = userScrollEnabled
+            modifier = Modifier.fillMaxWidth()
         ) {
             items(count = times.size, key = { times[it].toString() }) { index ->
                 HourRulerItem(times[index], minuteWidth, colors)
@@ -592,7 +587,6 @@ private fun TimeRuler(
         }
         RulerEdgeFades(colors.surface)
         CentreArrow(colors.arrow)
-        if (!userScrollEnabled) LockedRulerOverlay(onLockedInteraction)
     }
 }
 
