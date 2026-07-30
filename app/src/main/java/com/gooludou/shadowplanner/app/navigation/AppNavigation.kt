@@ -31,6 +31,7 @@ import com.gooludou.shadowplanner.feature.settings.SettingsScreen
 import com.gooludou.shadowplanner.feature.settings.DeveloperSettingsScreen
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapRoute
 import com.gooludou.shadowplanner.location.LocationSearchResult
+import com.gooludou.shadowplanner.purchase.model.EntitlementState
 import com.gooludou.shadowplanner.purchase.model.InAppPurchaseState
 import com.gooludou.shadowplanner.purchase.ui.PaywallSheet
 import com.gooludou.shadowplanner.purchase.ui.PurchaseViewModel
@@ -82,6 +83,11 @@ fun AppNavigation(
 
                     AppDestination.Settings -> NavEntry(key) {
                         SettingsScreen(
+                            isPremium = purchaseViewModel.effectiveEntitlement(
+                                purchaseState.entitlement,
+                                forcePremium
+                            ) == EntitlementState.Premium,
+                            onPremiumClick = purchaseViewModel::requestPaywall,
                             onDeveloperClick = {
                                 backStack.add(AppDestination.DeveloperSettings)
                             },

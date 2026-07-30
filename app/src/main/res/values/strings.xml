@@ -44,6 +44,10 @@
     <string name="developer_settings_summary">Testing and premium overrides</string>
     <string name="force_premium">Force premium</string>
     <string name="force_premium_summary">Bypass purchase checks and unlock all premium features</string>
+    <string name="premium_card_title">Unlock Shadow Planner Pro</string>
+    <string name="premium_card_cta">Unlock premium</string>
+    <string name="premium_card_active_subtitle">All features are unlocked</string>
+    <string name="premium_status_active">ACTIVE</string>
     <string name="map_view">Map view</string>
     <string name="back_to_map">Back to map</string>
     <string name="center_on_current_location">Center on current location</string>
