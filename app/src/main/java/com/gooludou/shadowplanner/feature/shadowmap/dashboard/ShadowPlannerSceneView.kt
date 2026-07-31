@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
+import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.DrawnTree
@@ -289,9 +290,23 @@ private fun MapboxScene3DMap(
         ?: Scene3DLighting.DEFAULT_POLAR_ANGLE_DEGREES
     val standardSatelliteStyleState = rememberStandardSatelliteStyleState {
         terrainState = TerrainState.DISABLED
+        configurationsState.apply {
+            val labelVisibility = BooleanValue(Config.SHOW_MAP_LABELS)
+            showPlaceLabels = labelVisibility
+            showPointOfInterestLabels = labelVisibility
+            showRoadLabels = labelVisibility
+            showTransitLabels = labelVisibility
+        }
     }
     val standardStyleState = rememberStandardStyleState {
         terrainState = TerrainState.DISABLED
+        configurationsState.apply {
+            val labelVisibility = BooleanValue(Config.SHOW_MAP_LABELS)
+            showPlaceLabels = labelVisibility
+            showPointOfInterestLabels = labelVisibility
+            showRoadLabels = labelVisibility
+            showTransitLabels = labelVisibility
+        }
     }
     val standardBuildingColorOverride = remember { StandardBuildingColorOverride() }
     MapboxMap(

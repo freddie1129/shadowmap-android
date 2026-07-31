@@ -6,6 +6,9 @@ import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadType
 object Config {
     const val ALLOW_LOAD_BUILDING = true
 
+    /** Shows place, point-of-interest, road, and transit labels on Mapbox basemaps. */
+    const val SHOW_MAP_LABELS = true
+
     /** Loads only the building under the crosshair; use ALL to load the visible viewport. */
     val BUILDING_LOAD_TYPE = BuildingLoadType.CENTRE_ONLY
 

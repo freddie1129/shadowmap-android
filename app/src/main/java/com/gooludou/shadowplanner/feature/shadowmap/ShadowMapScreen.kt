@@ -97,7 +97,9 @@ import com.mapbox.maps.ScreenCoordinate
 import com.mapbox.maps.extension.compose.MapEffect
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import com.mapbox.maps.extension.compose.style.BooleanValue
 import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
+import com.mapbox.maps.extension.compose.style.standard.rememberStandardSatelliteStyleState
 import com.mapbox.maps.plugin.LocationPuck2D
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.mapbox.maps.plugin.locationcomponent.location
@@ -707,6 +709,16 @@ internal fun ShadowMapScreen(
         }
     }
 
+    val satelliteStyleState = rememberStandardSatelliteStyleState {
+        configurationsState.apply {
+            val labelVisibility = BooleanValue(Config.SHOW_MAP_LABELS)
+            showPlaceLabels = labelVisibility
+            showPointOfInterestLabels = labelVisibility
+            showRoadLabels = labelVisibility
+            showTransitLabels = labelVisibility
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         MapboxMap(
             modifier = Modifier.fillMaxSize(),
@@ -721,7 +733,11 @@ internal fun ShadowMapScreen(
             scaleBar = { },
             logo = { Logo(modifier = Modifier.safeDrawingPadding()) },
             attribution = { Attribution(modifier = Modifier.safeDrawingPadding()) },
-            style = { MapboxStandardSatelliteStyle() }
+            style = {
+                MapboxStandardSatelliteStyle(
+                    standardSatelliteStyleState = satelliteStyleState
+                )
+            }
         ) {
             MapEffect(Unit) { currentMapView -> mapView = currentMapView }
         }

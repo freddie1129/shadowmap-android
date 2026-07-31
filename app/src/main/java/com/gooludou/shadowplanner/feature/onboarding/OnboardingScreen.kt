@@ -1,5 +1,7 @@
 package com.gooludou.shadowplanner.feature.onboarding
 
+import android.net.Uri
+import android.widget.VideoView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -31,9 +33,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -42,15 +50,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.annotation.RawRes
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import kotlinx.coroutines.launch
 
 private val onboardingPages = listOf(
-    OnboardingPage(R.string.onboarding_shade_title, R.string.onboarding_shade_description),
-    OnboardingPage(R.string.onboarding_time_title, R.string.onboarding_time_description),
-    OnboardingPage(R.string.onboarding_plan_title, R.string.onboarding_plan_description)
+    OnboardingPage(
+        R.string.onboarding_shade_title,
+        R.string.onboarding_shade_description,
+        artwork = OnboardingArtwork.Video(R.raw.onboarding_1)
+    ),
+    OnboardingPage(
+        R.string.onboarding_time_title,
+        R.string.onboarding_time_description,
+        artwork = OnboardingArtwork.Video(R.raw.onboarding_2)
+    ),
+    OnboardingPage(
+        R.string.onboarding_plan_title,
+        R.string.onboarding_plan_description,
+        artwork = OnboardingArtwork.Video(R.raw.onboarding_3)
+    )
 )
 
 @Composable
@@ -74,8 +96,9 @@ fun OnboardingRoute(
         state = pagerState,
         modifier = modifier.fillMaxSize()
     ) { pageIndex ->
+        val page = onboardingPages[pageIndex]
         OnboardingScreen(
-            page = onboardingPages[pageIndex],
+            page = page,
             pageIndex = pageIndex,
             pageCount = onboardingPages.size,
             onSkip = onFinish,
@@ -83,7 +106,8 @@ fun OnboardingRoute(
             onNext = {
                 if (pageIndex == onboardingPages.lastIndex) onFinish()
                 else moveTo(pageIndex + 1)
-            }
+            },
+            artwork = { OnboardingArtwork(page.artwork, pagerState.currentPage == pageIndex) }
         )
     }
 }
@@ -135,6 +159,82 @@ fun OnboardingScreen(
 }
 
 @Composable
+private fun OnboardingArtwork(
+    artwork: OnboardingArtwork,
+    isActive: Boolean,
+    modifier: Modifier = Modifier
+) {
+    when (artwork) {
+        OnboardingArtwork.Image -> OnboardingArtworkPlaceholder(modifier)
+        is OnboardingArtwork.Video -> OnboardingArtworkVideo(
+            resourceId = artwork.resourceId,
+            isActive = isActive,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun OnboardingArtworkVideo(
+    @RawRes resourceId: Int,
+    isActive: Boolean,
+    modifier: Modifier = Modifier
+) {
+    if (LocalInspectionMode.current) {
+        OnboardingArtworkPlaceholder(modifier)
+        return
+    }
+
+    val context = LocalContext.current
+    val videoView = remember(context, resourceId) { VideoView(context) }
+    val videoDescription = stringResource(R.string.onboarding_artwork_video_description)
+
+    DisposableEffect(videoView) {
+        onDispose { videoView.stopPlayback() }
+    }
+
+    LaunchedEffect(isActive) {
+        if (isActive) videoView.start() else videoView.pause()
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .widthIn(max = 560.dp)
+            .aspectRatio(1f),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        AndroidView(
+            factory = {
+                videoView.apply {
+                    val playerView = this
+                    tag = isActive
+                    setVideoURI(Uri.parse("android.resource://${context.packageName}/$resourceId"))
+                    setOnPreparedListener { mediaPlayer ->
+                        mediaPlayer.isLooping = true
+                        mediaPlayer.setVolume(0f, 0f)
+                        if (playerView.tag == true) playerView.start()
+                    }
+                }
+            },
+            update = { view ->
+                view.tag = isActive
+                if (isActive && !view.isPlaying) view.start()
+                if (!isActive && view.isPlaying) view.pause()
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(MaterialTheme.shapes.extraLarge)
+                .semantics {
+                    contentDescription = videoDescription
+                }
+        )
+    }
+}
+
+@Composable
 private fun CompactOnboardingLayout(
     page: OnboardingPage,
     pageIndex: Int,
@@ -153,7 +253,7 @@ private fun CompactOnboardingLayout(
         SkipButton(onSkip, Modifier.align(Alignment.End))
         Box(
             modifier = Modifier
-                .weight(1f)
+                .weight(0.85f)
                 .fillMaxWidth()
                 .padding(vertical = dimensions.spacingLarge),
             contentAlignment = Alignment.Center
@@ -167,6 +267,7 @@ private fun CompactOnboardingLayout(
             onBack = onBack,
             onNext = onNext
         )
+        Spacer(modifier = Modifier.weight(0.15f))
         Spacer(modifier = Modifier.height(dimensions.spacingLarge))
     }
 }
@@ -282,7 +383,7 @@ private fun NavigationButtons(
         Button(onClick = onNext, modifier = Modifier.weight(1f)) {
             Text(
                 stringResource(
-                    if (isLastPage) R.string.explore_the_map else R.string.next
+                    if (isLastPage) R.string.start_exploring else R.string.next
                 )
             )
         }
