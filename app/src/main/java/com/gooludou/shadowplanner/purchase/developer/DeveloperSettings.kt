@@ -24,6 +24,12 @@ class DeveloperSettings @Inject constructor(@ApplicationContext context: Context
         _forcePremium.value = enabled
     }
 
+    fun clear() {
+        if (!BuildConfig.DEBUG) return
+        preferences.edit().clear().apply()
+        _forcePremium.value = false
+    }
+
     private companion object {
         const val PREFERENCES_NAME = "developer_settings"
         const val FORCE_PREMIUM_KEY = "force_premium"

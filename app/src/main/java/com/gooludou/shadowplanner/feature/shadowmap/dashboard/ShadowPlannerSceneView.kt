@@ -222,7 +222,8 @@ internal fun ShadowPlannerSceneView(
                 canRecenterCurrentLocation = state.canRecenterCurrentLocation,
                 displayMode = activeDisplayMode,
                 sceneMode = state.sceneMode,
-                autoToolState = state.autoToolState
+                autoToolState = state.autoToolState,
+                hasCompletedEditingTooltips = state.hasCompletedEditingTooltips
             ),
             actions = MapControlsActions(
                 navigation = actions.navigation,
@@ -249,7 +250,8 @@ internal fun ShadowPlannerSceneView(
                     }
                 ),
                 editing = actions.editing,
-                dateTime = actions.dateTime
+                dateTime = actions.dateTime,
+                onEditingTooltipsCompleted = actions.onEditingTooltipsCompleted
             )
         )
     }

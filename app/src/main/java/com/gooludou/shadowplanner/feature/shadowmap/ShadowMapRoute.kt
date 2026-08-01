@@ -25,11 +25,14 @@ internal fun ShadowMapRoute(
     onOpenProjects: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     viewModel: ShadowMapViewModel = hiltViewModel(),
-    locationPermissionViewModel: LocationPermissionViewModel = hiltViewModel()
+    locationPermissionViewModel: LocationPermissionViewModel = hiltViewModel(),
+    editingTooltipsViewModel: EditingTooltipsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val hasRequestedLocationPermission by locationPermissionViewModel
         .hasRequestedLocationPermission
+        .collectAsStateWithLifecycle()
+    val hasCompletedEditingTooltips by editingTooltipsViewModel.hasCompleted
         .collectAsStateWithLifecycle()
     LaunchedEffect(pendingLocation) {
         val latitude = pendingLocation?.latitude
@@ -101,6 +104,8 @@ internal fun ShadowMapRoute(
         hasRequestedLocationPermission = hasRequestedLocationPermission,
         onLocationPermissionRequested =
             locationPermissionViewModel::markLocationPermissionRequested,
+        hasCompletedEditingTooltips = hasCompletedEditingTooltips,
+        onEditingTooltipsCompleted = editingTooltipsViewModel::markCompleted,
         modifier = modifier
     )
 }

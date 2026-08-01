@@ -35,6 +35,7 @@ import com.gooludou.shadowplanner.feature.projects.ProjectListScreen
 import com.gooludou.shadowplanner.feature.projects.ProjectListViewModel
 import com.gooludou.shadowplanner.feature.settings.SettingsScreen
 import com.gooludou.shadowplanner.feature.settings.DeveloperSettingsScreen
+import com.gooludou.shadowplanner.feature.settings.DeveloperSettingsViewModel
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.feature.settings.AboutActions
 import com.gooludou.shadowplanner.feature.settings.AboutScreen
@@ -55,6 +56,7 @@ fun AppNavigation(
 ) {
     val purchaseViewModel: PurchaseViewModel = hiltViewModel()
     val onboardingViewModel: OnboardingViewModel = hiltViewModel()
+    val developerSettingsViewModel: DeveloperSettingsViewModel = hiltViewModel()
     val purchaseState by purchaseViewModel.purchaseState.collectAsStateWithLifecycle()
     val forcePremium by purchaseViewModel.forcePremium.collectAsStateWithLifecycle()
     val showPaywall by purchaseViewModel.showPaywall.collectAsStateWithLifecycle()
@@ -145,6 +147,7 @@ fun AppNavigation(
                         DeveloperSettingsScreen(
                             forcePremium = forcePremium,
                             onForcePremiumChange = purchaseViewModel::setForcePremium,
+                            onClearAllStoredData = developerSettingsViewModel::clearAllStoredData,
                             onBack = { backStack.removeLastOrNull() }
                         )
                     }

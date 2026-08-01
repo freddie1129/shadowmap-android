@@ -41,9 +41,11 @@ import com.gooludou.shadowplanner.core.model.ShadowAppearance
 import com.gooludou.shadowplanner.core.ui.components.MapRoundIconButton
 import com.gooludou.shadowplanner.core.ui.theme.Map3DActionBlue
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.EditingTooltipTarget
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.reportEditingTooltipTarget
 
 @Composable
-fun MapToolBar(
+internal fun MapToolBar(
     autoState: AutoToolState,
     hasSceneObjects: Boolean,
     isTimeVisible: Boolean,
@@ -55,15 +57,31 @@ fun MapToolBar(
     onOpenShadowColor: () -> Unit,
     onOpenMapbox3D: (() -> Unit)?,
     modifier: Modifier = Modifier,
-    showTimeToggle: Boolean = true
+    showTimeToggle: Boolean = true,
+    onTooltipTargetBoundsChanged: (EditingTooltipTarget, androidx.compose.ui.geometry.Rect) -> Unit =
+        { _, _ -> }
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ShadowColorButton(shadowAppearance, onOpenShadowColor)
-        PrimaryToolBar(autoState, hasSceneObjects, onDrawMode, onAutoLoad, onClear)
+        ShadowColorButton(
+            appearance = shadowAppearance,
+            onClick = onOpenShadowColor,
+            modifier = Modifier.reportEditingTooltipTarget(
+                EditingTooltipTarget.SHADOW_COLOUR,
+                onTooltipTargetBoundsChanged
+            )
+        )
+        PrimaryToolBar(
+            autoState,
+            hasSceneObjects,
+            onDrawMode,
+            onAutoLoad,
+            onClear,
+            onTooltipTargetBoundsChanged
+        )
         if (showTimeToggle) {
             TimeToolButton(isTimeVisible, onToggleTime)
         }
@@ -75,8 +93,13 @@ fun MapToolBar(
 }
 
 @Composable
-fun ShadowColorButton(appearance: ShadowAppearance, onClick: () -> Unit) {
+fun ShadowColorButton(
+    appearance: ShadowAppearance,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     MapRoundIconButton(
+        modifier = modifier,
         onClick = onClick,
         contentDescription = stringResource(R.string.change_shadow_colour)
     ) {
@@ -99,7 +122,8 @@ private fun PrimaryToolBar(
     hasSceneObjects: Boolean,
     onDrawMode: (DrawMode) -> Unit,
     onAutoLoad: () -> Unit,
-    onClear: () -> Unit
+    onClear: () -> Unit,
+    onTooltipTargetBoundsChanged: (EditingTooltipTarget, androidx.compose.ui.geometry.Rect) -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(28.dp),
@@ -111,26 +135,56 @@ private fun PrimaryToolBar(
         shadowElevation = 6.dp
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            ToolIconButton({
-                onDrawMode(DrawMode.BUILDING)
-            }, stringResource(R.string.outline_a_building)) {
+            ToolIconButton(
+                onClick = { onDrawMode(DrawMode.BUILDING) },
+                contentDescription = stringResource(R.string.outline_a_building),
+                modifier = Modifier.reportEditingTooltipTarget(
+                    EditingTooltipTarget.BUILDING,
+                    onTooltipTargetBoundsChanged
+                )
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.square_polygon),
                     contentDescription = null
                 )
             }
-            ToolIconButton({ onDrawMode(DrawMode.WALL) }, stringResource(R.string.draw_wall)) {
+            ToolIconButton(
+                onClick = { onDrawMode(DrawMode.WALL) },
+                contentDescription = stringResource(R.string.draw_wall),
+                modifier = Modifier.reportEditingTooltipTarget(
+                    EditingTooltipTarget.WALL,
+                    onTooltipTargetBoundsChanged
+                )
+            ) {
                 Icon(Icons.Outlined.Timeline, contentDescription = null)
             }
-            ToolIconButton({ onDrawMode(DrawMode.TREE) }, stringResource(R.string.place_tree)) {
+            ToolIconButton(
+                onClick = { onDrawMode(DrawMode.TREE) },
+                contentDescription = stringResource(R.string.place_tree),
+                modifier = Modifier.reportEditingTooltipTarget(
+                    EditingTooltipTarget.TREE,
+                    onTooltipTargetBoundsChanged
+                )
+            ) {
                 Icon(Icons.Outlined.Park, contentDescription = null)
             }
             if (Config.ALLOW_LOAD_BUILDING) {
-                AutoToolButton(autoState, onAutoLoad)
+                AutoToolButton(
+                    autoState,
+                    onAutoLoad,
+                    Modifier.reportEditingTooltipTarget(
+                        EditingTooltipTarget.AUTO_LOAD,
+                        onTooltipTargetBoundsChanged
+                    )
+                )
             }
             ToolIconButton(
-                onClear,
-                stringResource(R.string.clear_scene),
+                onClick = onClear,
+                contentDescription = stringResource(R.string.clear_scene),
+                modifier = Modifier.reportEditingTooltipTarget(
+                    EditingTooltipTarget.CLEAR,
+                    onTooltipTargetBoundsChanged
+                ),
                 enabled = hasSceneObjects
             ) {
                 Icon(Icons.Outlined.DeleteSweep, contentDescription = null)
@@ -140,7 +194,11 @@ private fun PrimaryToolBar(
 }
 
 @Composable
-private fun AutoToolButton(autoState: AutoToolState, onClick: () -> Unit) {
+private fun AutoToolButton(
+    autoState: AutoToolState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val description = when (autoState) {
         AutoToolState.TOO_LARGE -> stringResource(R.string.zoom_in_load_buildings)
         AutoToolState.LOADING -> stringResource(R.string.loading_buildings)
@@ -159,6 +217,7 @@ private fun AutoToolButton(autoState: AutoToolState, onClick: () -> Unit) {
     ToolIconButton(
         onClick = onClick,
         contentDescription = description,
+        modifier = modifier,
         enabled = autoState != AutoToolState.LOADING,
         tint = tint
     ) {

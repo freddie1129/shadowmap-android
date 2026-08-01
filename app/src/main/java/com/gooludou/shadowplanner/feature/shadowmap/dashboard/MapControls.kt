@@ -13,10 +13,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.GeoPoint
@@ -47,6 +53,8 @@ internal fun MapControls(
     var isDateTimeVisible by rememberSaveable { mutableStateOf(true) }
     val showEditingToolbar = state.sceneMode == MapboxSceneMode.EDIT &&
         uiState.canShowMapboxEditingToolbar()
+    val editingTooltipBounds = remember { mutableStateMapOf<EditingTooltipTarget, Rect>() }
+    var controlsRootPosition by remember { mutableStateOf(Offset.Zero) }
     LaunchedEffect(currentPitch) {
         if (abs(currentPitch - state.displayMode.cameraPitchDegrees) > CAMERA_PITCH_SYNC_EPSILON) {
             actions.display.onDisplayModeChanged(
@@ -58,6 +66,7 @@ internal fun MapControls(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
+            .onGloballyPositioned { controlsRootPosition = it.positionInRoot() }
     ) {
         MapTopControls(
             uiState = uiState,
@@ -113,6 +122,9 @@ internal fun MapControls(
                     onAutoLoad = actions.editing.onAutoLoad,
                     onClear = actions.editing.onClear,
                     onFinishEditing = actions.editing.onFinishEditing,
+                    onTooltipTargetBoundsChanged = { target, bounds ->
+                        editingTooltipBounds[target] = bounds
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = ShadowMapDesign.dimensions.screenPadding)
@@ -131,6 +143,23 @@ internal fun MapControls(
                     onPremiumRequired = actions.dateTime.onPremiumRequired
                 )
             }
+        }
+        if (
+            state.sceneMode == MapboxSceneMode.EDIT &&
+                showEditingToolbar &&
+                !state.hasCompletedEditingTooltips
+        ) {
+            EditingFeatureTour(
+                targetBounds = editingTooltipBounds.mapValues { (_, bounds) ->
+                    Rect(
+                        left = bounds.left - controlsRootPosition.x,
+                        top = bounds.top - controlsRootPosition.y,
+                        right = bounds.right - controlsRootPosition.x,
+                        bottom = bounds.bottom - controlsRootPosition.y
+                    )
+                },
+                onCompleted = actions.onEditingTooltipsCompleted
+            )
         }
     }
 }
@@ -198,6 +227,7 @@ private fun MapEditingControls(
     onAutoLoad: () -> Unit,
     onClear: () -> Unit,
     onFinishEditing: () -> Unit,
+    onTooltipTargetBoundsChanged: (EditingTooltipTarget, Rect) -> Unit,
     modifier: Modifier = Modifier
 ) {
     MapToolBar(
@@ -211,6 +241,7 @@ private fun MapEditingControls(
         onToggleTime = {},
         onOpenShadowColor = onOpenShadowColor,
         onOpenMapbox3D = onFinishEditing,
+        onTooltipTargetBoundsChanged = onTooltipTargetBoundsChanged,
         modifier = modifier,
         showTimeToggle = false
     )
@@ -274,7 +305,8 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean, sceneMode: M
                         cameraPitchDegrees = Config.DEFAULT_3D_PITCH_DEGREES
                     ),
                     sceneMode = sceneMode,
-                    autoToolState = AutoToolState.READY
+                    autoToolState = AutoToolState.READY,
+                    hasCompletedEditingTooltips = true
                 ),
                 actions = previewMapControlsActions()
             )
@@ -308,7 +340,8 @@ private fun previewMapControlsActions(): MapControlsActions = MapControlsActions
         onNowSelected = {},
         entitlementState = EntitlementState.Premium,
         onPremiumRequired = {}
-    )
+    ),
+    onEditingTooltipsCompleted = {}
 )
 
 private const val CAMERA_PITCH_SYNC_EPSILON = 0.01

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -19,6 +21,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -32,10 +38,12 @@ import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 fun DeveloperSettingsScreen(
     forcePremium: Boolean,
     onForcePremiumChange: (Boolean) -> Unit,
+    onClearAllStoredData: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onBack)
+    var showClearConfirmation by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -62,6 +70,59 @@ fun DeveloperSettingsScreen(
                 onEnabledChange = onForcePremiumChange
             )
             HorizontalDivider()
+            ClearStoredDataSetting(onClick = { showClearConfirmation = true })
+        }
+    }
+    if (showClearConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirmation = false },
+            title = { Text(stringResource(R.string.clear_stored_data)) },
+            text = { Text(stringResource(R.string.clear_stored_data_confirmation)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearConfirmation = false
+                        onClearAllStoredData()
+                    }
+                ) {
+                    Text(stringResource(R.string.clear))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearConfirmation = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun ClearStoredDataSetting(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dimensions = ShadowMapDesign.dimensions
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(
+                horizontal = dimensions.screenPadding,
+                vertical = dimensions.spacingMedium
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(
+                text = stringResource(R.string.clear_stored_data),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = stringResource(R.string.clear_stored_data_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -105,6 +166,7 @@ private fun DeveloperSettingsLightPreview() {
         DeveloperSettingsScreen(
             forcePremium = true,
             onForcePremiumChange = {},
+            onClearAllStoredData = {},
             onBack = {}
         )
     }
@@ -117,6 +179,7 @@ private fun DeveloperSettingsDarkPreview() {
         DeveloperSettingsScreen(
             forcePremium = false,
             onForcePremiumChange = {},
+            onClearAllStoredData = {},
             onBack = {}
         )
     }
