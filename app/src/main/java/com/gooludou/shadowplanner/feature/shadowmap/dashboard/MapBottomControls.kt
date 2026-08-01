@@ -129,40 +129,6 @@ internal fun MapBottomControls(
             modifier = Modifier.Companion
                 .fillMaxWidth()
                 .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.Companion.CenterVertically
-        ) {
-            MapboxScene3DToggleButton(
-                isSelected = !isTopDown,
-                contentDescription = cameraDescription,
-                onClick = {
-                    onDisplayModeChanged(
-                        displayMode.copy(
-                            cameraPitchDegrees = if (isTopDown) {
-                                Scene3DCamera.ORBIT_PITCH_DEGREES
-                            } else {
-                                Scene3DCamera.TOP_DOWN_PITCH_DEGREES
-                            }
-                        )
-                    )
-                }
-            ) {
-                Icon(
-                    painter = painterResource(
-                        if (isTopDown) {
-                            R.drawable.two_d_2_24dp
-                        } else {
-                            R.drawable.three_d_2_24dp
-                        }
-                    ),
-                    contentDescription = null
-                )
-            }
-        }
-        Row(
-            modifier = Modifier.Companion
-                .fillMaxWidth()
-                .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
             horizontalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall),
             verticalAlignment = Alignment.Companion.CenterVertically
         ) {
@@ -212,6 +178,32 @@ internal fun MapBottomControls(
                     } else {
                         Icons.Outlined.Apartment
                     },
+                    contentDescription = null
+                )
+            }
+            MapboxScene3DToggleButton(
+                isSelected = !isTopDown,
+                contentDescription = cameraDescription,
+                onClick = {
+                    onDisplayModeChanged(
+                        displayMode.copy(
+                            cameraPitchDegrees = if (isTopDown) {
+                                Scene3DCamera.ORBIT_PITCH_DEGREES
+                            } else {
+                                Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+                            }
+                        )
+                    )
+                }
+            ) {
+                Icon(
+                    painter = painterResource(
+                        if (isTopDown) {
+                            R.drawable.two_d_2_24dp
+                        } else {
+                            R.drawable.three_d_2_24dp
+                        }
+                    ),
                     contentDescription = null
                 )
             }
