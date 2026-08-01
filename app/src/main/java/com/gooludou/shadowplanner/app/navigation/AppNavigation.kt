@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
+import com.gooludou.shadowplanner.BuildConfig
 import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchScreen
 import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchViewModel
 import com.gooludou.shadowplanner.feature.onboarding.OnboardingRoute
@@ -34,7 +35,6 @@ import com.gooludou.shadowplanner.feature.projects.ProjectListScreen
 import com.gooludou.shadowplanner.feature.projects.ProjectListViewModel
 import com.gooludou.shadowplanner.feature.settings.SettingsScreen
 import com.gooludou.shadowplanner.feature.settings.DeveloperSettingsScreen
-import com.gooludou.shadowplanner.BuildConfig
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.feature.settings.AboutActions
 import com.gooludou.shadowplanner.feature.settings.AboutScreen
@@ -224,7 +224,7 @@ private fun aboutActions(
 )
 
 private fun Context.shareApp() {
-    val text = getString(R.string.about_share_text, WEBSITE_URL)
+    val text = getString(R.string.about_share_text, PLAY_STORE_URL)
     startActivity(
         Intent.createChooser(
             Intent(Intent.ACTION_SEND).apply {
@@ -237,7 +237,7 @@ private fun Context.shareApp() {
 }
 
 private fun Context.rateApp() {
-    openUri("https://play.google.com/store/apps/details?id=${BuildConfig.APPLICATION_ID}")
+    openUri(PLAY_STORE_URL)
 }
 
 private fun Context.openUri(uri: String) {
@@ -246,6 +246,8 @@ private fun Context.openUri(uri: String) {
 
 private const val WEBSITE_URL = "https://sunfinderapps.com"
 private const val PRIVACY_URL = "https://sunfinderapps.com/privacy.html"
+private const val PLAY_STORE_URL =
+    "https://play.google.com/store/apps/details?id=com.gooludou.shadowplanner"
 
 @Composable
 private fun RefreshPurchasesOnResume(onResume: () -> Unit) {
