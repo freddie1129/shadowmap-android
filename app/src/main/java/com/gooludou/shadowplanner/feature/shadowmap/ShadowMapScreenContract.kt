@@ -5,6 +5,7 @@ import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.ShadowAppearance
+import com.gooludou.shadowplanner.core.model.TreeCrownShape
 import com.gooludou.shadowplanner.project.ProjectViewport
 import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 
@@ -37,8 +38,8 @@ data class DrawingActions(
     val onFinishWall: (GeoPoint) -> Boolean,
     val onStartTree: (GeoPoint) -> Unit,
     val onReturnPendingToDrawing: () -> Unit,
-    val onCommitPendingDrawing: (Double, Double?) -> Unit,
-    val onUpdateSelectedDrawing: (Double, Double?) -> Unit,
+    val onCommitPendingDrawing: (Double, Double?, TreeCrownShape) -> Unit,
+    val onUpdateSelectedDrawing: (Double, Double?, TreeCrownShape) -> Unit,
     val onDeleteSelectedDrawing: () -> Boolean,
     val onRestoreDeletedObject: () -> Unit,
     val onSelectDrawing: (DrawnObjectSelection?) -> Unit,

@@ -60,6 +60,7 @@ import com.gooludou.shadowplanner.core.model.DrawnObjectType
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.PendingDrawing
 import com.gooludou.shadowplanner.core.model.SceneObjectSource
+import com.gooludou.shadowplanner.core.model.TreeCrownShape
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.feature.locationsearch.SelectedLocationSheet
 import com.gooludou.shadowplanner.feature.projects.SaveProjectDialog
@@ -887,10 +888,11 @@ internal fun ShadowMapScreen(
                 initialHeightMeters = propertyInitialHeight,
                 initialRadiusMeters = selectedTree?.radiusMeters
                     ?: if (propertyType == DrawnObjectType.TREE) {
-                        DEFAULT_DRAWN_TREE_RADIUS_METERS
+                        DEFAULT_DRAWN_TREE_RADIUS_METERS / 2.0
                     } else {
                         null
                     },
+                initialCrownShape = selectedTree?.crownShape ?: TreeCrownShape.CONE,
                 isCreating = pendingType != null,
                 objectSource = uiState.selectedDrawing?.source ?: SceneObjectSource.MANUAL,
                 loadedHeightMeters = selectedOriginalLoadedBuilding?.heightMeters,
@@ -898,11 +900,11 @@ internal fun ShadowMapScreen(
                     if (pendingType != null) onReturnPendingToDrawing() else onSelectDrawing(null)
                 },
                 onMove = onStartMoving,
-                onApply = { height, radius ->
+                onApply = { height, radius, crownShape ->
                     if (pendingType != null) {
-                        onCommitPendingDrawing(height, radius)
+                        onCommitPendingDrawing(height, radius, crownShape)
                     } else {
-                        onUpdateSelectedDrawing(height, radius)
+                        onUpdateSelectedDrawing(height, radius, crownShape)
                     }
                 },
                 onDelete = {

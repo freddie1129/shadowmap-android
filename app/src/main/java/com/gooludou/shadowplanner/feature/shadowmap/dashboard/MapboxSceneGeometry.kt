@@ -5,6 +5,7 @@ import com.gooludou.shadowplanner.core.model.DrawnTree
 import com.gooludou.shadowplanner.core.model.DrawnWall
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.GeoPolygon
+import com.gooludou.shadowplanner.core.model.TreeCrownShape
 import com.gooludou.shadowplanner.renderer.filament.SceneViewport
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.LineString
@@ -48,16 +49,32 @@ internal fun DrawnTree.toTrunkFeature(): Feature = Feature.fromGeometry(
     )
 }
 
-internal fun DrawnTree.toCanopyFeature(): Feature = Feature.fromGeometry(
-    circlePolygon(center, radiusMeters.coerceAtLeast(Scene3DTreeGeometry.MIN_CANOPY_RADIUS_METERS))
-).apply {
+internal fun DrawnTree.toCanopyFeatures(): List<Feature> {
     val height = heightMeters.coerceAtLeast(Scene3DTreeGeometry.MIN_TREE_HEIGHT_METERS)
-    addNumberProperty(
-        Scene3DFeatureProperties.BASE_HEIGHT,
-        height * Scene3DTreeGeometry.CANOPY_BASE_RATIO
-    )
-    addNumberProperty(Scene3DFeatureProperties.HEIGHT, height)
+    val canopyBase = height * Scene3DTreeGeometry.CANOPY_BASE_RATIO
+    val radius = radiusMeters.coerceAtLeast(Scene3DTreeGeometry.MIN_CANOPY_RADIUS_METERS)
+    return when (crownShape) {
+        TreeCrownShape.CYLINDER -> listOf(canopyFeature(radius, canopyBase, height))
+        TreeCrownShape.CONE -> (0 until Scene3DTreeGeometry.CONE_SLICES).map { index ->
+            val sliceHeight = (height - canopyBase) / Scene3DTreeGeometry.CONE_SLICES
+            val base = canopyBase + index * sliceHeight
+            val top = base + sliceHeight
+            val midpointRatio = 1.0 - (index + 0.5) / Scene3DTreeGeometry.CONE_SLICES
+            canopyFeature(
+                radius = (radius * midpointRatio)
+                    .coerceAtLeast(Scene3DTreeGeometry.MIN_CONE_RADIUS_METERS),
+                baseHeight = base,
+                height = top
+            )
+        }
+    }
 }
+
+private fun DrawnTree.canopyFeature(radius: Double, baseHeight: Double, height: Double): Feature =
+    Feature.fromGeometry(circlePolygon(center, radius)).apply {
+        addNumberProperty(Scene3DFeatureProperties.BASE_HEIGHT, baseHeight)
+        addNumberProperty(Scene3DFeatureProperties.HEIGHT, height)
+    }
 
 private fun GeoPolygon.toMapboxPolygon(): Polygon = Polygon.fromLngLats(
     rings.map { ring ->

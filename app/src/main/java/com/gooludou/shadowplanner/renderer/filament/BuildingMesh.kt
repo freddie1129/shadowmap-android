@@ -2,6 +2,7 @@ package com.gooludou.shadowplanner.renderer.filament
 
 import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.DrawnTree
+import com.gooludou.shadowplanner.core.model.TreeCrownShape
 import com.gooludou.shadowplanner.core.model.DrawnWall
 import kotlin.math.PI
 import kotlin.math.abs
@@ -148,37 +149,61 @@ object BuildingMeshGenerator {
                     cos(middle).toFloat()
                 )
             }
-            val coneHeight = (height - trunkHeight).coerceAtLeast(0.1f)
-            val normalLength = kotlin.math.sqrt(
-                coneHeight * coneHeight + canopyRadius * canopyRadius
-            )
-            repeat(TREE_CANOPY_SEGMENTS) { index ->
-                val angle0 = index.toDouble() / TREE_CANOPY_SEGMENTS * 2.0 * PI
-                val angle1 = (index + 1).toDouble() / TREE_CANOPY_SEGMENTS * 2.0 * PI
-                val middle = (angle0 + angle1) / 2.0
-                val normalHorizontal = coneHeight / normalLength
-                val normalY = canopyRadius / normalLength
-                val nx = sin(middle).toFloat() * normalHorizontal
-                val nz = cos(middle).toFloat() * normalHorizontal
-                val start = vertices.size
-                vertices += MeshVertex(
-                    centerX + sin(angle0).toFloat() * canopyRadius,
-                    trunkHeight,
-                    centerZ + cos(angle0).toFloat() * canopyRadius,
-                    nx,
-                    normalY,
-                    nz
-                )
-                vertices += MeshVertex(
-                    centerX + sin(angle1).toFloat() * canopyRadius,
-                    trunkHeight,
-                    centerZ + cos(angle1).toFloat() * canopyRadius,
-                    nx,
-                    normalY,
-                    nz
-                )
-                vertices += MeshVertex(centerX, height, centerZ, nx, normalY, nz)
-                roofIndices += listOf(start, start + 1, start + 2)
+            when (tree.crownShape) {
+                TreeCrownShape.CYLINDER -> {
+                    repeat(TREE_CANOPY_SEGMENTS) { index ->
+                        val angle0 = index.toDouble() / TREE_CANOPY_SEGMENTS * 2.0 * PI
+                        val angle1 = (index + 1).toDouble() / TREE_CANOPY_SEGMENTS * 2.0 * PI
+                        val middle = (angle0 + angle1) / 2.0
+                        addWallFaceBetween(
+                            vertices,
+                            wallIndices,
+                            centerX + sin(angle0).toFloat() * canopyRadius,
+                            centerZ + cos(angle0).toFloat() * canopyRadius,
+                            centerX + sin(angle1).toFloat() * canopyRadius,
+                            centerZ + cos(angle1).toFloat() * canopyRadius,
+                            trunkHeight,
+                            height,
+                            sin(middle).toFloat(),
+                            cos(middle).toFloat()
+                        )
+                    }
+                }
+
+                TreeCrownShape.CONE -> {
+                    val coneHeight = (height - trunkHeight).coerceAtLeast(0.1f)
+                    val normalLength = kotlin.math.sqrt(
+                        coneHeight * coneHeight + canopyRadius * canopyRadius
+                    )
+                    repeat(TREE_CANOPY_SEGMENTS) { index ->
+                        val angle0 = index.toDouble() / TREE_CANOPY_SEGMENTS * 2.0 * PI
+                        val angle1 = (index + 1).toDouble() / TREE_CANOPY_SEGMENTS * 2.0 * PI
+                        val middle = (angle0 + angle1) / 2.0
+                        val normalHorizontal = coneHeight / normalLength
+                        val normalY = canopyRadius / normalLength
+                        val nx = sin(middle).toFloat() * normalHorizontal
+                        val nz = cos(middle).toFloat() * normalHorizontal
+                        val start = vertices.size
+                        vertices += MeshVertex(
+                            centerX + sin(angle0).toFloat() * canopyRadius,
+                            trunkHeight,
+                            centerZ + cos(angle0).toFloat() * canopyRadius,
+                            nx,
+                            normalY,
+                            nz
+                        )
+                        vertices += MeshVertex(
+                            centerX + sin(angle1).toFloat() * canopyRadius,
+                            trunkHeight,
+                            centerZ + cos(angle1).toFloat() * canopyRadius,
+                            nx,
+                            normalY,
+                            nz
+                        )
+                        vertices += MeshVertex(centerX, height, centerZ, nx, normalY, nz)
+                        roofIndices += listOf(start, start + 1, start + 2)
+                    }
+                }
             }
         }
         val radius = (vertices.maxOfOrNull { kotlin.math.sqrt(it.x * it.x + it.z * it.z) } ?: 1f)
@@ -255,6 +280,26 @@ object BuildingMeshGenerator {
         vertices += MeshVertex(x1, 0f, z1, normalX, 0f, normalZ)
         vertices += MeshVertex(x1, height, z1, normalX, 0f, normalZ)
         vertices += MeshVertex(x0, height, z0, normalX, 0f, normalZ)
+        indices += listOf(start, start + 1, start + 2, start, start + 2, start + 3)
+    }
+
+    private fun addWallFaceBetween(
+        vertices: MutableList<MeshVertex>,
+        indices: MutableList<Int>,
+        x0: Float,
+        z0: Float,
+        x1: Float,
+        z1: Float,
+        bottom: Float,
+        top: Float,
+        normalX: Float,
+        normalZ: Float
+    ) {
+        val start = vertices.size
+        vertices += MeshVertex(x0, bottom, z0, normalX, 0f, normalZ)
+        vertices += MeshVertex(x1, bottom, z1, normalX, 0f, normalZ)
+        vertices += MeshVertex(x1, top, z1, normalX, 0f, normalZ)
+        vertices += MeshVertex(x0, top, z0, normalX, 0f, normalZ)
         indices += listOf(start, start + 1, start + 2, start, start + 2, start + 3)
     }
 

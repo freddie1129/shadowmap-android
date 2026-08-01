@@ -499,7 +499,7 @@ private fun rememberMapboxScene3DMapSources(
     val buildingFeatures = remember(buildings) { buildings.mapNotNull(Building::toMapboxFeature) }
     val wallFeatures = remember(walls) { walls.mapNotNull(DrawnWall::toMapboxFeature) }
     val treeTrunkFeatures = remember(trees) { trees.map(DrawnTree::toTrunkFeature) }
-    val treeCanopyFeatures = remember(trees) { trees.map(DrawnTree::toCanopyFeature) }
+    val treeCanopyFeatures = remember(trees) { trees.flatMap(DrawnTree::toCanopyFeatures) }
     return MapboxScene3DMapSources(
         buildingSource = rememberFeatureSource(
             Scene3DDrawingLayers.BUILDING_SOURCE,

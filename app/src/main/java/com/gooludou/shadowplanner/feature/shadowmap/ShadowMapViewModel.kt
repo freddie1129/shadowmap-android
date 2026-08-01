@@ -12,6 +12,7 @@ import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
 import com.gooludou.shadowplanner.core.model.DrawnObjectType
 import com.gooludou.shadowplanner.core.model.DrawnTree
+import com.gooludou.shadowplanner.core.model.TreeCrownShape
 import com.gooludou.shadowplanner.core.model.DrawnWall
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.LoadedBuildingOverride
@@ -434,7 +435,11 @@ constructor(
         }
     }
 
-    fun commitPendingDrawing(heightMeters: Double, radiusMeters: Double? = null) {
+    fun commitPendingDrawing(
+        heightMeters: Double,
+        radiusMeters: Double? = null,
+        crownShape: TreeCrownShape = TreeCrownShape.CONE
+    ) {
         val state = _uiState.value
         val pending = state.pendingDrawing ?: return
         _uiState.value = when (pending) {
@@ -462,7 +467,8 @@ constructor(
                 drawnTrees = state.drawnTrees + DrawnTree(
                     center = pending.center,
                     heightMeters = heightMeters,
-                    radiusMeters = radiusMeters ?: return
+                    radiusMeters = radiusMeters ?: return,
+                    crownShape = crownShape
                 ),
                 activeDrawMode = null,
                 pendingDrawing = null
@@ -541,7 +547,11 @@ constructor(
         }
     }
 
-    fun updateSelectedDrawing(heightMeters: Double, radiusMeters: Double? = null) {
+    fun updateSelectedDrawing(
+        heightMeters: Double,
+        radiusMeters: Double? = null,
+        crownShape: TreeCrownShape = TreeCrownShape.CONE
+    ) {
         val state = _uiState.value
         val selection = state.selectedDrawing ?: return
         _uiState.value = if (selection.source == SceneObjectSource.AUTOMATIC) {
@@ -595,7 +605,8 @@ constructor(
                             it.copy(
                                 heightMeters = heightMeters,
                                 radiusMeters =
-                                    radiusMeters ?: it.radiusMeters
+                                    radiusMeters ?: it.radiusMeters,
+                                crownShape = crownShape
                             )
                         } else {
                             it

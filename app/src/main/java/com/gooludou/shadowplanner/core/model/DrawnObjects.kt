@@ -18,8 +18,14 @@ data class DrawnTree(
     val id: String = UUID.randomUUID().toString(),
     val center: GeoPoint,
     val heightMeters: Double = DEFAULT_DRAWN_TREE_HEIGHT_METERS,
-    val radiusMeters: Double = DEFAULT_DRAWN_TREE_RADIUS_METERS
+    val radiusMeters: Double = DEFAULT_DRAWN_TREE_RADIUS_METERS,
+    val crownShape: TreeCrownShape = TreeCrownShape.CONE
 )
+
+enum class TreeCrownShape {
+    CYLINDER,
+    CONE
+}
 
 sealed interface PendingDrawing {
     data class Building(val vertices: List<GeoPoint>) : PendingDrawing

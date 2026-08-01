@@ -285,6 +285,11 @@ internal object Scene3DTreeGeometry {
     /** Rounded-roof edge radius for tree canopies. */
     const val EDGE_RADIUS_METERS = 0.5
 
+    /** Number of stacked extrusions used to approximate a cone in Mapbox. */
+    const val CONE_SLICES = 12
+
+    const val MIN_CONE_RADIUS_METERS = 0.05
+
     /** Minimum height allowed for a drawn tree. */
     const val MIN_TREE_HEIGHT_METERS = 0.1
 

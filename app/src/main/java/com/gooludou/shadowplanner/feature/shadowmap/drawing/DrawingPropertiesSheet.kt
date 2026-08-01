@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.model.DrawnObjectType
 import com.gooludou.shadowplanner.core.model.SceneObjectSource
+import com.gooludou.shadowplanner.core.model.TreeCrownShape
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import java.util.Locale
@@ -56,9 +57,10 @@ fun DrawingPropertiesSheet(
     type: DrawnObjectType,
     initialHeightMeters: Double,
     initialRadiusMeters: Double?,
+    initialCrownShape: TreeCrownShape = TreeCrownShape.CONE,
     isCreating: Boolean,
     onBack: () -> Unit,
-    onApply: (heightMeters: Double, radiusMeters: Double?) -> Unit,
+    onApply: (heightMeters: Double, radiusMeters: Double?, crownShape: TreeCrownShape) -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     onMove: () -> Unit = {},
@@ -72,6 +74,7 @@ fun DrawingPropertiesSheet(
     var crownWidthText by remember(type, initialRadiusMeters) {
         mutableStateOf(((initialRadiusMeters ?: 2.5) * 2.0).toEditableText())
     }
+    val crownShape = initialCrownShape
     val height = heightText.toDoubleOrNull()
     val crownWidth = crownWidthText.toDoubleOrNull()
     val isHeightValid = height != null && height in config.heightRange
@@ -160,7 +163,8 @@ fun DrawingPropertiesSheet(
                 onSave = {
                     onApply(
                         requireNotNull(height),
-                        if (type == DrawnObjectType.TREE) requireNotNull(crownWidth) / 2.0 else null
+                        if (type == DrawnObjectType.TREE) requireNotNull(crownWidth) / 2.0 else null,
+                        crownShape
                     )
                 }
             )
@@ -248,6 +252,7 @@ private fun TreeCrownEditor(
         }
     )
 }
+
 
 @Composable
 private fun PropertyPanelActions(
@@ -390,7 +395,7 @@ private fun DarkBuildingPropertiesSheetPreview() {
             initialRadiusMeters = null,
             isCreating = false,
             onBack = {},
-            onApply = { _, _ -> },
+            onApply = { _, _, _ -> },
             onDelete = {}
         )
     }
@@ -420,7 +425,7 @@ private fun EditedLoadedBuildingPropertiesSheetPreview() {
             objectSource = SceneObjectSource.AUTOMATIC,
             loadedHeightMeters = 18.0,
             onBack = {},
-            onApply = { _, _ -> },
+            onApply = { _, _, _ -> },
             onDelete = {}
         )
     }
@@ -440,7 +445,7 @@ private fun DrawingPropertiesPreview(type: DrawnObjectType, isCreating: Boolean 
             isCreating = isCreating,
             objectSource = SceneObjectSource.MANUAL,
             onBack = {},
-            onApply = { _, _ -> },
+            onApply = { _, _, _ -> },
             onDelete = {}
         )
     }
