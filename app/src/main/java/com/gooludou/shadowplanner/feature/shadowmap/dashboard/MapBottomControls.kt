@@ -16,11 +16,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.PanoramaPhotosphere
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.SatelliteAlt
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -96,9 +98,16 @@ internal fun MapBottomControls(
                         displayMode.copy(skyDisplayMode = displayMode.skyDisplayMode.next())
                     )
                 },
-                showSlashWhenUnselected = displayMode.skyDisplayMode == SkyDisplayMode.HIDDEN
+                showSlashWhenUnselected = false
             ) {
-                Icon(Icons.Outlined.PanoramaPhotosphere, contentDescription = null)
+                Icon(
+                    imageVector = when (displayMode.skyDisplayMode) {
+                        SkyDisplayMode.FULL -> Icons.Outlined.PanoramaPhotosphere
+                        SkyDisplayMode.HIDDEN -> Icons.Outlined.VisibilityOff
+                        SkyDisplayMode.OVERLAYS_ONLY -> Icons.Outlined.Explore
+                    },
+                    contentDescription = null
+                )
             }
         }
         Row(
