@@ -97,12 +97,31 @@ internal enum class MapCameraMode {
 }
 
 /** User-selectable settings that determine how the Mapbox scene is displayed. */
+internal enum class SkyDisplayMode {
+    FULL,
+    HIDDEN,
+    OVERLAYS_ONLY;
+
+    val isVisible: Boolean
+        get() = this != HIDDEN
+
+    fun next(): SkyDisplayMode = when (this) {
+        FULL -> HIDDEN
+        HIDDEN -> OVERLAYS_ONLY
+        OVERLAYS_ONLY -> FULL
+    }
+}
+
+/** User-selectable settings that determine how the Mapbox scene is displayed. */
 internal data class MapDisplayMode(
     val basemapStyle: MapboxBasemapStyle,
-    val isDomeVisible: Boolean,
+    val skyDisplayMode: SkyDisplayMode,
     val content: SceneBuildingSelection,
     val cameraPitchDegrees: Double
 ) {
+    val isDomeVisible: Boolean
+        get() = skyDisplayMode.isVisible
+
     val cameraMode: MapCameraMode
         get() = if (cameraPitchDegrees <= Scene3DCamera.TOP_DOWN_THRESHOLD_DEGREES) {
             MapCameraMode.TOP_DOWN
@@ -115,14 +134,14 @@ internal data class MapDisplayMode(
 internal object MapDisplayDefaults {
     val APP_LAUNCH = MapDisplayMode(
         basemapStyle = MapboxBasemapStyle.STANDARD,
-        isDomeVisible = true,
+        skyDisplayMode = SkyDisplayMode.FULL,
         content = SceneBuildingSelection.MAPBOX,
         cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
     )
 
     val PROJECT = MapDisplayMode(
         basemapStyle = MapboxBasemapStyle.SATELLITE,
-        isDomeVisible = false,
+        skyDisplayMode = SkyDisplayMode.HIDDEN,
         content = SceneBuildingSelection.DRAWN,
         cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
     )

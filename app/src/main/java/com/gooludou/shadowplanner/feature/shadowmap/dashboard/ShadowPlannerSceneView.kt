@@ -139,8 +139,8 @@ internal fun ShadowPlannerSceneView(
             )
         skyState.updateViewport(currentViewport)
     }
-    LaunchedEffect(sceneMapView, activeDisplayMode.isDomeVisible, viewport) {
-        if (!activeDisplayMode.isDomeVisible || sceneMapView == null) {
+    LaunchedEffect(sceneMapView, activeDisplayMode.skyDisplayMode, viewport) {
+        if (!activeDisplayMode.skyDisplayMode.isVisible || sceneMapView == null) {
             isSkyViewportReady = false
             return@LaunchedEffect
         }
@@ -184,8 +184,8 @@ internal fun ShadowPlannerSceneView(
             },
             onMapClick = actions.onSceneMapClick
         ) {
-            if (activeDisplayMode.isDomeVisible && isSkyViewportReady) {
-                SceneSkyModelLayers(skyState)
+            if (activeDisplayMode.skyDisplayMode.isVisible && isSkyViewportReady) {
+                SceneSkyModelLayers(skyState, activeDisplayMode.skyDisplayMode)
             }
         }
 
@@ -213,7 +213,9 @@ internal fun ShadowPlannerSceneView(
                 display = MapDisplayActions(
                     onDisplayModeChanged = { updatedMode ->
                         val constrainedMode = updatedMode.forSceneMode(state.sceneMode)
-                        if (!activeDisplayMode.isDomeVisible && constrainedMode.isDomeVisible) {
+                        if (!activeDisplayMode.skyDisplayMode.isVisible &&
+                            constrainedMode.skyDisplayMode.isVisible
+                        ) {
                             refreshSkyViewport()
                         }
                         if (activeDisplayMode.cameraPitchDegrees !=

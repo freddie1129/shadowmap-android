@@ -3,12 +3,20 @@ package com.gooludou.shadowplanner.feature.shadowmap.dashboard
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-/** Mapbox resources associated with the static compass dome GLB. */
-internal object SceneDomeGlb {
-    const val SOURCE_ID = "scene-dome-source"
-    const val LAYER_ID = "scene-dome-layer"
-    const val MODEL_ID = "scene-dome-model"
-    const val MODEL_URI = "asset://scene_dome.glb"
+/** Mapbox resources associated with the static sphere-grid GLB. */
+internal object SceneSkyGridGlb {
+    const val SOURCE_ID = "scene-sky-grid-source"
+    const val LAYER_ID = "scene-sky-grid-layer"
+    const val MODEL_ID = "scene-sky-grid-model"
+    const val MODEL_URI = "asset://scene_sky_grid.glb"
+}
+
+/** Mapbox resources associated with the static compass GLB. */
+internal object SceneCompassGlb {
+    const val SOURCE_ID = "scene-compass-source"
+    const val LAYER_ID = "scene-compass-layer"
+    const val MODEL_ID = "scene-compass-model"
+    const val MODEL_URI = "asset://scene_compass.glb"
 }
 
 /** Mapbox resources and colors associated with the shared sun-segment GLB. */

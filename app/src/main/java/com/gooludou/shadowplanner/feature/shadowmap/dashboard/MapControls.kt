@@ -266,7 +266,7 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean, sceneMode: M
                     canRecenterCurrentLocation = true,
                     displayMode = MapDisplayMode(
                         basemapStyle = MapboxBasemapStyle.SATELLITE,
-                        isDomeVisible = true,
+                        skyDisplayMode = SkyDisplayMode.FULL,
                         content = SceneBuildingSelection.DRAWN,
                         cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
                     ),

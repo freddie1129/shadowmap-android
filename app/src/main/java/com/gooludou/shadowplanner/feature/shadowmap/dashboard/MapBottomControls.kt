@@ -81,20 +81,20 @@ internal fun MapBottomControls(
             verticalAlignment = Alignment.Companion.CenterVertically
         ) {
             MapboxScene3DToggleButton(
-                isSelected = displayMode.isDomeVisible,
+                isSelected = displayMode.skyDisplayMode != SkyDisplayMode.HIDDEN,
                 contentDescription = stringResource(
-                    if (displayMode.isDomeVisible) {
-                        R.string.hide_sky_overview
-                    } else {
-                        R.string.show_sky_overview
+                    when (displayMode.skyDisplayMode) {
+                        SkyDisplayMode.FULL -> R.string.hide_sky_overview
+                        SkyDisplayMode.HIDDEN -> R.string.show_sky_overlays
+                        SkyDisplayMode.OVERLAYS_ONLY -> R.string.show_sky_overview
                     }
                 ),
                 onClick = {
                     onDisplayModeChanged(
-                        displayMode.copy(isDomeVisible = !displayMode.isDomeVisible)
+                        displayMode.copy(skyDisplayMode = displayMode.skyDisplayMode.next())
                     )
                 },
-                showSlashWhenUnselected = true
+                showSlashWhenUnselected = displayMode.skyDisplayMode == SkyDisplayMode.HIDDEN
             ) {
                 Icon(Icons.Outlined.PanoramaPhotosphere, contentDescription = null)
             }
@@ -352,7 +352,7 @@ private fun MapBottomControlsLightPreview() {
     ShadowMapTheme(darkTheme = false, dynamicColor = false) {
         MapBottomControlsPreviewContent(
             backgroundColor = Color(0xFF6B8064),
-            isDomeVisible = true
+            skyDisplayMode = SkyDisplayMode.FULL
         )
     }
 }
@@ -369,13 +369,13 @@ private fun MapBottomControlsDarkPreview() {
     ShadowMapTheme(darkTheme = true, dynamicColor = false) {
         MapBottomControlsPreviewContent(
             backgroundColor = Color(0xFF263238),
-            isDomeVisible = false
+            skyDisplayMode = SkyDisplayMode.HIDDEN
         )
     }
 }
 
 @Composable
-private fun MapBottomControlsPreviewContent(backgroundColor: Color, isDomeVisible: Boolean) {
+private fun MapBottomControlsPreviewContent(backgroundColor: Color, skyDisplayMode: SkyDisplayMode) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -385,7 +385,7 @@ private fun MapBottomControlsPreviewContent(backgroundColor: Color, isDomeVisibl
         MapBottomControls(
             displayMode = MapDisplayMode(
                 basemapStyle = MapboxBasemapStyle.STANDARD,
-                isDomeVisible = isDomeVisible,
+                skyDisplayMode = skyDisplayMode,
                 content = SceneBuildingSelection.MAPBOX,
                 cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
             ),

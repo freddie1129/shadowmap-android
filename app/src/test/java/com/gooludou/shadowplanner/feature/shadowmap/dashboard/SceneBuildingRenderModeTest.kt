@@ -6,6 +6,20 @@ import org.junit.Test
 
 class SceneBuildingRenderModeTest {
     @Test
+    fun `sky display mode cycles from full to hidden to overlays and back`() {
+        assertEquals(SkyDisplayMode.HIDDEN, SkyDisplayMode.FULL.next())
+        assertEquals(SkyDisplayMode.OVERLAYS_ONLY, SkyDisplayMode.HIDDEN.next())
+        assertEquals(SkyDisplayMode.FULL, SkyDisplayMode.OVERLAYS_ONLY.next())
+    }
+
+    @Test
+    fun `only hidden sky mode is not visible`() {
+        assertEquals(true, SkyDisplayMode.FULL.isVisible)
+        assertEquals(false, SkyDisplayMode.HIDDEN.isVisible)
+        assertEquals(true, SkyDisplayMode.OVERLAYS_ONLY.isVisible)
+    }
+
+    @Test
     fun `Mapbox buildings use Mapbox rendering regardless of pitch`() {
         assertEquals(
             SceneBuildingRenderMode.MAPBOX,

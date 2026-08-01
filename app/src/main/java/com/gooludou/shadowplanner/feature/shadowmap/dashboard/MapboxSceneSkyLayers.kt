@@ -35,7 +35,8 @@ internal class MapboxSceneSkyLayers(
     private val edgePaddingPixels: Double,
     private val pathWidthPixels: Double,
     private val connectorWidthPixels: Double,
-    val domeSource: GeoJsonSourceState,
+    val gridSource: GeoJsonSourceState,
+    val compassSource: GeoJsonSourceState,
     val segmentSource: GeoJsonSourceState,
     val markerSource: GeoJsonSourceState
 ) {
@@ -86,7 +87,10 @@ internal fun rememberMapboxSceneSkyState(
             edgePaddingPixels = edgePaddingPixels,
             pathWidthPixels = pathWidthPixels,
             connectorWidthPixels = connectorWidthPixels,
-            domeSource = GeoJsonSourceState(SceneDomeGlb.SOURCE_ID).apply {
+            gridSource = GeoJsonSourceState(SceneSkyGridGlb.SOURCE_ID).apply {
+                data = GeoJSONData(listOf(initialFeature))
+            },
+            compassSource = GeoJsonSourceState(SceneCompassGlb.SOURCE_ID).apply {
                 data = GeoJSONData(listOf(initialFeature))
             },
             segmentSource = GeoJsonSourceState(SceneSunSegmentGlb.SOURCE_ID).apply {
@@ -112,8 +116,10 @@ internal fun rememberMapboxSceneSkyState(
         listOfNotNull(marker?.toMapboxMarkerFeature(state.center.toMapboxPoint()))
     }
     LaunchedEffect(state.center) {
-        state.domeSource.data = GeoJSONData(
-            listOf(Feature.fromGeometry(state.center.toMapboxPoint()))
+        val feature = Feature.fromGeometry(state.center.toMapboxPoint())
+        state.gridSource.data = GeoJSONData(listOf(feature))
+        state.compassSource.data = GeoJSONData(
+            listOf(feature)
         )
     }
     LaunchedEffect(segmentFeatures) {
@@ -127,20 +133,42 @@ internal fun rememberMapboxSceneSkyState(
 
 @Composable
 @OptIn(MapboxExperimental::class)
-internal fun SceneSkyModelLayers(state: MapboxSceneSkyLayers) {
-    SceneDomeModelLayer(state.domeSource, state.metrics)
+internal fun SceneSkyModelLayers(
+    state: MapboxSceneSkyLayers,
+    displayMode: SkyDisplayMode
+) {
+    if (displayMode == SkyDisplayMode.FULL) {
+        SceneSkyGridModelLayer(state.gridSource, state.metrics)
+    }
+    SceneCompassModelLayer(state.compassSource, state.metrics)
     SceneSunSegmentModelLayer(state.segmentSource)
     SceneSunMarkerModelLayer(state.markerSource, state.metrics)
 }
 
 @Composable
 @OptIn(MapboxExperimental::class)
-private fun SceneDomeModelLayer(source: GeoJsonSourceState, metrics: MapboxSkyMetrics) {
+private fun SceneSkyGridModelLayer(source: GeoJsonSourceState, metrics: MapboxSkyMetrics) {
     val radius = metrics.domeRadiusMeters
-    ModelLayer(sourceState = source, layerId = SceneDomeGlb.LAYER_ID) {
-        modelId = ModelIdValue(modelId = SceneDomeGlb.MODEL_ID, uri = SceneDomeGlb.MODEL_URI)
+    ModelLayer(sourceState = source, layerId = SceneSkyGridGlb.LAYER_ID) {
+        modelId = ModelIdValue(modelId = SceneSkyGridGlb.MODEL_ID, uri = SceneSkyGridGlb.MODEL_URI)
         modelType = ModelTypeValue.COMMON_3D
         modelScale = DoubleListValue(listOf(radius, radius, radius))
+        applySkyModelAppearance()
+    }
+}
+
+@Composable
+@OptIn(MapboxExperimental::class)
+private fun SceneCompassModelLayer(source: GeoJsonSourceState, metrics: MapboxSkyMetrics) {
+    ModelLayer(sourceState = source, layerId = SceneCompassGlb.LAYER_ID) {
+        modelId = ModelIdValue(
+            modelId = SceneCompassGlb.MODEL_ID,
+            uri = SceneCompassGlb.MODEL_URI
+        )
+        modelType = ModelTypeValue.COMMON_3D
+        modelScale = DoubleListValue(
+            listOf(metrics.domeRadiusMeters, metrics.domeRadiusMeters, metrics.domeRadiusMeters)
+        )
         applySkyModelAppearance()
     }
 }
