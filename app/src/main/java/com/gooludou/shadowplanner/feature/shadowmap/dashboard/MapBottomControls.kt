@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.PanoramaPhotosphere
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.SatelliteAlt
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -56,6 +57,7 @@ import com.gooludou.shadowplanner.feature.shadowmap.components.ShadowColorButton
 internal fun MapBottomControls(
     displayMode: MapDisplayMode,
     onDisplayModeChanged: (MapDisplayMode) -> Unit,
+    onRefreshSky: () -> Unit,
     shadowAppearance: ShadowAppearance,
     onOpenShadowColor: () -> Unit,
     onStartEditing: () -> Unit
@@ -97,6 +99,21 @@ internal fun MapBottomControls(
                 showSlashWhenUnselected = displayMode.skyDisplayMode == SkyDisplayMode.HIDDEN
             ) {
                 Icon(Icons.Outlined.PanoramaPhotosphere, contentDescription = null)
+            }
+        }
+        Row(
+            modifier = Modifier.Companion
+                .fillMaxWidth()
+                .padding(horizontal = ShadowMapDesign.dimensions.screenPadding),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.Companion.CenterVertically
+        ) {
+            MapboxScene3DToggleButton(
+                isSelected = true,
+                contentDescription = stringResource(R.string.refresh_sky_overview),
+                onClick = onRefreshSky
+            ) {
+                Icon(Icons.Outlined.Refresh, contentDescription = null)
             }
         }
         Row(
@@ -390,6 +407,7 @@ private fun MapBottomControlsPreviewContent(backgroundColor: Color, skyDisplayMo
                 cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
             ),
             onDisplayModeChanged = {},
+            onRefreshSky = {},
             shadowAppearance = ShadowAppearance.DEFAULT,
             onOpenShadowColor = {},
             onStartEditing = {}

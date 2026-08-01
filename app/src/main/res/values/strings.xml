@@ -115,6 +115,7 @@
     <string name="hide_sky_overview">Hide sky overview</string>
     <string name="show_sky_overview">Show sky overview</string>
     <string name="show_sky_overlays">Show compass and sun path</string>
+    <string name="refresh_sky_overview">Recenter sky overview</string>
     <string name="show_mapbox_buildings">Show Mapbox buildings</string>
     <string name="show_drawing_buildings">Show drawing buildings</string>
     <string name="refresh_sky_dome">Refresh sky dome</string>

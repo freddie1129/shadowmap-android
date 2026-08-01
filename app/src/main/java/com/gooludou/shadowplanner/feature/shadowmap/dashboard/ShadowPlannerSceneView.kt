@@ -84,6 +84,7 @@ internal fun ShadowPlannerSceneView(
     var hasEnteredEditing by remember { mutableStateOf(false) }
     var sceneMapView by remember { mutableStateOf<MapView?>(null) }
     var isSkyViewportReady by remember { mutableStateOf(false) }
+    var skyRefreshRequest by remember { mutableStateOf(0) }
     val skyState = rememberMapboxSceneSkyState(viewport, solarPosition, uiState.sunPath)
     val mapSources = rememberMapboxScene3DMapSources(
         uiState.buildings,
@@ -139,8 +140,8 @@ internal fun ShadowPlannerSceneView(
             )
         skyState.updateViewport(currentViewport)
     }
-    LaunchedEffect(sceneMapView, activeDisplayMode.skyDisplayMode, viewport) {
-        if (!activeDisplayMode.skyDisplayMode.isVisible || sceneMapView == null) {
+    LaunchedEffect(sceneMapView, skyRefreshRequest) {
+        if (sceneMapView == null) {
             isSkyViewportReady = false
             return@LaunchedEffect
         }
@@ -213,11 +214,6 @@ internal fun ShadowPlannerSceneView(
                 display = MapDisplayActions(
                     onDisplayModeChanged = { updatedMode ->
                         val constrainedMode = updatedMode.forSceneMode(state.sceneMode)
-                        if (!activeDisplayMode.skyDisplayMode.isVisible &&
-                            constrainedMode.skyDisplayMode.isVisible
-                        ) {
-                            refreshSkyViewport()
-                        }
                         if (activeDisplayMode.cameraPitchDegrees !=
                             constrainedMode.cameraPitchDegrees
                         ) {
@@ -226,6 +222,11 @@ internal fun ShadowPlannerSceneView(
                             }
                         }
                         displayMode = constrainedMode
+                    },
+                    onRefreshSky = {
+                        displayMode = displayMode.copy(skyDisplayMode = SkyDisplayMode.FULL)
+                        isSkyViewportReady = false
+                        skyRefreshRequest++
                     },
                     onOpenShadowColor = actions.onOpenShadowColor,
                     onStartEditing = {

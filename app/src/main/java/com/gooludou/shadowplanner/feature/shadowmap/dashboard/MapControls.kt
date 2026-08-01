@@ -96,6 +96,7 @@ internal fun MapControls(
                 MapBottomControls(
                     displayMode = state.displayMode,
                     onDisplayModeChanged = actions.display.onDisplayModeChanged,
+                    onRefreshSky = actions.display.onRefreshSky,
                     shadowAppearance = uiState.shadowAppearance,
                     onOpenShadowColor = actions.display.onOpenShadowColor,
                     onStartEditing = actions.display.onStartEditing
@@ -290,6 +291,7 @@ private fun previewMapControlsActions(): MapControlsActions = MapControlsActions
     ),
     display = MapDisplayActions(
         onDisplayModeChanged = {},
+        onRefreshSky = {},
         onOpenShadowColor = {},
         onStartEditing = {}
     ),

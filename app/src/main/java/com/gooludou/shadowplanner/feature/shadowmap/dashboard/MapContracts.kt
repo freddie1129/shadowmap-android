@@ -33,6 +33,7 @@ internal data class MapNavigationActions(
 
 internal data class MapDisplayActions(
     val onDisplayModeChanged: (MapDisplayMode) -> Unit,
+    val onRefreshSky: () -> Unit,
     val onOpenShadowColor: () -> Unit,
     val onStartEditing: () -> Unit
 )
