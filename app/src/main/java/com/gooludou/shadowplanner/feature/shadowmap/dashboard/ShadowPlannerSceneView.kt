@@ -223,7 +223,8 @@ internal fun ShadowPlannerSceneView(
                 displayMode = activeDisplayMode,
                 sceneMode = state.sceneMode,
                 autoToolState = state.autoToolState,
-                hasCompletedEditingTooltips = state.hasCompletedEditingTooltips
+                hasCompletedEditingTooltips = state.hasCompletedEditingTooltips,
+                hasCompletedMainViewTooltips = state.hasCompletedMainViewTooltips
             ),
             actions = MapControlsActions(
                 navigation = actions.navigation,
@@ -251,7 +252,8 @@ internal fun ShadowPlannerSceneView(
                 ),
                 editing = actions.editing,
                 dateTime = actions.dateTime,
-                onEditingTooltipsCompleted = actions.onEditingTooltipsCompleted
+                onEditingTooltipsCompleted = actions.onEditingTooltipsCompleted,
+                onMainViewTooltipsCompleted = actions.onMainViewTooltipsCompleted
             )
         )
     }

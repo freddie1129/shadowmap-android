@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -66,7 +67,8 @@ internal fun MapBottomControls(
     shadowAppearance: ShadowAppearance,
     onOpenShadowColor: () -> Unit,
     onStartEditing: () -> Unit,
-    hasDrawings: Boolean
+    hasDrawings: Boolean,
+    onTooltipTargetBoundsChanged: (MainViewTooltipTarget, Rect) -> Unit = { _, _ -> }
 ) {
     var showEmptyDrawingsDialog by rememberSaveable { mutableStateOf(false) }
     val isTopDown = displayMode.cameraMode == MapCameraMode.TOP_DOWN
@@ -103,7 +105,12 @@ internal fun MapBottomControls(
                         displayMode.copy(skyDisplayMode = displayMode.skyDisplayMode.next())
                     )
                 },
-                showSlashWhenUnselected = false
+                showSlashWhenUnselected = false,
+                modifier = Modifier.reportFeatureTourTarget(
+                    MainViewTooltipTarget.SKY_DISPLAY.name
+                ) { _, bounds ->
+                    onTooltipTargetBoundsChanged(MainViewTooltipTarget.SKY_DISPLAY, bounds)
+                }
             ) {
                 Icon(
                     imageVector = when (displayMode.skyDisplayMode) {
@@ -125,7 +132,12 @@ internal fun MapBottomControls(
             MapboxScene3DToggleButton(
                 isSelected = true,
                 contentDescription = stringResource(R.string.refresh_sky_overview),
-                onClick = onRefreshSky
+                onClick = onRefreshSky,
+                modifier = Modifier.reportFeatureTourTarget(
+                    MainViewTooltipTarget.REFRESH_SKY.name
+                ) { _, bounds ->
+                    onTooltipTargetBoundsChanged(MainViewTooltipTarget.REFRESH_SKY, bounds)
+                }
             ) {
                 Icon(Icons.Outlined.Refresh, contentDescription = null)
             }
@@ -139,12 +151,22 @@ internal fun MapBottomControls(
         ) {
             ShadowColorButton(
                 appearance = shadowAppearance,
-                onClick = onOpenShadowColor
+                onClick = onOpenShadowColor,
+                modifier = Modifier.reportFeatureTourTarget(
+                    MainViewTooltipTarget.SHADOW_COLOUR.name
+                ) { _, bounds ->
+                    onTooltipTargetBoundsChanged(MainViewTooltipTarget.SHADOW_COLOUR, bounds)
+                }
             )
             MapboxScene3DBasemapSelectionButton(
                 basemapStyle = displayMode.basemapStyle,
                 onBasemapStyleSelected = { selectedStyle ->
                     onDisplayModeChanged(displayMode.copy(basemapStyle = selectedStyle))
+                },
+                modifier = Modifier.reportFeatureTourTarget(
+                    MainViewTooltipTarget.BASEMAP.name
+                ) { _, bounds ->
+                    onTooltipTargetBoundsChanged(MainViewTooltipTarget.BASEMAP, bounds)
                 }
             )
             val buildingsTitle = stringResource(R.string.map_display)
@@ -178,6 +200,11 @@ internal fun MapBottomControls(
                     if (selectedContent == SceneBuildingSelection.DRAWN && !hasDrawings) {
                         showEmptyDrawingsDialog = true
                     }
+                },
+                modifier = Modifier.reportFeatureTourTarget(
+                    MainViewTooltipTarget.MAP_DISPLAY.name
+                ) { _, bounds ->
+                    onTooltipTargetBoundsChanged(MainViewTooltipTarget.MAP_DISPLAY, bounds)
                 }
             ) {
                 Icon(
@@ -202,6 +229,11 @@ internal fun MapBottomControls(
                             }
                         )
                     )
+                },
+                modifier = Modifier.reportFeatureTourTarget(
+                    MainViewTooltipTarget.CAMERA.name
+                ) { _, bounds ->
+                    onTooltipTargetBoundsChanged(MainViewTooltipTarget.CAMERA, bounds)
                 }
             ) {
                 Icon(
@@ -216,7 +248,14 @@ internal fun MapBottomControls(
                 )
             }
             Spacer(modifier = Modifier.Companion.weight(1f))
-            MapboxScene3DModeButton(onStartEditing = onStartEditing)
+            MapboxScene3DModeButton(
+                onStartEditing = onStartEditing,
+                modifier = Modifier.reportFeatureTourTarget(
+                    MainViewTooltipTarget.EDIT.name
+                ) { _, bounds ->
+                    onTooltipTargetBoundsChanged(MainViewTooltipTarget.EDIT, bounds)
+                }
+            )
         }
     }
     if (showEmptyDrawingsDialog) {
@@ -249,10 +288,12 @@ fun MapboxScene3DToggleButton(
     contentDescription: String,
     onClick: () -> Unit,
     showSlashWhenUnselected: Boolean = false,
+    modifier: Modifier = Modifier,
     icon: @Composable () -> Unit
 ) {
     MapboxScene3DTooltip(tooltip = contentDescription) {
         MapRoundIconButton(
+            modifier = modifier,
             onClick = onClick,
             contentDescription = contentDescription,
             containerColor = if (isSelected) {
@@ -299,6 +340,7 @@ fun MapboxScene3DSelectionButton(
     options: List<String>,
     selectedOptionIndex: Int,
     onOptionSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
     icon: @Composable () -> Unit
 ) {
     var isMenuExpanded by rememberSaveable { mutableStateOf(false) }
@@ -307,6 +349,7 @@ fun MapboxScene3DSelectionButton(
             isSelected = isSelected,
             contentDescription = contentDescription,
             onClick = { isMenuExpanded = true },
+            modifier = modifier,
             icon = icon
         )
         DropdownMenu(
@@ -343,7 +386,8 @@ fun MapboxScene3DSelectionButton(
 @Composable
 private fun MapboxScene3DBasemapSelectionButton(
     basemapStyle: MapboxBasemapStyle,
-    onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit
+    onBasemapStyleSelected: (MapboxBasemapStyle) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val menuTitle = stringResource(R.string.basemap)
     val options = listOf(
@@ -364,7 +408,8 @@ private fun MapboxScene3DBasemapSelectionButton(
             onBasemapStyleSelected(
                 if (index == 0) MapboxBasemapStyle.STANDARD else MapboxBasemapStyle.SATELLITE
             )
-        }
+        },
+        modifier = modifier
     ) {
         Icon(
             imageVector = if (basemapStyle == MapboxBasemapStyle.STANDARD) {
@@ -378,11 +423,15 @@ private fun MapboxScene3DBasemapSelectionButton(
 }
 
 @Composable
-private fun MapboxScene3DModeButton(onStartEditing: () -> Unit) {
+private fun MapboxScene3DModeButton(
+    onStartEditing: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     MapboxScene3DToggleButton(
         isSelected = true,
         contentDescription = stringResource(R.string.edit),
-        onClick = onStartEditing
+        onClick = onStartEditing,
+        modifier = modifier
     ) {
         Icon(Icons.Outlined.Edit, contentDescription = null)
     }

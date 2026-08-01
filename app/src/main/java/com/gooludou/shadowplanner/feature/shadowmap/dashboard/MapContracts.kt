@@ -13,7 +13,8 @@ internal data class MapControlsState(
     val displayMode: MapDisplayMode,
     val sceneMode: MapboxSceneMode,
     val autoToolState: AutoToolState,
-    val hasCompletedEditingTooltips: Boolean
+    val hasCompletedEditingTooltips: Boolean,
+    val hasCompletedMainViewTooltips: Boolean
 )
 
 internal data class MapControlsActions(
@@ -21,7 +22,8 @@ internal data class MapControlsActions(
     val display: MapDisplayActions,
     val editing: MapEditingActions,
     val dateTime: MapDateTimeActions,
-    val onEditingTooltipsCompleted: () -> Unit
+    val onEditingTooltipsCompleted: () -> Unit,
+    val onMainViewTooltipsCompleted: () -> Unit
 )
 
 internal data class MapNavigationActions(
@@ -60,7 +62,8 @@ internal data class ShadowPlannerSceneState(
     val autoToolState: AutoToolState,
     val canRecenterCurrentLocation: Boolean,
     val editingCrosshairPoint: GeoPoint?,
-    val hasCompletedEditingTooltips: Boolean
+    val hasCompletedEditingTooltips: Boolean,
+    val hasCompletedMainViewTooltips: Boolean
 )
 
 internal data class ShadowPlannerSceneActions(
@@ -69,6 +72,7 @@ internal data class ShadowPlannerSceneActions(
     val dateTime: MapDateTimeActions,
     val onOpenShadowColor: () -> Unit,
     val onEditingTooltipsCompleted: () -> Unit,
+    val onMainViewTooltipsCompleted: () -> Unit,
     val onSceneModeChanged: (MapboxSceneMode) -> Unit,
     val onSceneMapViewReady: (MapView) -> Unit,
     val onSceneMapClick: (Point) -> Boolean

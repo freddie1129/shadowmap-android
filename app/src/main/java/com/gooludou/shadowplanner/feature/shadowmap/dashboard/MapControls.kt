@@ -54,6 +54,7 @@ internal fun MapControls(
     val showEditingToolbar = state.sceneMode == MapboxSceneMode.EDIT &&
         uiState.canShowMapboxEditingToolbar()
     val editingTooltipBounds = remember { mutableStateMapOf<EditingTooltipTarget, Rect>() }
+    val mainTooltipBounds = remember { mutableStateMapOf<MainViewTooltipTarget, Rect>() }
     var controlsRootPosition by remember { mutableStateOf(Offset.Zero) }
     LaunchedEffect(currentPitch) {
         if (abs(currentPitch - state.displayMode.cameraPitchDegrees) > CAMERA_PITCH_SYNC_EPSILON) {
@@ -80,7 +81,10 @@ internal fun MapControls(
             isSaveProjectPremiumLocked =
                 actions.dateTime.entitlementState == EntitlementState.Free ||
                     actions.dateTime.entitlementState is EntitlementState.Unavailable,
-            modifier = Modifier.align(Alignment.TopCenter)
+            modifier = Modifier.align(Alignment.TopCenter),
+            onTooltipTargetBoundsChanged = { target, bounds ->
+                mainTooltipBounds[target] = bounds
+            }
         )
         if (state.sceneMode == MapboxSceneMode.VIEW) {
             PitchSlider(
@@ -110,7 +114,10 @@ internal fun MapControls(
                     shadowAppearance = uiState.shadowAppearance,
                     onOpenShadowColor = actions.display.onOpenShadowColor,
                     onStartEditing = actions.display.onStartEditing,
-                    hasDrawings = uiState.hasDrawings
+                    hasDrawings = uiState.hasDrawings,
+                    onTooltipTargetBoundsChanged = { target, bounds ->
+                        mainTooltipBounds[target] = bounds
+                    }
                 )
             } else if (showEditingToolbar) {
                 MapEditingControls(
@@ -140,9 +147,27 @@ internal fun MapControls(
                     onDateTimeChanged = actions.dateTime.onDateTimeChanged,
                     onNowSelected = actions.dateTime.onNowSelected,
                     entitlementState = actions.dateTime.entitlementState,
-                    onPremiumRequired = actions.dateTime.onPremiumRequired
+                    onPremiumRequired = actions.dateTime.onPremiumRequired,
+                    modifier = Modifier.reportFeatureTourTarget(
+                        MainViewTooltipTarget.DATE_TIME.name
+                    ) { _, bounds ->
+                        mainTooltipBounds[MainViewTooltipTarget.DATE_TIME] = bounds
+                    }
                 )
             }
+        }
+        if (state.sceneMode == MapboxSceneMode.VIEW && !state.hasCompletedMainViewTooltips) {
+            MainViewFeatureTour(
+                targetBounds = mainTooltipBounds.mapValues { (_, bounds) ->
+                    Rect(
+                        left = bounds.left - controlsRootPosition.x,
+                        top = bounds.top - controlsRootPosition.y,
+                        right = bounds.right - controlsRootPosition.x,
+                        bottom = bounds.bottom - controlsRootPosition.y
+                    )
+                },
+                onCompleted = actions.onMainViewTooltipsCompleted
+            )
         }
         if (
             state.sceneMode == MapboxSceneMode.EDIT &&
@@ -174,7 +199,8 @@ private fun MapDateTimeControls(
     onDateTimeChanged: (Long) -> Unit,
     onNowSelected: () -> Unit,
     entitlementState: EntitlementState,
-    onPremiumRequired: () -> Unit
+    onPremiumRequired: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     AnimatedContent(
         targetState = isExpanded,
@@ -182,6 +208,7 @@ private fun MapDateTimeControls(
     ) { expanded ->
         if (expanded) {
             DateTimeSpinner(
+                modifier = modifier,
                 selectedEpochMillis = selectedEpochMillis,
                 timeZoneId = timeZoneId,
                 location = location,
@@ -200,6 +227,7 @@ private fun MapDateTimeControls(
             )
         } else {
             DateTimeSpinnerCollapsed(
+                modifier = modifier,
                 selectedEpochMillis = selectedEpochMillis,
                 timeZoneId = timeZoneId,
                 onExpand = { onExpandedChanged(true) },
@@ -306,7 +334,8 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean, sceneMode: M
                     ),
                     sceneMode = sceneMode,
                     autoToolState = AutoToolState.READY,
-                    hasCompletedEditingTooltips = true
+                    hasCompletedEditingTooltips = true,
+                    hasCompletedMainViewTooltips = true
                 ),
                 actions = previewMapControlsActions()
             )
@@ -341,7 +370,8 @@ private fun previewMapControlsActions(): MapControlsActions = MapControlsActions
         entitlementState = EntitlementState.Premium,
         onPremiumRequired = {}
     ),
-    onEditingTooltipsCompleted = {}
+    onEditingTooltipsCompleted = {},
+    onMainViewTooltipsCompleted = {}
 )
 
 private const val CAMERA_PITCH_SYNC_EPSILON = 0.01

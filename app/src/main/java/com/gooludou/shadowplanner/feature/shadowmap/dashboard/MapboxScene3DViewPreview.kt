@@ -53,7 +53,8 @@ private fun MapboxScene3DViewPreviewContent(darkTheme: Boolean) {
                 autoToolState = AutoToolState.READY,
                 canRecenterCurrentLocation = false,
                 editingCrosshairPoint = null,
-                hasCompletedEditingTooltips = true
+                hasCompletedEditingTooltips = true,
+                hasCompletedMainViewTooltips = true
             ),
             actions = previewShadowPlannerSceneActions()
         )
@@ -71,6 +72,7 @@ private fun previewShadowPlannerSceneActions(): ShadowPlannerSceneActions =
             onSaveProject = {}
         ),
         onEditingTooltipsCompleted = {},
+        onMainViewTooltipsCompleted = {},
         editing = MapEditingActions(
             onFinishEditing = {},
             onDrawMode = {},

@@ -135,6 +135,8 @@ internal fun ShadowMapScreen(
     onLocationPermissionRequested: () -> Unit,
     hasCompletedEditingTooltips: Boolean,
     onEditingTooltipsCompleted: () -> Unit,
+    hasCompletedMainViewTooltips: Boolean,
+    onMainViewTooltipsCompleted: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val noBuildingsFoundMessage = stringResource(R.string.no_buildings_found)
@@ -755,7 +757,8 @@ internal fun ShadowMapScreen(
                     canRecenterCurrentLocation = !hasLocationPermission ||
                         currentLocationPoint != null,
                     editingCrosshairPoint = crosshairPoint,
-                    hasCompletedEditingTooltips = hasCompletedEditingTooltips
+                    hasCompletedEditingTooltips = hasCompletedEditingTooltips,
+                    hasCompletedMainViewTooltips = hasCompletedMainViewTooltips
                 ),
                 actions = ShadowPlannerSceneActions(
                     navigation = MapNavigationActions(
@@ -792,6 +795,7 @@ internal fun ShadowMapScreen(
                     ),
                     onOpenShadowColor = { showShadowColorSheet = true },
                     onEditingTooltipsCompleted = onEditingTooltipsCompleted,
+                    onMainViewTooltipsCompleted = onMainViewTooltipsCompleted,
                     onSceneModeChanged = { mapboxSceneMode = it },
                     onSceneMapViewReady = { mapboxSceneMapView = it },
                     onSceneMapClick = { point ->

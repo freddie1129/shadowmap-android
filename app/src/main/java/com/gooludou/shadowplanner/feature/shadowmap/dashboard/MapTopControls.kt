@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.R
@@ -35,7 +36,7 @@ import com.gooludou.shadowplanner.feature.settings.SettingsIconButton
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
 
 @Composable
-fun MapTopControls(
+internal fun MapTopControls(
     uiState: ShadowMapUiState,
     onOpenSettings: () -> Unit,
     onOpenLocationSearch: () -> Unit,
@@ -45,7 +46,8 @@ fun MapTopControls(
     modifier: Modifier = Modifier,
     onOpenProjects: () -> Unit,
     onSaveProject: () -> Unit,
-    isSaveProjectPremiumLocked: Boolean
+    isSaveProjectPremiumLocked: Boolean,
+    onTooltipTargetBoundsChanged: (MainViewTooltipTarget, Rect) -> Unit = { _, _ -> }
 ) {
     val dimensions = ShadowMapDesign.dimensions
     Column(
@@ -65,7 +67,13 @@ fun MapTopControls(
                 label = uiState.selectedLocationLabel,
                 onClick = onOpenLocationSearch,
                 onInfoClick = onShowLocationInfo,
-                modifier = Modifier.Companion.weight(1f)
+                modifier = Modifier.Companion
+                    .weight(1f)
+                    .reportFeatureTourTarget(
+                        MainViewTooltipTarget.LOCATION_SEARCH.name
+                    ) { _, bounds ->
+                        onTooltipTargetBoundsChanged(MainViewTooltipTarget.LOCATION_SEARCH, bounds)
+                    }
             )
         }
         Row(
@@ -81,14 +89,24 @@ fun MapTopControls(
             MapRoundIconButton(
                 onClick = onRecenterCurrentLocation,
                 contentDescription = stringResource(R.string.center_on_current_location),
-                enabled = canRecenterCurrentLocation
+                enabled = canRecenterCurrentLocation,
+                modifier = Modifier.reportFeatureTourTarget(
+                    MainViewTooltipTarget.CURRENT_LOCATION.name
+                ) { _, bounds ->
+                    onTooltipTargetBoundsChanged(MainViewTooltipTarget.CURRENT_LOCATION, bounds)
+                }
             ) {
                 Icon(Icons.Outlined.MyLocation, contentDescription = null)
             }
             Spacer(modifier = Modifier.weight(1f))
             MapRoundIconButton(
                 onClick = onOpenProjects,
-                contentDescription = stringResource(R.string.open_projects)
+                contentDescription = stringResource(R.string.open_projects),
+                modifier = Modifier.reportFeatureTourTarget(
+                    MainViewTooltipTarget.OPEN_PROJECT.name
+                ) { _, bounds ->
+                    onTooltipTargetBoundsChanged(MainViewTooltipTarget.OPEN_PROJECT, bounds)
+                }
             ) {
                 Icon(Icons.Outlined.FolderOpen, contentDescription = null)
             }
@@ -102,7 +120,12 @@ fun MapTopControls(
                         } else {
                             R.string.save_project
                         }
-                    )
+                    ),
+                    modifier = Modifier.reportFeatureTourTarget(
+                        MainViewTooltipTarget.SAVE_PROJECT.name
+                    ) { _, bounds ->
+                        onTooltipTargetBoundsChanged(MainViewTooltipTarget.SAVE_PROJECT, bounds)
+                    }
                 ) {
                     Icon(Icons.Outlined.Save, contentDescription = null)
                 }

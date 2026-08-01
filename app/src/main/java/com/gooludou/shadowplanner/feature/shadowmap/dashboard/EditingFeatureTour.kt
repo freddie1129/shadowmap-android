@@ -54,53 +54,54 @@ internal enum class EditingTooltipTarget {
     CLEAR
 }
 
-private data class EditingTooltipStep(
-    val target: EditingTooltipTarget,
+internal data class FeatureTourStep(
+    val target: String,
     val title: Int,
     val description: Int
 )
 
 private val editingTooltipSteps = listOf(
-    EditingTooltipStep(
-        EditingTooltipTarget.SHADOW_COLOUR,
+    FeatureTourStep(
+        EditingTooltipTarget.SHADOW_COLOUR.name,
         R.string.editing_tooltip_shadow_colour_title,
         R.string.editing_tooltip_shadow_colour_description
     ),
-    EditingTooltipStep(
-        EditingTooltipTarget.BUILDING,
+    FeatureTourStep(
+        EditingTooltipTarget.BUILDING.name,
         R.string.editing_tooltip_building_title,
         R.string.editing_tooltip_building_description
     ),
-    EditingTooltipStep(
-        EditingTooltipTarget.WALL,
+    FeatureTourStep(
+        EditingTooltipTarget.WALL.name,
         R.string.editing_tooltip_wall_title,
         R.string.editing_tooltip_wall_description
     ),
-    EditingTooltipStep(
-        EditingTooltipTarget.TREE,
+    FeatureTourStep(
+        EditingTooltipTarget.TREE.name,
         R.string.editing_tooltip_tree_title,
         R.string.editing_tooltip_tree_description
     ),
-    EditingTooltipStep(
-        EditingTooltipTarget.AUTO_LOAD,
+    FeatureTourStep(
+        EditingTooltipTarget.AUTO_LOAD.name,
         R.string.editing_tooltip_auto_load_title,
         R.string.editing_tooltip_auto_load_description
     ),
-    EditingTooltipStep(
-        EditingTooltipTarget.CLEAR,
+    FeatureTourStep(
+        EditingTooltipTarget.CLEAR.name,
         R.string.editing_tooltip_clear_title,
         R.string.editing_tooltip_clear_description
     )
 )
 
 @Composable
-internal fun EditingFeatureTour(
-    targetBounds: Map<EditingTooltipTarget, Rect>,
+internal fun FeatureTourOverlay(
+    targetBounds: Map<String, Rect>,
+    steps: List<FeatureTourStep>,
     onCompleted: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var stepIndex by remember { mutableIntStateOf(0) }
-    val step = editingTooltipSteps[stepIndex]
+    val step = steps[stepIndex]
     val target = targetBounds[step.target] ?: return
     val density = LocalDensity.current
     val screenWidthPx = LocalWindowInfo.current.containerSize.width.toFloat()
@@ -173,14 +174,14 @@ internal fun EditingFeatureTour(
                         text = stringResource(
                             R.string.editing_tooltip_progress,
                             stepIndex + 1,
-                            editingTooltipSteps.size
+                            steps.size
                         ),
                         style = MaterialTheme.typography.labelMedium
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Button(
                         onClick = {
-                            if (stepIndex == editingTooltipSteps.lastIndex) {
+                            if (stepIndex == steps.lastIndex) {
                                 onCompleted()
                             } else {
                                 stepIndex += 1
@@ -189,7 +190,7 @@ internal fun EditingFeatureTour(
                     ) {
                         Text(
                             stringResource(
-                                if (stepIndex == editingTooltipSteps.lastIndex) {
+                                if (stepIndex == steps.lastIndex) {
                                     R.string.editing_tooltip_done
                                 } else {
                                     R.string.editing_tooltip_close
@@ -203,9 +204,30 @@ internal fun EditingFeatureTour(
     }
 }
 
+@Composable
+internal fun EditingFeatureTour(
+    targetBounds: Map<EditingTooltipTarget, Rect>,
+    onCompleted: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FeatureTourOverlay(
+        targetBounds = targetBounds.mapKeys { it.key.name },
+        steps = editingTooltipSteps,
+        onCompleted = onCompleted,
+        modifier = modifier
+    )
+}
+
 internal fun Modifier.reportEditingTooltipTarget(
     target: EditingTooltipTarget,
     onBoundsChanged: (EditingTooltipTarget, Rect) -> Unit
+): Modifier = reportFeatureTourTarget(target.name) { _, bounds ->
+    onBoundsChanged(target, bounds)
+}
+
+internal fun Modifier.reportFeatureTourTarget(
+    target: String,
+    onBoundsChanged: (String, Rect) -> Unit
 ): Modifier = onGloballyPositioned { coordinates: LayoutCoordinates ->
     val position = coordinates.positionInRoot()
     onBoundsChanged(

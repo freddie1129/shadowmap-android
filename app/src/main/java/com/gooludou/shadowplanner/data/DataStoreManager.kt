@@ -33,6 +33,9 @@ class DataStoreManager @Inject constructor(
     val hasCompletedEditingTooltips: Flow<Boolean> = preferences
         .map { it[Keys.HasCompletedEditingTooltips] ?: false }
 
+    val hasCompletedMainViewTooltips: Flow<Boolean> = preferences
+        .map { it[Keys.HasCompletedMainViewTooltips] ?: false }
+
     suspend fun markOnboardingCompleted() {
         context.dataStore.edit { preferences ->
             preferences[Keys.HasCompletedOnboarding] = true
@@ -57,11 +60,19 @@ class DataStoreManager @Inject constructor(
         }
     }
 
+    suspend fun markMainViewTooltipsCompleted() {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.HasCompletedMainViewTooltips] = true
+        }
+    }
+
     private object Keys {
         val HasCompletedOnboarding = booleanPreferencesKey("has_completed_onboarding")
         val HasRequestedLocationPermission =
             booleanPreferencesKey("has_requested_location_permission")
         val HasCompletedEditingTooltips =
             booleanPreferencesKey("has_completed_editing_tooltips")
+        val HasCompletedMainViewTooltips =
+            booleanPreferencesKey("has_completed_main_view_tooltips")
     }
 }
