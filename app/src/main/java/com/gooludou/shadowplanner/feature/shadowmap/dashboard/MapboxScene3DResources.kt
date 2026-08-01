@@ -169,6 +169,14 @@ internal fun initialMapDisplayMode(
         MapDisplayDefaults.APP_LAUNCH
     }
 
+/** Selects the view-mode defaults after leaving editing based on drawing availability. */
+internal fun postEditingDisplayMode(hasDrawings: Boolean): MapDisplayMode =
+    if (hasDrawings) {
+        MapDisplayDefaults.PROJECT_WITH_DRAWINGS
+    } else {
+        MapDisplayDefaults.PROJECT_WITHOUT_DRAWINGS
+    }
+
 /** Keeps editing on satellite imagery while leaving view-mode basemap selection unrestricted. */
 internal fun MapDisplayMode.forSceneMode(sceneMode: MapboxSceneMode): MapDisplayMode =
     if (sceneMode == MapboxSceneMode.EDIT && basemapStyle != MapboxBasemapStyle.SATELLITE) {

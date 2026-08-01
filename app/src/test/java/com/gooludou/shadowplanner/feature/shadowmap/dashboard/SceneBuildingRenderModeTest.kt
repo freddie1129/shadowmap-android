@@ -122,8 +122,8 @@ class SceneBuildingRenderModeTest {
     }
 
     @Test
-    fun `editing and post-edit view use centralized top-down drawing defaults`() {
-        val displayMode = MapDisplayDefaults.EDITING
+    fun `post-edit view with drawings uses drawing defaults`() {
+        val displayMode = postEditingDisplayMode(hasDrawings = true)
 
         assertEquals(
             Scene3DCamera.TOP_DOWN_PITCH_DEGREES,
@@ -140,6 +140,16 @@ class SceneBuildingRenderModeTest {
         )
         assertFalse(displayMode.isDomeVisible)
         assertEquals(MapCameraMode.TOP_DOWN, displayMode.cameraMode)
+    }
+
+    @Test
+    fun `post-edit view without drawings uses standard 3D defaults`() {
+        val displayMode = postEditingDisplayMode(hasDrawings = false)
+
+        assertEquals(MapboxBasemapStyle.STANDARD, displayMode.basemapStyle)
+        assertEquals(SkyDisplayMode.FULL, displayMode.skyDisplayMode)
+        assertEquals(SceneBuildingSelection.MAPBOX, displayMode.content)
+        assertEquals(Config.DEFAULT_3D_PITCH_DEGREES, displayMode.cameraPitchDegrees, 0.0)
     }
 
     @Test

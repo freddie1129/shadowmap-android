@@ -130,9 +130,10 @@ internal fun ShadowPlannerSceneView(
                 pitch(MapDisplayDefaults.EDITING.cameraPitchDegrees)
             }
         } else if (hasEnteredEditing) {
-            displayMode = MapDisplayDefaults.EDITING
+            val postEditingMode = postEditingDisplayMode(uiState.hasDrawings)
+            displayMode = postEditingMode
             mapViewportState.setCameraOptions {
-                pitch(MapDisplayDefaults.EDITING.cameraPitchDegrees)
+                pitch(postEditingMode.cameraPitchDegrees)
             }
             hasEnteredEditing = false
         }
