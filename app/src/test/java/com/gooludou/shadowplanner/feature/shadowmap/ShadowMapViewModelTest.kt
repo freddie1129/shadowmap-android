@@ -582,6 +582,29 @@ class ShadowMapViewModelTest {
             advanceUntilIdle()
         }
 
+    @Test
+    fun currentLocationReceived_appliesDaylightTimeWhenViewportInitializedFirst() =
+        runTest(dispatcher) {
+            val nighttime = Instant.parse("2026-07-14T10:00:00Z")
+            val zoneId = ZoneId.of("Australia/Brisbane")
+            val viewModel = createViewModel(clock = Clock.fixed(nighttime, ZoneOffset.UTC))
+
+            viewModel.onMapCenterChanged(GeoPoint(151.2, -33.9))
+            viewModel.onCurrentLocationReceived(TEST_LOCATION, "Current location")
+
+            val daylight = requireNotNull(
+                SunriseSunsetCalculator().calculate(
+                    date = nighttime.atZone(zoneId).toLocalDate(),
+                    zoneId = zoneId,
+                    location = TEST_LOCATION
+                )
+            )
+            assertEquals(
+                daylight.sunrise.plus(2, ChronoUnit.HOURS).toEpochMilli(),
+                viewModel.uiState.value.selectedEpochMillis
+            )
+        }
+
     private fun testBuilding(): Building {
         val ring =
             listOf(

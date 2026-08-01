@@ -248,6 +248,16 @@ constructor(
         )
         if (hasResolvedCurrentLocation) return
         hasResolvedCurrentLocation = true
+        // The initial map time must not depend on whether the map has already emitted an
+        // initial viewport. That viewport can populate calculationLocation before this
+        // callback, even though the daylight-aware time has not been initialized yet.
+        if (shouldApplyInitialDaylightTime) {
+            val initialTime = daylightAwareInitialTime(location)
+            shouldApplyInitialDaylightTime = false
+            savedStateHandle[SELECTED_TIME_KEY] = initialTime
+            _uiState.value = _uiState.value.copy(selectedEpochMillis = initialTime)
+        }
+
         // The initial map time must not depend on reverse geocoding, which can finish well
         // after the date/time ruler has initialized itself at the current time.
         val initializedMapFromCurrentLocation = _uiState.value.calculationLocation == null
