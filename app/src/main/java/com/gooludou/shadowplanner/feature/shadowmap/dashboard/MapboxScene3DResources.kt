@@ -137,19 +137,37 @@ internal object MapDisplayDefaults {
         cameraPitchDegrees = Config.DEFAULT_3D_PITCH_DEGREES
     )
 
-    val PROJECT = MapDisplayMode(
+    val PROJECT_WITH_DRAWINGS = MapDisplayMode(
         basemapStyle = MapboxBasemapStyle.SATELLITE,
         skyDisplayMode = SkyDisplayMode.HIDDEN,
         content = SceneBuildingSelection.DRAWN,
         cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
     )
 
-    val EDITING = PROJECT
+    val PROJECT_WITHOUT_DRAWINGS = MapDisplayMode(
+        basemapStyle = MapboxBasemapStyle.STANDARD,
+        skyDisplayMode = SkyDisplayMode.FULL,
+        content = SceneBuildingSelection.MAPBOX,
+        cameraPitchDegrees = Config.DEFAULT_3D_PITCH_DEGREES
+    )
+
+    val EDITING = PROJECT_WITH_DRAWINGS
 }
 
 /** Selects the initial display mode before the Mapbox map is attached. */
-internal fun initialMapDisplayMode(projectLoadRevision: Long): MapDisplayMode =
-    if (projectLoadRevision > 0L) MapDisplayDefaults.PROJECT else MapDisplayDefaults.APP_LAUNCH
+internal fun initialMapDisplayMode(
+    projectLoadRevision: Long,
+    hasDrawings: Boolean = false
+): MapDisplayMode =
+    if (projectLoadRevision > 0L) {
+        if (hasDrawings) {
+            MapDisplayDefaults.PROJECT_WITH_DRAWINGS
+        } else {
+            MapDisplayDefaults.PROJECT_WITHOUT_DRAWINGS
+        }
+    } else {
+        MapDisplayDefaults.APP_LAUNCH
+    }
 
 /** Keeps editing on satellite imagery while leaving view-mode basemap selection unrestricted. */
 internal fun MapDisplayMode.forSceneMode(sceneMode: MapboxSceneMode): MapDisplayMode =

@@ -99,7 +99,10 @@ class SceneBuildingRenderModeTest {
 
     @Test
     fun `loaded projects use centralized Mapbox 3D defaults`() {
-        val displayMode = initialMapDisplayMode(projectLoadRevision = 1L)
+        val displayMode = initialMapDisplayMode(
+            projectLoadRevision = 1L,
+            hasDrawings = true
+        )
 
         assertEquals(
             Scene3DCamera.TOP_DOWN_PITCH_DEGREES,
@@ -147,6 +150,19 @@ class SceneBuildingRenderModeTest {
         assertEquals(SceneBuildingSelection.MAPBOX, displayMode.content)
         assertEquals(MapCameraMode.THREE_DIMENSIONAL, displayMode.cameraMode)
         assertEquals(true, displayMode.isDomeVisible)
+    }
+
+    @Test
+    fun `projects without drawings use the standard 3D display defaults`() {
+        val displayMode = initialMapDisplayMode(
+            projectLoadRevision = 1L,
+            hasDrawings = false
+        )
+
+        assertEquals(MapboxBasemapStyle.STANDARD, displayMode.basemapStyle)
+        assertEquals(SkyDisplayMode.FULL, displayMode.skyDisplayMode)
+        assertEquals(SceneBuildingSelection.MAPBOX, displayMode.content)
+        assertEquals(Config.DEFAULT_3D_PITCH_DEGREES, displayMode.cameraPitchDegrees, 0.0)
     }
 
     @Test

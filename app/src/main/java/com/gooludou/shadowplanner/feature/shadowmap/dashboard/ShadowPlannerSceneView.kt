@@ -75,7 +75,7 @@ internal fun ShadowPlannerSceneView(
     val viewport = state.viewport
     val solarPosition = uiState.solarPosition
     val initialDisplayMode = remember {
-        initialMapDisplayMode(uiState.projectLoadRevision)
+        initialMapDisplayMode(uiState.projectLoadRevision, uiState.hasDrawings)
     }
     var displayMode by remember {
         mutableStateOf(initialDisplayMode)
@@ -110,9 +110,14 @@ internal fun ShadowPlannerSceneView(
     LaunchedEffect(uiState.projectLoadRevision) {
         if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
         hasEnteredEditing = false
-        displayMode = MapDisplayDefaults.PROJECT
+        val projectDisplayMode = if (uiState.hasDrawings) {
+            MapDisplayDefaults.PROJECT_WITH_DRAWINGS
+        } else {
+            MapDisplayDefaults.PROJECT_WITHOUT_DRAWINGS
+        }
+        displayMode = projectDisplayMode
         mapViewportState.setCameraOptions {
-            pitch(MapDisplayDefaults.PROJECT.cameraPitchDegrees)
+            pitch(projectDisplayMode.cameraPitchDegrees)
         }
     }
     LaunchedEffect(state.sceneMode) {
