@@ -99,6 +99,9 @@
     <string name="camera_view">Camera view</string>
     <string name="built_in_map_buildings">Built-in map buildings</string>
     <string name="my_drawings">My drawings</string>
+    <string name="no_drawings_yet_title">No drawings yet</string>
+    <string name="no_drawings_yet_message">Add a building, wall, or tree to create your own shadow plan.</string>
+    <string name="add_drawing">Add drawing</string>
     <string name="top_down_view">Top-down view</string>
     <string name="setting_current_value">%1$s: %2$s</string>
     <string name="change_shadow_colour">Change shadow colour</string>

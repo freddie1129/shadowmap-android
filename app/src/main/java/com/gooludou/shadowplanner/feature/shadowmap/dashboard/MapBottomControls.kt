@@ -26,6 +26,8 @@ import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
@@ -63,8 +65,10 @@ internal fun MapBottomControls(
     onRefreshSky: () -> Unit,
     shadowAppearance: ShadowAppearance,
     onOpenShadowColor: () -> Unit,
-    onStartEditing: () -> Unit
+    onStartEditing: () -> Unit,
+    hasDrawings: Boolean
 ) {
+    var showEmptyDrawingsDialog by rememberSaveable { mutableStateOf(false) }
     val isTopDown = displayMode.cameraMode == MapCameraMode.TOP_DOWN
     val topDownLabel = stringResource(R.string.top_down_view)
     val threeDimensionalLabel = stringResource(R.string.view_3d_button)
@@ -171,6 +175,9 @@ internal fun MapBottomControls(
                             )
                         )
                     )
+                    if (selectedContent == SceneBuildingSelection.DRAWN && !hasDrawings) {
+                        showEmptyDrawingsDialog = true
+                    }
                 }
             ) {
                 Icon(
@@ -211,6 +218,28 @@ internal fun MapBottomControls(
             Spacer(modifier = Modifier.Companion.weight(1f))
             MapboxScene3DModeButton(onStartEditing = onStartEditing)
         }
+    }
+    if (showEmptyDrawingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmptyDrawingsDialog = false },
+            title = { Text(stringResource(R.string.no_drawings_yet_title)) },
+            text = { Text(stringResource(R.string.no_drawings_yet_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showEmptyDrawingsDialog = false
+                        onStartEditing()
+                    }
+                ) {
+                    Text(stringResource(R.string.add_drawing))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEmptyDrawingsDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }
 
@@ -412,7 +441,8 @@ private fun MapBottomControlsPreviewContent(backgroundColor: Color, skyDisplayMo
             onRefreshSky = {},
             shadowAppearance = ShadowAppearance.DEFAULT,
             onOpenShadowColor = {},
-            onStartEditing = {}
+            onStartEditing = {},
+            hasDrawings = true
         )
     }
 }

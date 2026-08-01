@@ -100,7 +100,8 @@ internal fun MapControls(
                     onRefreshSky = actions.display.onRefreshSky,
                     shadowAppearance = uiState.shadowAppearance,
                     onOpenShadowColor = actions.display.onOpenShadowColor,
-                    onStartEditing = actions.display.onStartEditing
+                    onStartEditing = actions.display.onStartEditing,
+                    hasDrawings = uiState.hasDrawings
                 )
             } else if (showEditingToolbar) {
                 MapEditingControls(
