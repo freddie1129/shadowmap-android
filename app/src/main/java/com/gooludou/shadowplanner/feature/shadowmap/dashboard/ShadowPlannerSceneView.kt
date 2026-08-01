@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.model.Building
@@ -29,6 +30,7 @@ import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.solar.SolarPosition
 import com.gooludou.shadowplanner.core.ui.theme.LightSurfaceVariant
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
+import com.gooludou.shadowplanner.feature.shadowmap.components.MapCenterPlus
 import com.gooludou.shadowplanner.feature.shadowmap.components.mapboxNative3dConfig
 import com.mapbox.bindgen.Value
 import com.mapbox.geojson.Feature
@@ -202,6 +204,13 @@ internal fun ShadowPlannerSceneView(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds
             )
+        }
+
+        if (
+            state.sceneMode == MapboxSceneMode.VIEW &&
+            activeDisplayMode.cameraMode == MapCameraMode.TOP_DOWN
+        ) {
+            MapCenterPlus(modifier = Modifier.align(Alignment.Center))
         }
 
         MapControls(
