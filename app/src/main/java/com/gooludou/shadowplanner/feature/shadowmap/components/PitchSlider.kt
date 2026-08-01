@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 
@@ -107,4 +108,4 @@ private val PITCH_THUMB_SIZE = 18.dp
 private val PITCH_TRACK_HALO_WIDTH = 8.dp
 private val PITCH_TRACK_WIDTH = 4.dp
 private const val MIN_PITCH_DEGREES = 0f
-private const val MAX_PITCH_DEGREES = 60f
+private val MAX_PITCH_DEGREES = Config.MAX_3D_PITCH_DEGREES.toFloat()

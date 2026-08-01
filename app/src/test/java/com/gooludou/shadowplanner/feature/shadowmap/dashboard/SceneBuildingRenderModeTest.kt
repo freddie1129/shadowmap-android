@@ -1,5 +1,6 @@
 package com.gooludou.shadowplanner.feature.shadowmap.dashboard
 
+import com.gooludou.shadowplanner.Config
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -50,7 +51,7 @@ class SceneBuildingRenderModeTest {
             sceneBuildingRenderMode(
                 buildingSelection = SceneBuildingSelection.DRAWN,
                 basemapStyle = MapboxBasemapStyle.SATELLITE,
-                cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
+                cameraPitchDegrees = Config.DEFAULT_3D_PITCH_DEGREES
             )
         )
     }

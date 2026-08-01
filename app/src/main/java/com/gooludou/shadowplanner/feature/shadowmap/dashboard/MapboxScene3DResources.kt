@@ -1,6 +1,7 @@
 package com.gooludou.shadowplanner.feature.shadowmap.dashboard
 
 import androidx.compose.ui.unit.dp
+import com.gooludou.shadowplanner.Config
 
 /** IDs used by the Standard style import and the scene's Mapbox light objects. */
 internal object Scene3DMapIds {
@@ -61,9 +62,6 @@ internal object Scene3DFeatureProperties {
 
 /** Camera values shared by the 3D map and its camera controls. */
 internal object Scene3DCamera {
-    /** Default pitched angle used for the orbit-style 3D view. */
-    const val ORBIT_PITCH_DEGREES = 60.0
-
     /** Camera pitch used for the top-down map view. */
     const val TOP_DOWN_PITCH_DEGREES = 0.0
 
@@ -136,7 +134,7 @@ internal object MapDisplayDefaults {
         basemapStyle = MapboxBasemapStyle.STANDARD,
         skyDisplayMode = SkyDisplayMode.FULL,
         content = SceneBuildingSelection.MAPBOX,
-        cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
+        cameraPitchDegrees = Config.DEFAULT_3D_PITCH_DEGREES
     )
 
     val PROJECT = MapDisplayMode(

@@ -21,6 +21,12 @@ object Config {
     /** Zoom shared by the initial camera and all location-based camera moves. */
     const val DEFAULT_MAP_ZOOM = 17.0
 
+    /** Camera pitch used when entering the 3D scene. */
+    const val DEFAULT_3D_PITCH_DEGREES = 60.0
+
+    /** Maximum camera pitch exposed by the 3D pitch slider. */
+    const val MAX_3D_PITCH_DEGREES = 80.0
+
     /** Neutral camera bearing used for the world fallback. */
     const val FALLBACK_MAP_BEARING_DEGREES = 0.0
 

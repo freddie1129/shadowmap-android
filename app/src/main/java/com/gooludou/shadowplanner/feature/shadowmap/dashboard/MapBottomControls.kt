@@ -47,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gooludou.shadowplanner.R
+import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.core.model.ShadowAppearance
 import com.gooludou.shadowplanner.core.ui.components.MapRoundIconButton
 import com.gooludou.shadowplanner.core.ui.theme.Map3DActionBlue
@@ -188,7 +189,7 @@ internal fun MapBottomControls(
                     onDisplayModeChanged(
                         displayMode.copy(
                             cameraPitchDegrees = if (isTopDown) {
-                                Scene3DCamera.ORBIT_PITCH_DEGREES
+                                Config.DEFAULT_3D_PITCH_DEGREES
                             } else {
                                 Scene3DCamera.TOP_DOWN_PITCH_DEGREES
                             }
@@ -405,7 +406,7 @@ private fun MapBottomControlsPreviewContent(backgroundColor: Color, skyDisplayMo
                 basemapStyle = MapboxBasemapStyle.STANDARD,
                 skyDisplayMode = skyDisplayMode,
                 content = SceneBuildingSelection.MAPBOX,
-                cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
+                cameraPitchDegrees = Config.DEFAULT_3D_PITCH_DEGREES
             ),
             onDisplayModeChanged = {},
             onRefreshSky = {},

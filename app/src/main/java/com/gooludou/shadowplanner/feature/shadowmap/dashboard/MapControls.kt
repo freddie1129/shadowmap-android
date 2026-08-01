@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
@@ -269,7 +270,7 @@ private fun MapboxScene3DControlsPreviewContent(darkTheme: Boolean, sceneMode: M
                         basemapStyle = MapboxBasemapStyle.SATELLITE,
                         skyDisplayMode = SkyDisplayMode.FULL,
                         content = SceneBuildingSelection.DRAWN,
-                        cameraPitchDegrees = Scene3DCamera.ORBIT_PITCH_DEGREES
+                        cameraPitchDegrees = Config.DEFAULT_3D_PITCH_DEGREES
                     ),
                     sceneMode = sceneMode,
                     autoToolState = AutoToolState.READY
