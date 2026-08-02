@@ -12,8 +12,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -21,9 +21,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.tooling.preview.Preview
+import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.GeoPoint
-import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
@@ -38,7 +38,7 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 import kotlin.math.abs
 
 @Composable
-@Suppress("LongMethod")
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 internal fun MapControls(
     mapViewportState: MapViewportState,
     uiState: ShadowMapUiState,
@@ -163,8 +163,8 @@ internal fun MapControls(
         }
         if (
             state.sceneMode == MapboxSceneMode.EDIT &&
-                showEditingToolbar &&
-                !state.hasCompletedEditingTooltips
+            showEditingToolbar &&
+            !state.hasCompletedEditingTooltips
         ) {
             EditingFeatureTour(
                 targetBounds = editingTooltipBounds,

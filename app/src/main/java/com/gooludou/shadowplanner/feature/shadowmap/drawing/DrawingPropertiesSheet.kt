@@ -57,12 +57,12 @@ fun DrawingPropertiesSheet(
     type: DrawnObjectType,
     initialHeightMeters: Double,
     initialRadiusMeters: Double?,
+    modifier: Modifier = Modifier,
     initialCrownShape: TreeCrownShape = TreeCrownShape.CONE,
     isCreating: Boolean,
     onBack: () -> Unit,
     onApply: (heightMeters: Double, radiusMeters: Double?, crownShape: TreeCrownShape) -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier,
     onMove: () -> Unit = {},
     objectSource: SceneObjectSource? = null,
     loadedHeightMeters: Double? = null
@@ -163,7 +163,13 @@ fun DrawingPropertiesSheet(
                 onSave = {
                     onApply(
                         requireNotNull(height),
-                        if (type == DrawnObjectType.TREE) requireNotNull(crownWidth) / 2.0 else null,
+                        if (type ==
+                            DrawnObjectType.TREE
+                        ) {
+                            requireNotNull(crownWidth) / 2.0
+                        } else {
+                            null
+                        },
                         crownShape
                     )
                 }
@@ -252,7 +258,6 @@ private fun TreeCrownEditor(
         }
     )
 }
-
 
 @Composable
 private fun PropertyPanelActions(

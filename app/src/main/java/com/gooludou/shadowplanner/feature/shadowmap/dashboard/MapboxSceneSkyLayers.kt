@@ -133,10 +133,7 @@ internal fun rememberMapboxSceneSkyState(
 
 @Composable
 @OptIn(MapboxExperimental::class)
-internal fun SceneSkyModelLayers(
-    state: MapboxSceneSkyLayers,
-    displayMode: SkyDisplayMode
-) {
+internal fun SceneSkyModelLayers(state: MapboxSceneSkyLayers, displayMode: SkyDisplayMode) {
     if (displayMode == SkyDisplayMode.FULL) {
         SceneSkyGridModelLayer(state.gridSource, state.metrics)
     }

@@ -4,8 +4,8 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gooludou.shadowplanner.purchase.billing.InAppPurchaseManager
-import com.gooludou.shadowplanner.purchase.developer.DeveloperSettings
 import com.gooludou.shadowplanner.purchase.developer.DeveloperEntitlementOverride
+import com.gooludou.shadowplanner.purchase.developer.DeveloperSettings
 import com.gooludou.shadowplanner.purchase.model.EntitlementState
 import com.gooludou.shadowplanner.purchase.model.InAppPurchaseState
 import com.gooludou.shadowplanner.purchase.model.PurchaseCatalogState

@@ -58,7 +58,10 @@ internal fun MapToolBar(
     onOpenMapbox3D: (() -> Unit)?,
     modifier: Modifier = Modifier,
     showTimeToggle: Boolean = true,
-    onTooltipTargetBoundsChanged: (EditingTooltipTarget, androidx.compose.ui.geometry.Rect) -> Unit =
+    onTooltipTargetBoundsChanged: (
+        EditingTooltipTarget,
+        androidx.compose.ui.geometry.Rect
+    ) -> Unit =
         { _, _ -> }
 ) {
     Row(

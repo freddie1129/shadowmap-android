@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import androidx.core.net.toUri
 import com.gooludou.shadowplanner.BuildConfig
 import com.gooludou.shadowplanner.R
 
@@ -34,11 +35,11 @@ object FeedbackEmailHelper {
             appendLine(context.getString(R.string.feedback_access, accessType))
         }
         val subject = context.getString(R.string.feedback_subject, BuildConfig.VERSION_NAME)
-        val mailto = Uri.parse(
+        val mailto = (
             "mailto:$CONTACT_EMAIL" +
                 "?subject=${Uri.encode(subject)}" +
                 "&body=${Uri.encode(body)}"
-        )
+            ).toUri()
 
         return Intent(Intent.ACTION_SENDTO, mailto)
     }

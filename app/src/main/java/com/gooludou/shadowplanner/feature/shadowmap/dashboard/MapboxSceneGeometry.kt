@@ -55,6 +55,7 @@ internal fun DrawnTree.toCanopyFeatures(): List<Feature> {
     val radius = radiusMeters.coerceAtLeast(Scene3DTreeGeometry.MIN_CANOPY_RADIUS_METERS)
     return when (crownShape) {
         TreeCrownShape.CYLINDER -> listOf(canopyFeature(radius, canopyBase, height))
+
         TreeCrownShape.CONE -> (0 until Scene3DTreeGeometry.CONE_SLICES).map { index ->
             val sliceHeight = (height - canopyBase) / Scene3DTreeGeometry.CONE_SLICES
             val base = canopyBase + index * sliceHeight

@@ -12,7 +12,6 @@ import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
 import com.gooludou.shadowplanner.core.model.DrawnObjectType
 import com.gooludou.shadowplanner.core.model.DrawnTree
-import com.gooludou.shadowplanner.core.model.TreeCrownShape
 import com.gooludou.shadowplanner.core.model.DrawnWall
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.LoadedBuildingOverride
@@ -21,6 +20,7 @@ import com.gooludou.shadowplanner.core.model.PendingDrawing
 import com.gooludou.shadowplanner.core.model.SceneObjectGeometry
 import com.gooludou.shadowplanner.core.model.SceneObjectSource
 import com.gooludou.shadowplanner.core.model.ShadowAppearance
+import com.gooludou.shadowplanner.core.model.TreeCrownShape
 import com.gooludou.shadowplanner.core.model.translatedBy
 import com.gooludou.shadowplanner.core.shadow.BuildingShadowCalculator
 import com.gooludou.shadowplanner.core.shadow.UserObjectShadowCalculator

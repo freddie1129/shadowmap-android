@@ -12,6 +12,7 @@ import com.gooludou.shadowplanner.purchase.model.EntitlementState
 import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
 
 @Composable
+@Suppress("LongMethod")
 internal fun ShadowMapRoute(
     mapControllerFactory: MapboxShadowMapController.Factory,
     entitlementState: EntitlementState,

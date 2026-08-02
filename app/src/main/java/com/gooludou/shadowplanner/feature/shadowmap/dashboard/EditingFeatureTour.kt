@@ -54,11 +54,7 @@ internal enum class EditingTooltipTarget {
     CLEAR
 }
 
-internal data class FeatureTourStep(
-    val target: String,
-    val title: Int,
-    val description: Int
-)
+internal data class FeatureTourStep(val target: String, val title: Int, val description: Int)
 
 private val editingTooltipSteps = listOf(
     FeatureTourStep(
@@ -94,6 +90,7 @@ private val editingTooltipSteps = listOf(
 )
 
 @Composable
+@Suppress("LongMethod")
 internal fun FeatureTourOverlay(
     targetBounds: Map<String, Rect>,
     steps: List<FeatureTourStep>,

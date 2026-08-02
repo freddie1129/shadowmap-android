@@ -158,24 +158,22 @@ internal object MapDisplayDefaults {
 internal fun initialMapDisplayMode(
     projectLoadRevision: Long,
     hasDrawings: Boolean = false
-): MapDisplayMode =
-    if (projectLoadRevision > 0L) {
-        if (hasDrawings) {
-            MapDisplayDefaults.PROJECT_WITH_DRAWINGS
-        } else {
-            MapDisplayDefaults.PROJECT_WITHOUT_DRAWINGS
-        }
-    } else {
-        MapDisplayDefaults.APP_LAUNCH
-    }
-
-/** Selects the view-mode defaults after leaving editing based on drawing availability. */
-internal fun postEditingDisplayMode(hasDrawings: Boolean): MapDisplayMode =
+): MapDisplayMode = if (projectLoadRevision > 0L) {
     if (hasDrawings) {
         MapDisplayDefaults.PROJECT_WITH_DRAWINGS
     } else {
         MapDisplayDefaults.PROJECT_WITHOUT_DRAWINGS
     }
+} else {
+    MapDisplayDefaults.APP_LAUNCH
+}
+
+/** Selects the view-mode defaults after leaving editing based on drawing availability. */
+internal fun postEditingDisplayMode(hasDrawings: Boolean): MapDisplayMode = if (hasDrawings) {
+    MapDisplayDefaults.PROJECT_WITH_DRAWINGS
+} else {
+    MapDisplayDefaults.PROJECT_WITHOUT_DRAWINGS
+}
 
 /** Keeps editing on satellite imagery while leaving view-mode basemap selection unrestricted. */
 internal fun MapDisplayMode.forSceneMode(sceneMode: MapboxSceneMode): MapDisplayMode =

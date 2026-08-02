@@ -1,13 +1,15 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.gooludou.shadowplanner.feature.shadowmap.dashboard
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 

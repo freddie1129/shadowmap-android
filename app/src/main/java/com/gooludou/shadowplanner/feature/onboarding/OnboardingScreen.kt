@@ -1,8 +1,8 @@
 package com.gooludou.shadowplanner.feature.onboarding
 
-import android.net.Uri
 import android.widget.VideoView
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RawRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,7 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.annotation.RawRes
+import androidx.core.net.toUri
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
@@ -76,11 +76,7 @@ private val onboardingPages = listOf(
 )
 
 @Composable
-fun OnboardingRoute(
-    onFinish: () -> Unit,
-    onClose: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun OnboardingRoute(onFinish: () -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
     val pagerState = rememberPagerState(pageCount = onboardingPages::size)
     val coroutineScope = rememberCoroutineScope()
 
@@ -104,8 +100,11 @@ fun OnboardingRoute(
             onSkip = onFinish,
             onBack = { moveTo(pageIndex - 1) },
             onNext = {
-                if (pageIndex == onboardingPages.lastIndex) onFinish()
-                else moveTo(pageIndex + 1)
+                if (pageIndex == onboardingPages.lastIndex) {
+                    onFinish()
+                } else {
+                    moveTo(pageIndex + 1)
+                }
             },
             artwork = { OnboardingArtwork(page.artwork, pagerState.currentPage == pageIndex) }
         )
@@ -166,6 +165,7 @@ private fun OnboardingArtwork(
 ) {
     when (artwork) {
         OnboardingArtwork.Image -> OnboardingArtworkPlaceholder(modifier)
+
         is OnboardingArtwork.Video -> OnboardingArtworkVideo(
             resourceId = artwork.resourceId,
             isActive = isActive,
@@ -211,7 +211,7 @@ private fun OnboardingArtworkVideo(
                 videoView.apply {
                     val playerView = this
                     tag = isActive
-                    setVideoURI(Uri.parse("android.resource://${context.packageName}/$resourceId"))
+                    setVideoURI("android.resource://${context.packageName}/$resourceId".toUri())
                     setOnPreparedListener { mediaPlayer ->
                         mediaPlayer.isLooping = true
                         mediaPlayer.setVolume(0f, 0f)

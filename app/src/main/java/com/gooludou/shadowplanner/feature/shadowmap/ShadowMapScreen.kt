@@ -31,8 +31,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -42,8 +42,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -1049,15 +1049,14 @@ private val LocationPermissions = arrayOf(
     Manifest.permission.ACCESS_COARSE_LOCATION
 )
 
-private fun Context.hasLocationPermission(): Boolean =
+private fun Context.hasLocationPermission(): Boolean = ContextCompat.checkSelfPermission(
+    this,
+    Manifest.permission.ACCESS_FINE_LOCATION
+) == PackageManager.PERMISSION_GRANTED ||
     ContextCompat.checkSelfPermission(
         this,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    ) == PackageManager.PERMISSION_GRANTED ||
-        ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
 
 private fun Activity.shouldShowLocationPermissionRationale(): Boolean =
     ActivityCompat.shouldShowRequestPermissionRationale(
@@ -1071,12 +1070,11 @@ private fun Activity.shouldShowLocationPermissionRationale(): Boolean =
 private fun resolveLocationPermissionDialogState(
     wasRequested: Boolean,
     shouldShowRationale: Boolean
-): LocationPermissionDialogState =
-    if (wasRequested && !shouldShowRationale) {
-        LocationPermissionDialogState.SETTINGS
-    } else {
-        LocationPermissionDialogState.RATIONALE
-    }
+): LocationPermissionDialogState = if (wasRequested && !shouldShowRationale) {
+    LocationPermissionDialogState.SETTINGS
+} else {
+    LocationPermissionDialogState.RATIONALE
+}
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this

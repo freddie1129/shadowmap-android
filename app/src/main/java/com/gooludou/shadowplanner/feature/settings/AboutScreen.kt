@@ -22,8 +22,8 @@ import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.EnergySavingsLeaf
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Language
-import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material.icons.outlined.PlayCircleOutline
+import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Yard
@@ -47,10 +47,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import coil3.compose.AsyncImage
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
-import coil3.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -188,37 +188,37 @@ private fun ActionCard(actions: AboutActions, modifier: Modifier = Modifier) {
             AboutRow(
                 Icons.Outlined.PlayCircleOutline,
                 stringResource(R.string.view_introduction),
-                actions.onViewIntroductionClick
+                onClick = actions.onViewIntroductionClick
             )
             AboutDivider()
             AboutRow(
                 Icons.Outlined.Language,
                 stringResource(R.string.about_website),
-                actions.onWebsiteClick
+                onClick = actions.onWebsiteClick
             )
             AboutDivider()
             AboutRow(
                 Icons.Outlined.PrivacyTip,
                 stringResource(R.string.about_privacy_policy),
-                actions.onPrivacyPolicyClick
+                onClick = actions.onPrivacyPolicyClick
             )
             AboutDivider()
             AboutRow(
                 Icons.Outlined.Email,
                 stringResource(R.string.about_contact_us),
-                actions.onContactUsClick
+                onClick = actions.onContactUsClick
             )
             AboutDivider()
             AboutRow(
                 Icons.Outlined.Share,
                 stringResource(R.string.about_share),
-                actions.onShareClick
+                onClick = actions.onShareClick
             )
             AboutDivider()
             AboutRow(
                 Icons.Outlined.Star,
                 stringResource(R.string.about_rate),
-                actions.onRateClick
+                onClick = actions.onRateClick
             )
         }
     }
@@ -242,8 +242,8 @@ private fun AboutCard(modifier: Modifier = Modifier, content: @Composable () -> 
 private fun AboutRow(
     icon: ImageVector,
     text: String,
-    onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     val dimensions = ShadowMapDesign.dimensions
     Row(

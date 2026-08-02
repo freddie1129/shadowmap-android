@@ -1,6 +1,7 @@
 package com.gooludou.shadowplanner.purchase.developer
 
 import android.content.Context
+import androidx.core.content.edit
 import com.gooludou.shadowplanner.BuildConfig
 import com.gooludou.shadowplanner.purchase.model.EntitlementState
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,13 +21,13 @@ class DeveloperSettings @Inject constructor(@ApplicationContext context: Context
 
     fun setForcePremium(enabled: Boolean) {
         if (!BuildConfig.DEBUG) return
-        preferences.edit().putBoolean(FORCE_PREMIUM_KEY, enabled).apply()
+        preferences.edit { putBoolean(FORCE_PREMIUM_KEY, enabled) }
         _forcePremium.value = enabled
     }
 
     fun clear() {
         if (!BuildConfig.DEBUG) return
-        preferences.edit().clear().apply()
+        preferences.edit { clear() }
         _forcePremium.value = false
     }
 

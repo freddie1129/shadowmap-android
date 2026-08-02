@@ -18,8 +18,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.R
@@ -36,6 +36,7 @@ import com.gooludou.shadowplanner.feature.settings.SettingsIconButton
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
 
 @Composable
+@Suppress("LongMethod")
 internal fun MapTopControls(
     uiState: ShadowMapUiState,
     onOpenSettings: () -> Unit,

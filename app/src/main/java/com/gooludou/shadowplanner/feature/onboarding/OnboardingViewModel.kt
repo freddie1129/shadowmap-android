@@ -12,9 +12,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class OnboardingViewModel @Inject constructor(
-    private val dataStoreManager: DataStoreManager
-) : ViewModel() {
+class OnboardingViewModel @Inject constructor(private val dataStoreManager: DataStoreManager) :
+    ViewModel() {
     val hasCompletedOnboarding: StateFlow<Boolean?> = dataStoreManager.hasCompletedOnboarding
         .map<Boolean, Boolean?> { it }
         .stateIn(

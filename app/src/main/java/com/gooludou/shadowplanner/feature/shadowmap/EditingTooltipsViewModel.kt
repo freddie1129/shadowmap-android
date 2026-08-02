@@ -11,9 +11,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class EditingTooltipsViewModel @Inject constructor(
-    private val dataStoreManager: DataStoreManager
-) : ViewModel() {
+class EditingTooltipsViewModel @Inject constructor(private val dataStoreManager: DataStoreManager) :
+    ViewModel() {
     val hasCompleted: StateFlow<Boolean> = dataStoreManager.hasCompletedEditingTooltips
         .stateIn(
             scope = viewModelScope,

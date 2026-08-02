@@ -17,9 +17,7 @@ private val Context.dataStore by preferencesDataStore(name = "shadow_planner_pre
 
 /** Central access point for app-wide preferences stored with DataStore. */
 @Singleton
-class DataStoreManager @Inject constructor(
-    @param:ApplicationContext private val context: Context
-) {
+class DataStoreManager @Inject constructor(@param:ApplicationContext private val context: Context) {
     private val preferences = context.dataStore.data.catch { exception ->
         if (exception is IOException) emit(emptyPreferences()) else throw exception
     }

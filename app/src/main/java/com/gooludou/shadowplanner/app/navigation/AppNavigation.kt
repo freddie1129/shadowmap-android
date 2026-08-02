@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -19,6 +18,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -27,19 +27,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.gooludou.shadowplanner.BuildConfig
+import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchScreen
 import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchViewModel
 import com.gooludou.shadowplanner.feature.onboarding.OnboardingRoute
 import com.gooludou.shadowplanner.feature.onboarding.OnboardingViewModel
 import com.gooludou.shadowplanner.feature.projects.ProjectListScreen
 import com.gooludou.shadowplanner.feature.projects.ProjectListViewModel
-import com.gooludou.shadowplanner.feature.settings.SettingsScreen
-import com.gooludou.shadowplanner.feature.settings.DeveloperSettingsScreen
-import com.gooludou.shadowplanner.feature.settings.DeveloperSettingsViewModel
-import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.feature.settings.AboutActions
 import com.gooludou.shadowplanner.feature.settings.AboutScreen
+import com.gooludou.shadowplanner.feature.settings.DeveloperSettingsScreen
+import com.gooludou.shadowplanner.feature.settings.DeveloperSettingsViewModel
 import com.gooludou.shadowplanner.feature.settings.FeedbackEmailHelper
+import com.gooludou.shadowplanner.feature.settings.SettingsScreen
 import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapRoute
 import com.gooludou.shadowplanner.location.LocationSearchResult
 import com.gooludou.shadowplanner.purchase.model.EntitlementState
@@ -68,8 +68,11 @@ fun AppNavigation(
     }
     val backStack = remember {
         mutableStateListOf<Any>(
-            if (hasCompletedOnboarding == true) AppDestination.Map
-            else AppDestination.Onboarding()
+            if (hasCompletedOnboarding == true) {
+                AppDestination.Map
+            } else {
+                AppDestination.Onboarding()
+            }
         )
     }
     var pendingLocation by remember {
@@ -99,8 +102,11 @@ fun AppNavigation(
                         OnboardingRoute(
                             onFinish = finishOnboarding,
                             onClose = {
-                                if (key.isReplay) backStack.removeLastOrNull()
-                                else finishOnboarding()
+                                if (key.isReplay) {
+                                    backStack.removeLastOrNull()
+                                } else {
+                                    finishOnboarding()
+                                }
                             }
                         )
                     }
@@ -244,7 +250,7 @@ private fun Context.rateApp() {
 }
 
 private fun Context.openUri(uri: String) {
-    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+    startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()))
 }
 
 private const val WEBSITE_URL = "https://sunfinderapps.com"
