@@ -19,10 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.tooling.preview.Preview
 import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.GeoPoint
@@ -55,7 +52,6 @@ internal fun MapControls(
         uiState.canShowMapboxEditingToolbar()
     val editingTooltipBounds = remember { mutableStateMapOf<EditingTooltipTarget, Rect>() }
     val mainTooltipBounds = remember { mutableStateMapOf<MainViewTooltipTarget, Rect>() }
-    var controlsRootPosition by remember { mutableStateOf(Offset.Zero) }
     LaunchedEffect(currentPitch) {
         if (abs(currentPitch - state.displayMode.cameraPitchDegrees) > CAMERA_PITCH_SYNC_EPSILON) {
             actions.display.onDisplayModeChanged(
@@ -64,108 +60,104 @@ internal fun MapControls(
         }
     }
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .onGloballyPositioned { controlsRootPosition = it.positionInRoot() }
+        modifier = Modifier.fillMaxSize()
     ) {
-        MapTopControls(
-            uiState = uiState,
-            onOpenSettings = actions.navigation.onOpenSettings,
-            onOpenLocationSearch = actions.navigation.onOpenLocationSearch,
-            onShowLocationInfo = actions.navigation.onShowLocationInfo,
-            onRecenterCurrentLocation = actions.navigation.onRecenterCurrentLocation,
-            canRecenterCurrentLocation = state.canRecenterCurrentLocation,
-            onOpenProjects = actions.navigation.onOpenProjects,
-            onSaveProject = actions.navigation.onSaveProject,
-            isSaveProjectPremiumLocked =
-                actions.dateTime.entitlementState == EntitlementState.Free ||
-                    actions.dateTime.entitlementState is EntitlementState.Unavailable,
-            modifier = Modifier.align(Alignment.TopCenter),
-            onTooltipTargetBoundsChanged = { target, bounds ->
-                mainTooltipBounds[target] = bounds
-            }
-        )
-        if (state.sceneMode == MapboxSceneMode.VIEW) {
-            PitchSlider(
-                pitch = currentPitch.toFloat(),
-                onPitchChange = { pitch ->
-                    actions.display.onDisplayModeChanged(
-                        state.displayMode.copy(cameraPitchDegrees = pitch.toDouble())
-                    )
-                },
-                modifier = Modifier.align(Alignment.CenterEnd)
-            )
-        }
-        Column(
+        Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(
-                ShadowMapDesign.dimensions.spacingSmall
-            )
+                .fillMaxSize()
+                .safeDrawingPadding()
         ) {
+            MapTopControls(
+                uiState = uiState,
+                onOpenSettings = actions.navigation.onOpenSettings,
+                onOpenLocationSearch = actions.navigation.onOpenLocationSearch,
+                onShowLocationInfo = actions.navigation.onShowLocationInfo,
+                onRecenterCurrentLocation = actions.navigation.onRecenterCurrentLocation,
+                canRecenterCurrentLocation = state.canRecenterCurrentLocation,
+                onOpenProjects = actions.navigation.onOpenProjects,
+                onSaveProject = actions.navigation.onSaveProject,
+                isSaveProjectPremiumLocked =
+                    actions.dateTime.entitlementState == EntitlementState.Free ||
+                        actions.dateTime.entitlementState is EntitlementState.Unavailable,
+                modifier = Modifier.align(Alignment.TopCenter),
+                onTooltipTargetBoundsChanged = { target, bounds ->
+                    mainTooltipBounds[target] = bounds
+                }
+            )
             if (state.sceneMode == MapboxSceneMode.VIEW) {
-                MapBottomControls(
-                    displayMode = state.displayMode,
-                    onDisplayModeChanged = actions.display.onDisplayModeChanged,
-                    onRefreshSky = actions.display.onRefreshSky,
-                    shadowAppearance = uiState.shadowAppearance,
-                    onOpenShadowColor = actions.display.onOpenShadowColor,
-                    onStartEditing = actions.display.onStartEditing,
-                    hasDrawings = uiState.hasDrawings,
-                    onTooltipTargetBoundsChanged = { target, bounds ->
-                        mainTooltipBounds[target] = bounds
-                    }
-                )
-            } else if (showEditingToolbar) {
-                MapEditingControls(
-                    uiState = uiState,
-                    autoToolState = state.autoToolState,
-                    isDateTimeVisible = isDateTimeVisible,
-                    onOpenShadowColor = actions.display.onOpenShadowColor,
-                    onDrawMode = actions.editing.onDrawMode,
-                    onAutoLoad = actions.editing.onAutoLoad,
-                    onClear = actions.editing.onClear,
-                    onFinishEditing = actions.editing.onFinishEditing,
-                    onTooltipTargetBoundsChanged = { target, bounds ->
-                        editingTooltipBounds[target] = bounds
+                PitchSlider(
+                    pitch = currentPitch.toFloat(),
+                    onPitchChange = { pitch ->
+                        actions.display.onDisplayModeChanged(
+                            state.displayMode.copy(cameraPitchDegrees = pitch.toDouble())
+                        )
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = ShadowMapDesign.dimensions.screenPadding)
+                    modifier = Modifier.align(Alignment.CenterEnd)
                 )
             }
-            if (state.sceneMode == MapboxSceneMode.VIEW || showEditingToolbar) {
-                MapDateTimeControls(
-                    selectedEpochMillis = uiState.selectedEpochMillis,
-                    timeZoneId = uiState.displayTimeZoneId,
-                    location = state.dateTimeLocation,
-                    isExpanded = isDateTimeVisible,
-                    onExpandedChanged = { isDateTimeVisible = it },
-                    onDateTimeChanged = actions.dateTime.onDateTimeChanged,
-                    onNowSelected = actions.dateTime.onNowSelected,
-                    entitlementState = actions.dateTime.entitlementState,
-                    onPremiumRequired = actions.dateTime.onPremiumRequired,
-                    modifier = Modifier.reportFeatureTourTarget(
-                        MainViewTooltipTarget.DATE_TIME.name
-                    ) { _, bounds ->
-                        mainTooltipBounds[MainViewTooltipTarget.DATE_TIME] = bounds
-                    }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(
+                    ShadowMapDesign.dimensions.spacingSmall
                 )
+            ) {
+                if (state.sceneMode == MapboxSceneMode.VIEW) {
+                    MapBottomControls(
+                        displayMode = state.displayMode,
+                        onDisplayModeChanged = actions.display.onDisplayModeChanged,
+                        onRefreshSky = actions.display.onRefreshSky,
+                        shadowAppearance = uiState.shadowAppearance,
+                        onOpenShadowColor = actions.display.onOpenShadowColor,
+                        onStartEditing = actions.display.onStartEditing,
+                        hasDrawings = uiState.hasDrawings,
+                        onTooltipTargetBoundsChanged = { target, bounds ->
+                            mainTooltipBounds[target] = bounds
+                        }
+                    )
+                } else if (showEditingToolbar) {
+                    MapEditingControls(
+                        uiState = uiState,
+                        autoToolState = state.autoToolState,
+                        isDateTimeVisible = isDateTimeVisible,
+                        onOpenShadowColor = actions.display.onOpenShadowColor,
+                        onDrawMode = actions.editing.onDrawMode,
+                        onAutoLoad = actions.editing.onAutoLoad,
+                        onClear = actions.editing.onClear,
+                        onFinishEditing = actions.editing.onFinishEditing,
+                        onTooltipTargetBoundsChanged = { target, bounds ->
+                            editingTooltipBounds[target] = bounds
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = ShadowMapDesign.dimensions.screenPadding)
+                    )
+                }
+                if (state.sceneMode == MapboxSceneMode.VIEW || showEditingToolbar) {
+                    MapDateTimeControls(
+                        selectedEpochMillis = uiState.selectedEpochMillis,
+                        timeZoneId = uiState.displayTimeZoneId,
+                        location = state.dateTimeLocation,
+                        isExpanded = isDateTimeVisible,
+                        onExpandedChanged = { isDateTimeVisible = it },
+                        onDateTimeChanged = actions.dateTime.onDateTimeChanged,
+                        onNowSelected = actions.dateTime.onNowSelected,
+                        entitlementState = actions.dateTime.entitlementState,
+                        onPremiumRequired = actions.dateTime.onPremiumRequired,
+                        modifier = Modifier.reportFeatureTourTarget(
+                            MainViewTooltipTarget.DATE_TIME.name
+                        ) { _, bounds ->
+                            mainTooltipBounds[MainViewTooltipTarget.DATE_TIME] = bounds
+                        }
+                    )
+                }
             }
         }
         if (state.sceneMode == MapboxSceneMode.VIEW && !state.hasCompletedMainViewTooltips) {
             MainViewFeatureTour(
-                targetBounds = mainTooltipBounds.mapValues { (_, bounds) ->
-                    Rect(
-                        left = bounds.left - controlsRootPosition.x,
-                        top = bounds.top - controlsRootPosition.y,
-                        right = bounds.right - controlsRootPosition.x,
-                        bottom = bounds.bottom - controlsRootPosition.y
-                    )
-                },
+                targetBounds = mainTooltipBounds,
                 onCompleted = actions.onMainViewTooltipsCompleted
             )
         }
@@ -175,14 +167,7 @@ internal fun MapControls(
                 !state.hasCompletedEditingTooltips
         ) {
             EditingFeatureTour(
-                targetBounds = editingTooltipBounds.mapValues { (_, bounds) ->
-                    Rect(
-                        left = bounds.left - controlsRootPosition.x,
-                        top = bounds.top - controlsRootPosition.y,
-                        right = bounds.right - controlsRootPosition.x,
-                        bottom = bounds.bottom - controlsRootPosition.y
-                    )
-                },
+                targetBounds = editingTooltipBounds,
                 onCompleted = actions.onEditingTooltipsCompleted
             )
         }

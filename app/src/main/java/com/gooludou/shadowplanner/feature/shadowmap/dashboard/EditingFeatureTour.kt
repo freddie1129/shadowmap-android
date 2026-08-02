@@ -116,7 +116,7 @@ internal fun FeatureTourOverlay(
     } else {
         target.bottom + verticalMarginPx
     }
-    val highlightColor = MaterialTheme.colorScheme.primary
+    val highlightColor = Color(0xFF00E5FF)
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -129,7 +129,7 @@ internal fun FeatureTourOverlay(
                 }
                 .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
         ) {
-            drawRect(Color.Black.copy(alpha = 0.64f))
+            drawRect(Color.Black.copy(alpha = 0.50f))
             drawRoundRect(
                 color = Color.Transparent,
                 topLeft = target.topLeft,
@@ -152,6 +152,7 @@ internal fun FeatureTourOverlay(
                 .align(Alignment.TopStart)
                 .offset { IntOffset(cardLeft.roundToInt(), cardTop.roundToInt()) },
             shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainerLowest,
             tonalElevation = 6.dp,
             shadowElevation = 8.dp
         ) {
