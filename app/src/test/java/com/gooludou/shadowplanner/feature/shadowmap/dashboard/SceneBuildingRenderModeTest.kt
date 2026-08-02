@@ -1,0 +1,191 @@
+package com.gooludou.shadowplanner.feature.shadowmap.dashboard
+
+import com.gooludou.shadowplanner.Config
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Test
+
+class SceneBuildingRenderModeTest {
+    @Test
+    fun `sky display mode cycles from full to hidden to overlays and back`() {
+        assertEquals(SkyDisplayMode.HIDDEN, SkyDisplayMode.FULL.next())
+        assertEquals(SkyDisplayMode.OVERLAYS_ONLY, SkyDisplayMode.HIDDEN.next())
+        assertEquals(SkyDisplayMode.FULL, SkyDisplayMode.OVERLAYS_ONLY.next())
+    }
+
+    @Test
+    fun `only hidden sky mode is not visible`() {
+        assertEquals(true, SkyDisplayMode.FULL.isVisible)
+        assertEquals(false, SkyDisplayMode.HIDDEN.isVisible)
+        assertEquals(true, SkyDisplayMode.OVERLAYS_ONLY.isVisible)
+    }
+
+    @Test
+    fun `Mapbox buildings use Mapbox rendering regardless of pitch`() {
+        assertEquals(
+            SceneBuildingRenderMode.MAPBOX,
+            sceneBuildingRenderMode(
+                buildingSelection = SceneBuildingSelection.MAPBOX,
+                basemapStyle = MapboxBasemapStyle.STANDARD,
+                cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+            )
+        )
+    }
+
+    @Test
+    fun `satellite drawn buildings use 2D rendering in top-down view`() {
+        assertEquals(
+            SceneBuildingRenderMode.DRAWN_TOP_DOWN,
+            sceneBuildingRenderMode(
+                buildingSelection = SceneBuildingSelection.DRAWN,
+                basemapStyle = MapboxBasemapStyle.SATELLITE,
+                cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+            )
+        )
+    }
+
+    @Test
+    fun `drawn buildings use extrusion rendering in 3D view`() {
+        assertEquals(
+            SceneBuildingRenderMode.DRAWN_3D,
+            sceneBuildingRenderMode(
+                buildingSelection = SceneBuildingSelection.DRAWN,
+                basemapStyle = MapboxBasemapStyle.SATELLITE,
+                cameraPitchDegrees = Config.DEFAULT_3D_PITCH_DEGREES
+            )
+        )
+    }
+
+    @Test
+    fun `standard drawn buildings remain extruded in top-down view`() {
+        assertEquals(
+            SceneBuildingRenderMode.DRAWN_3D,
+            sceneBuildingRenderMode(
+                buildingSelection = SceneBuildingSelection.DRAWN,
+                basemapStyle = MapboxBasemapStyle.STANDARD,
+                cameraPitchDegrees = Scene3DCamera.TOP_DOWN_PITCH_DEGREES
+            )
+        )
+    }
+
+    @Test
+    fun `building menu contains only drawn and Mapbox options`() {
+        assertEquals(2, SceneBuildingSelection.entries.size)
+        assertEquals(SceneBuildingSelection.DRAWN, SceneBuildingSelection.fromMenuIndex(0))
+        assertEquals(SceneBuildingSelection.MAPBOX, SceneBuildingSelection.fromMenuIndex(1))
+    }
+
+    @Test
+    fun `explicitly selecting Mapbox buildings starts on standard basemap`() {
+        assertEquals(
+            MapboxBasemapStyle.STANDARD,
+            basemapStyleAfterBuildingSelection(
+                buildingSelection = SceneBuildingSelection.MAPBOX,
+                currentBasemapStyle = MapboxBasemapStyle.SATELLITE
+            )
+        )
+    }
+
+    @Test
+    fun `selecting drawn buildings preserves the current basemap`() {
+        assertEquals(
+            MapboxBasemapStyle.SATELLITE,
+            basemapStyleAfterBuildingSelection(
+                buildingSelection = SceneBuildingSelection.DRAWN,
+                currentBasemapStyle = MapboxBasemapStyle.SATELLITE
+            )
+        )
+    }
+
+    @Test
+    fun `loaded projects use centralized Mapbox 3D defaults`() {
+        val displayMode = initialMapDisplayMode(
+            projectLoadRevision = 1L,
+            hasDrawings = true
+        )
+
+        assertEquals(
+            Scene3DCamera.TOP_DOWN_PITCH_DEGREES,
+            displayMode.cameraPitchDegrees,
+            0.0
+        )
+        assertEquals(
+            SceneBuildingSelection.DRAWN,
+            displayMode.content
+        )
+        assertEquals(
+            MapboxBasemapStyle.SATELLITE,
+            displayMode.basemapStyle
+        )
+        assertFalse(displayMode.isDomeVisible)
+        assertEquals(MapCameraMode.TOP_DOWN, displayMode.cameraMode)
+    }
+
+    @Test
+    fun `post-edit view with drawings uses drawing defaults`() {
+        val displayMode = postEditingDisplayMode(hasDrawings = true)
+
+        assertEquals(
+            Scene3DCamera.TOP_DOWN_PITCH_DEGREES,
+            displayMode.cameraPitchDegrees,
+            0.0
+        )
+        assertEquals(
+            SceneBuildingSelection.DRAWN,
+            displayMode.content
+        )
+        assertEquals(
+            MapboxBasemapStyle.SATELLITE,
+            displayMode.basemapStyle
+        )
+        assertFalse(displayMode.isDomeVisible)
+        assertEquals(MapCameraMode.TOP_DOWN, displayMode.cameraMode)
+    }
+
+    @Test
+    fun `post-edit view without drawings uses standard 3D defaults`() {
+        val displayMode = postEditingDisplayMode(hasDrawings = false)
+
+        assertEquals(MapboxBasemapStyle.STANDARD, displayMode.basemapStyle)
+        assertEquals(SkyDisplayMode.FULL, displayMode.skyDisplayMode)
+        assertEquals(SceneBuildingSelection.MAPBOX, displayMode.content)
+        assertEquals(Config.DEFAULT_3D_PITCH_DEGREES, displayMode.cameraPitchDegrees, 0.0)
+    }
+
+    @Test
+    fun `app launch display mode starts with standard Mapbox 3D and dome`() {
+        val displayMode = initialMapDisplayMode(projectLoadRevision = 0L)
+
+        assertEquals(MapboxBasemapStyle.STANDARD, displayMode.basemapStyle)
+        assertEquals(SceneBuildingSelection.MAPBOX, displayMode.content)
+        assertEquals(MapCameraMode.THREE_DIMENSIONAL, displayMode.cameraMode)
+        assertEquals(true, displayMode.isDomeVisible)
+    }
+
+    @Test
+    fun `projects without drawings use the standard 3D display defaults`() {
+        val displayMode = initialMapDisplayMode(
+            projectLoadRevision = 1L,
+            hasDrawings = false
+        )
+
+        assertEquals(MapboxBasemapStyle.STANDARD, displayMode.basemapStyle)
+        assertEquals(SkyDisplayMode.FULL, displayMode.skyDisplayMode)
+        assertEquals(SceneBuildingSelection.MAPBOX, displayMode.content)
+        assertEquals(Config.DEFAULT_3D_PITCH_DEGREES, displayMode.cameraPitchDegrees, 0.0)
+    }
+
+    @Test
+    fun `editing forces satellite basemap`() {
+        val displayMode = MapDisplayDefaults.APP_LAUNCH.forSceneMode(MapboxSceneMode.EDIT)
+
+        assertEquals(MapboxBasemapStyle.SATELLITE, displayMode.basemapStyle)
+    }
+
+    @Test
+    fun `view mode preserves selected basemap`() {
+        val displayMode = MapDisplayDefaults.APP_LAUNCH.forSceneMode(MapboxSceneMode.VIEW)
+
+        assertEquals(MapboxBasemapStyle.STANDARD, displayMode.basemapStyle)
+    }
+}

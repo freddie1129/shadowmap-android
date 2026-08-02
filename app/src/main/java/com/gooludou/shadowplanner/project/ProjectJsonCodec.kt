@@ -2,8 +2,9 @@ package com.gooludou.shadowplanner.project
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.gooludou.shadowplanner.domain.BuildingSource
-import com.gooludou.shadowplanner.domain.ShadowAppearance
+import com.gooludou.shadowplanner.core.model.BuildingSource
+import com.gooludou.shadowplanner.core.model.ShadowAppearance
+import com.gooludou.shadowplanner.core.model.TreeCrownShape
 
 /** JSON codec for the versioned project file format. */
 object ProjectJsonCodec {
@@ -26,6 +27,9 @@ object ProjectJsonCodec {
                 it.copy(source = BuildingSource.AUTOMATIC)
             },
             drawnBuildings = project.drawnBuildings.map { it.copy(source = BuildingSource.MANUAL) },
+            drawnTrees = project.drawnTrees.map {
+                it.copy(crownShape = it.crownShape ?: TreeCrownShape.CONE)
+            },
             shadowAppearance = project.shadowAppearance ?: ShadowAppearance.DEFAULT
         )
     }

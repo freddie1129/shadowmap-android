@@ -1,12 +1,12 @@
 package com.gooludou.shadowplanner.project
 
-import com.gooludou.shadowplanner.domain.AutomaticBuildingIdentity
-import com.gooludou.shadowplanner.domain.Building
-import com.gooludou.shadowplanner.domain.BuildingSource
-import com.gooludou.shadowplanner.domain.GeoPoint
-import com.gooludou.shadowplanner.domain.GeoPolygon
-import com.gooludou.shadowplanner.domain.LoadedBuildingOverride
-import com.gooludou.shadowplanner.domain.ShadowAppearance
+import com.gooludou.shadowplanner.core.model.AutomaticBuildingIdentity
+import com.gooludou.shadowplanner.core.model.Building
+import com.gooludou.shadowplanner.core.model.BuildingSource
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.model.GeoPolygon
+import com.gooludou.shadowplanner.core.model.LoadedBuildingOverride
+import com.gooludou.shadowplanner.core.model.ShadowAppearance
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

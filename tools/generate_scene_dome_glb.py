@@ -10,7 +10,7 @@ try:
     from PIL import Image, ImageDraw, ImageFont
 except ImportError as error:
     raise SystemExit(
-        "Pillow is required to generate scene_dome.glb: python3 -m pip install Pillow"
+        "Pillow is required to generate sky GLBs: python3 -m pip install Pillow"
     ) from error
 
 DOME_SEGMENTS = 180
@@ -108,6 +108,26 @@ def compass_png():
         ),
         fill=(214, 220, 224, 58),
     )
+    # Keep the map visible beneath the dome and tint only the compass area outside it.
+    draw.ellipse(
+        (
+            center - ring_radius,
+            center - ring_radius,
+            center + ring_radius,
+            center + ring_radius,
+        ),
+        fill=(0, 0, 0, 0),
+    )
+    draw.ellipse(
+        (
+            center - ring_radius,
+            center - ring_radius,
+            center + ring_radius,
+            center + ring_radius,
+        ),
+        outline=(255, 222, 138, 220),
+        width=render_pixels(4),
+    )
 
     for azimuth in range(0, 360, 5):
         cardinal = azimuth in (0, 90, 180, 270)
@@ -147,12 +167,12 @@ grid_normals = struct.pack(f"<{len(GRID_NORMALS)}f", *GRID_NORMALS)
 grid_vertex_count = len(GRID_POSITIONS) // 3
 grid_indices = struct.pack(f"<{grid_vertex_count}H", *range(grid_vertex_count))
 
-disk_positions = [(0.0, -0.02, 0.0)]
+disk_positions = [(0.0, 0.0, 0.0)]
 disk_uvs = [(0.5, 0.5)]
 for index in range(DOME_SEGMENTS + 1):
     angle = index * 2 * math.pi / DOME_SEGMENTS
     x, z = DISK_RADIUS * math.sin(angle), -DISK_RADIUS * math.cos(angle)
-    disk_positions.append((x, -0.02, z))
+    disk_positions.append((x, 0.0, z))
     disk_uvs.append(((x / DISK_RADIUS + 1) / 2, (z / DISK_RADIUS + 1) / 2))
 disk_normals = [(0.0, 1.0, 0.0)] * len(disk_positions)
 disk_indices = []
@@ -196,8 +216,8 @@ accessors = [
     {"bufferView": grid_index_view, "componentType": 5123, "count": grid_vertex_count,
      "type": "SCALAR", "min": [0], "max": [grid_vertex_count - 1]},
     {"bufferView": disk_position_view, "componentType": 5126, "count": len(disk_positions),
-     "type": "VEC3", "min": [-DISK_RADIUS, -0.02, -DISK_RADIUS],
-     "max": [DISK_RADIUS, -0.02, DISK_RADIUS]},
+     "type": "VEC3", "min": [-DISK_RADIUS, 0.0, -DISK_RADIUS],
+     "max": [DISK_RADIUS, 0.0, DISK_RADIUS]},
     {"bufferView": disk_normal_view, "componentType": 5126, "count": len(disk_normals), "type": "VEC3"},
     {"bufferView": disk_uv_view, "componentType": 5126, "count": len(disk_uvs), "type": "VEC2"},
     {"bufferView": disk_index_view, "componentType": 5123, "count": len(disk_indices),
@@ -229,15 +249,79 @@ document = {
     "scenes": [{"nodes": [0]}],
     "scene": 0,
 }
-while len(binary) % 4:
-    binary.append(0)
-document["buffers"][0]["byteLength"] = len(binary)
-encoded = json.dumps(document, separators=(",", ":")).encode("utf-8")
-while len(encoded) % 4:
-    encoded += b" "
-glb = struct.pack("<4sII", b"glTF", 2, 12 + 8 + len(encoded) + 8 + len(binary))
-glb += struct.pack("<I4s", len(encoded), b"JSON") + encoded
-glb += struct.pack("<I4s", len(binary), b"BIN\0") + binary
+
+
+def write_extracted_glb(filename, primitive_index, accessor_indices, material_index, include_texture):
+    """Write one of the independently renderable primitives from the source model."""
+    extracted_binary = bytearray()
+    extracted_views = []
+    view_remap = {}
+
+    def copy_view(view_index):
+        if view_index in view_remap:
+            return view_remap[view_index]
+        source_view = buffer_views[view_index]
+        while len(extracted_binary) % 4:
+            extracted_binary.append(0)
+        start = source_view["byteOffset"]
+        end = start + source_view["byteLength"]
+        new_view = dict(source_view)
+        new_view["buffer"] = 0
+        new_view["byteOffset"] = len(extracted_binary)
+        extracted_binary.extend(binary[start:end])
+        view_remap[view_index] = len(extracted_views)
+        extracted_views.append(new_view)
+        return view_remap[view_index]
+
+    extracted_accessors = []
+    accessor_remap = {}
+    for old_accessor_index in accessor_indices:
+        accessor = dict(accessors[old_accessor_index])
+        accessor["bufferView"] = copy_view(accessor["bufferView"])
+        accessor_remap[old_accessor_index] = len(extracted_accessors)
+        extracted_accessors.append(accessor)
+
+    source_primitive = document["meshes"][0]["primitives"][primitive_index]
+    primitive = {
+        "attributes": {
+            attribute: accessor_remap[accessor_index]
+            for attribute, accessor_index in source_primitive["attributes"].items()
+        },
+        "indices": accessor_remap[source_primitive["indices"]],
+        "mode": source_primitive["mode"],
+        "material": 0,
+    }
+    extracted_document = {
+        "asset": {"version": "2.0", "generator": "shadowplanner"},
+        "buffers": [{"byteLength": 0}],
+        "bufferViews": extracted_views,
+        "accessors": extracted_accessors,
+        "materials": [document["materials"][material_index]],
+        "meshes": [{"primitives": [primitive]}],
+        "nodes": [{"mesh": 0}],
+        "scenes": [{"nodes": [0]}],
+        "scene": 0,
+    }
+    if include_texture:
+        image_view = copy_view(document["images"][0]["bufferView"])
+        extracted_document["images"] = [{"bufferView": image_view, "mimeType": "image/png"}]
+        extracted_document["samplers"] = document["samplers"]
+        extracted_document["textures"] = document["textures"]
+    while len(extracted_binary) % 4:
+        extracted_binary.append(0)
+    extracted_document["buffers"][0]["byteLength"] = len(extracted_binary)
+    encoded = json.dumps(extracted_document, separators=(",", ":")).encode("utf-8")
+    while len(encoded) % 4:
+        encoded += b" "
+    glb = struct.pack(
+        "<4sII", b"glTF", 2, 12 + 8 + len(encoded) + 8 + len(extracted_binary)
+    )
+    glb += struct.pack("<I4s", len(encoded), b"JSON") + encoded
+    glb += struct.pack("<I4s", len(extracted_binary), b"BIN\0") + extracted_binary
+    with open(os.path.join("app/src/main/assets", filename), "wb") as output:
+        output.write(glb)
+
+
 os.makedirs("app/src/main/assets", exist_ok=True)
-with open("app/src/main/assets/scene_dome.glb", "wb") as output:
-    output.write(glb)
+write_extracted_glb("scene_sky_grid.glb", 0, (0, 1, 2), 0, False)
+write_extracted_glb("scene_compass.glb", 1, (3, 4, 5, 6), 1, True)

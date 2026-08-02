@@ -1,7 +1,7 @@
 package com.gooludou.shadowplanner
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.gooludou.shadowplanner.domain.BuildingShadowCalculator
+import com.gooludou.shadowplanner.core.shadow.BuildingShadowCalculator
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import javax.inject.Inject

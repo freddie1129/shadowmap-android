@@ -1,0 +1,1099 @@
+package com.gooludou.shadowplanner.feature.shadowmap
+
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.provider.Settings
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.gooludou.shadowplanner.Config
+import com.gooludou.shadowplanner.R
+import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
+import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
+import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_TREE_HEIGHT_METERS
+import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_TREE_RADIUS_METERS
+import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_WALL_HEIGHT_METERS
+import com.gooludou.shadowplanner.core.model.DrawMode
+import com.gooludou.shadowplanner.core.model.DrawnObjectType
+import com.gooludou.shadowplanner.core.model.GeoPoint
+import com.gooludou.shadowplanner.core.model.PendingDrawing
+import com.gooludou.shadowplanner.core.model.SceneObjectSource
+import com.gooludou.shadowplanner.core.model.TreeCrownShape
+import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
+import com.gooludou.shadowplanner.feature.locationsearch.SelectedLocationSheet
+import com.gooludou.shadowplanner.feature.projects.SaveProjectDialog
+import com.gooludou.shadowplanner.feature.shadowmap.BuildingLoadState
+import com.gooludou.shadowplanner.feature.shadowmap.DrawingActions
+import com.gooludou.shadowplanner.feature.shadowmap.MapActions
+import com.gooludou.shadowplanner.feature.shadowmap.MapScreenDependencies
+import com.gooludou.shadowplanner.feature.shadowmap.ProjectActions
+import com.gooludou.shadowplanner.feature.shadowmap.SceneActions
+import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapActions
+import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapNavigation
+import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapUiState
+import com.gooludou.shadowplanner.feature.shadowmap.ShadowMapViewModel
+import com.gooludou.shadowplanner.feature.shadowmap.components.AutoToolState
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.MapDateTimeActions
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.MapEditingActions
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.MapNavigationActions
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.MapboxScene3DViewport
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.MapboxSceneMode
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.ShadowPlannerSceneActions
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.ShadowPlannerSceneState
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.ShadowPlannerSceneView
+import com.gooludou.shadowplanner.feature.shadowmap.dashboard.currentScene3DViewport
+import com.gooludou.shadowplanner.feature.shadowmap.drawing.ActiveDrawingControls
+import com.gooludou.shadowplanner.feature.shadowmap.drawing.DrawingCrosshair
+import com.gooludou.shadowplanner.feature.shadowmap.drawing.DrawingPropertiesSheet
+import com.gooludou.shadowplanner.feature.shadowmap.drawing.ShadowColorSheet
+import com.gooludou.shadowplanner.purchase.model.EntitlementState
+import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadArea
+import com.gooludou.shadowplanner.renderer.mapbox.BuildingLoadType
+import com.gooludou.shadowplanner.renderer.mapbox.MapboxShadowMapController
+import com.mapbox.geojson.Point
+import com.mapbox.maps.MapView
+import com.mapbox.maps.ScreenCoordinate
+import com.mapbox.maps.extension.compose.MapEffect
+import com.mapbox.maps.extension.compose.MapboxMap
+import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import com.mapbox.maps.extension.compose.style.BooleanValue
+import com.mapbox.maps.extension.compose.style.standard.MapboxStandardSatelliteStyle
+import com.mapbox.maps.extension.compose.style.standard.rememberStandardSatelliteStyleState
+import com.mapbox.maps.plugin.LocationPuck2D
+import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
+import com.mapbox.maps.plugin.locationcomponent.location
+import kotlin.math.ln
+import kotlin.math.max
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+
+private val FALLBACK_MAPBOX_SCENE_VIEWPORT = MapboxScene3DViewport(
+    center = GeoPoint(
+        longitude = Config.FALLBACK_MAP_CENTER_LONGITUDE,
+        latitude = Config.FALLBACK_MAP_CENTER_LATITUDE
+    ),
+    zoom = Config.DEFAULT_MAP_ZOOM,
+    bearing = Config.FALLBACK_MAP_BEARING_DEGREES,
+    widthMeters = Config.MAPBOX_3D_FALLBACK_WIDTH_METERS,
+    heightMeters = Config.MAPBOX_3D_FALLBACK_HEIGHT_METERS,
+    widthPixels = 1,
+    heightPixels = 1
+)
+
+@Composable
+@Suppress("LongMethod", "CyclomaticComplexMethod")
+internal fun ShadowMapScreen(
+    uiState: ShadowMapUiState,
+    entitlementState: EntitlementState,
+    onPremiumRequired: () -> Unit,
+    dependencies: MapScreenDependencies,
+    actions: ShadowMapActions,
+    navigation: ShadowMapNavigation,
+    hasRequestedLocationPermission: Boolean?,
+    onLocationPermissionRequested: () -> Unit,
+    hasCompletedEditingTooltips: Boolean,
+    onEditingTooltipsCompleted: () -> Unit,
+    hasCompletedMainViewTooltips: Boolean,
+    onMainViewTooltipsCompleted: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val noBuildingsFoundMessage = stringResource(R.string.no_buildings_found)
+    val loadingBuildingsMessage = stringResource(R.string.loading_buildings)
+    val checkingMapAreaMessage = stringResource(R.string.checking_visible_map_area)
+    val zoomInLoadMessage = stringResource(R.string.zoom_in_load_buildings)
+    val zoomLoadAction = stringResource(R.string.zoom_load)
+    val moveFartherMessage = stringResource(R.string.move_farther_previous_point)
+    val objectDeletedMessage = stringResource(R.string.object_deleted)
+    val undoMessage = stringResource(R.string.undo)
+    val sceneClearedMessage = stringResource(R.string.scene_cleared)
+    val onDateTimeChanged = actions.map.onDateTimeChanged
+    val onNowSelected = actions.map.onNowSelected
+    val onLoadStarted = actions.map.onLoadStarted
+    val onBuildingsLoaded = actions.map.onBuildingsLoaded
+    val onLoadFailed = actions.map.onLoadFailed
+    val onViewportChanged = actions.map.onViewportChanged
+    val onShadowAppearanceChanged = actions.map.onShadowAppearanceChanged
+    val onCurrentLocationReceived = actions.map.onCurrentLocationReceived
+    val onSelectDrawMode = actions.drawing.onSelectDrawMode
+    val onStopDrawing = actions.drawing.onStopDrawing
+    val onAddVertex = actions.drawing.onAddVertex
+    val onUndo = actions.drawing.onUndo
+    val onDrawingError = actions.drawing.onDrawingError
+    val onFinishBuilding = actions.drawing.onFinishBuilding
+    val onFinishWall = actions.drawing.onFinishWall
+    val onStartTree = actions.drawing.onStartTree
+    val onReturnPendingToDrawing = actions.drawing.onReturnPendingToDrawing
+    val onCommitPendingDrawing = actions.drawing.onCommitPendingDrawing
+    val onUpdateSelectedDrawing = actions.drawing.onUpdateSelectedDrawing
+    val onDeleteSelectedDrawing = actions.drawing.onDeleteSelectedDrawing
+    val onRestoreDeletedObject = actions.drawing.onRestoreDeletedObject
+    val onSelectDrawing = actions.drawing.onSelectDrawing
+    val onStartMoving = actions.drawing.onStartMoving
+    val onMoveSelectedObject = actions.drawing.onMoveSelectedObject
+    val onFinishMoving = actions.drawing.onFinishMoving
+    val onCancelMoving = actions.drawing.onCancelMoving
+    val onClearScene = actions.scene.onClearScene
+    val onRestoreClearedScene = actions.scene.onRestoreClearedScene
+    val onSaveProject = actions.project.onSaveProject
+    val onSaveProjectAsNew = actions.project.onSaveProjectAsNew
+    val mapControllerFactory = dependencies.mapControllerFactory
+    val onOpenProjects = navigation.onOpenProjects
+    val onOpenLocationSearch = navigation.onOpenLocationSearch
+    val onOpenSettings = navigation.onOpenSettings
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val resources = LocalResources.current
+    val density = LocalDensity.current
+    val dimensions = ShadowMapDesign.dimensions
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            context.hasLocationPermission()
+        )
+    }
+    var requestedLocationPermissionThisSession by remember { mutableStateOf(false) }
+    var hasShownAutomaticLocationPrompt by rememberSaveable { mutableStateOf(false) }
+    var locationPermissionDialogState by remember {
+        mutableStateOf<LocationPermissionDialogState?>(null)
+    }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasLocationPermission = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+    }
+    DisposableEffect(context, lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasLocationPermission = context.hasLocationPermission()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(hasRequestedLocationPermission, hasLocationPermission) {
+        if (
+            !hasLocationPermission &&
+            hasRequestedLocationPermission != null &&
+            !hasShownAutomaticLocationPrompt
+        ) {
+            hasShownAutomaticLocationPrompt = true
+            val shouldShowRationale = context.findActivity()
+                ?.shouldShowLocationPermissionRationale() == true
+            locationPermissionDialogState = resolveLocationPermissionDialogState(
+                wasRequested = hasRequestedLocationPermission == true,
+                shouldShowRationale = shouldShowRationale
+            )
+        }
+    }
+
+    val mapViewportState = rememberMapViewportState {
+        setCameraOptions {
+            center(
+                Point.fromLngLat(
+                    Config.FALLBACK_MAP_CENTER_LONGITUDE,
+                    Config.FALLBACK_MAP_CENTER_LATITUDE
+                )
+            )
+            zoom(Config.DEFAULT_MAP_ZOOM)
+            bearing(Config.FALLBACK_MAP_BEARING_DEGREES)
+        }
+    }
+    var mapView by remember { mutableStateOf<MapView?>(null) }
+    val controller = remember(mapView, mapControllerFactory) {
+        mapView?.let(mapControllerFactory::create)
+    }
+    var mapboxSceneMapView by remember { mutableStateOf<MapView?>(null) }
+    val mapboxSceneController = remember(mapboxSceneMapView, mapControllerFactory) {
+        mapboxSceneMapView?.let(mapControllerFactory::create)
+    }
+    var satelliteSnapshot by remember { mutableStateOf<Bitmap?>(null) }
+    var loadRequest by remember { mutableIntStateOf(0) }
+    var buildingQueryLocation by remember { mutableStateOf<GeoPoint?>(null) }
+    var mapboxSceneMode by remember { mutableStateOf(MapboxSceneMode.VIEW) }
+    LaunchedEffect(uiState.projectLoadRevision) {
+        if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
+        mapboxSceneMode = MapboxSceneMode.VIEW
+    }
+    var mapboxSceneViewport by remember { mutableStateOf<MapboxScene3DViewport?>(null) }
+    LaunchedEffect(uiState.locationSelectionRevision, mapboxSceneMapView) {
+        if (uiState.locationSelectionRevision == 0L) return@LaunchedEffect
+        val selectedLocation = uiState.selectedMapLocation ?: return@LaunchedEffect
+        val center = Point.fromLngLat(selectedLocation.longitude, selectedLocation.latitude)
+        mapViewportState.setCameraOptions {
+            center(center)
+            zoom(Config.DEFAULT_MAP_ZOOM)
+        }
+        mapboxSceneMapView?.mapboxMap?.setCamera(
+            com.mapbox.maps.CameraOptions.Builder()
+                .center(center)
+                .zoom(Config.DEFAULT_MAP_ZOOM)
+                .build()
+        )
+        mapboxSceneViewport = (mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT).copy(
+            center = selectedLocation,
+            zoom = Config.DEFAULT_MAP_ZOOM
+        )
+    }
+    LaunchedEffect(uiState.projectLoadRevision) {
+        if (uiState.projectLoadRevision == 0L) return@LaunchedEffect
+        val projectViewport = uiState.viewport ?: return@LaunchedEffect
+        val center = Point.fromLngLat(
+            projectViewport.center.longitude,
+            projectViewport.center.latitude
+        )
+        mapViewportState.setCameraOptions {
+            center(center)
+            zoom(projectViewport.zoom)
+            bearing(projectViewport.bearing)
+        }
+        mapboxSceneViewport = (mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT).copy(
+            center = projectViewport.center,
+            zoom = projectViewport.zoom,
+            bearing = projectViewport.bearing
+        )
+    }
+    LaunchedEffect(mapView) {
+        withFrameNanos { }
+        mapboxSceneViewport = mapView?.currentScene3DViewport(
+            fallback = FALLBACK_MAPBOX_SCENE_VIEWPORT
+        ) ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
+    }
+    var buildingLoadArea by remember { mutableStateOf<BuildingLoadArea?>(null) }
+    var crosshairPoint by remember { mutableStateOf<GeoPoint?>(null) }
+    var autoLoadAfterZoom by remember { mutableStateOf(false) }
+    var showClearConfirmation by remember { mutableStateOf(false) }
+    var showDiscardDraftConfirmation by remember { mutableStateOf(false) }
+    var exitEditingAfterDiscard by remember { mutableStateOf(false) }
+    var currentLocationPoint by remember { mutableStateOf<Point?>(null) }
+    var showSelectedLocationSheet by remember { mutableStateOf(false) }
+    val requestOrRecenterCurrentLocation: () -> Unit = {
+        if (hasLocationPermission) {
+            currentLocationPoint?.let { point ->
+                mapViewportState.setCameraOptions { center(point) }
+                mapboxSceneMapView?.mapboxMap?.setCamera(
+                    com.mapbox.maps.CameraOptions.Builder()
+                        .center(point)
+                        .build()
+                )
+            }
+        } else {
+            val activity = context.findActivity()
+            val shouldShowRationale = activity?.shouldShowLocationPermissionRationale() == true
+            val wasRequested = hasRequestedLocationPermission == true ||
+                requestedLocationPermissionThisSession
+            locationPermissionDialogState = resolveLocationPermissionDialogState(
+                wasRequested = wasRequested,
+                shouldShowRationale = shouldShowRationale
+            )
+        }
+        Unit
+    }
+    var showShadowColorSheet by remember { mutableStateOf(false) }
+    var showSaveProjectDialog by remember { mutableStateOf(false) }
+    var projectNameDraft by remember(uiState.activeProjectName) {
+        mutableStateOf(uiState.activeProjectName.orEmpty())
+    }
+    val currentLocationLabel = stringResource(R.string.current_location)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    DisposableEffect(mapView, mapboxSceneMapView) {
+        val currentMapView = mapView
+        if (currentMapView == null || mapboxSceneMapView != null) {
+            buildingLoadArea = null
+            onDispose { }
+        } else {
+            fun updateBuildingLoadArea() {
+                currentMapView.post {
+                    buildingLoadArea = currentMapView.toBuildingLoadArea()
+                    val center = currentMapView.mapboxMap.cameraState.center
+                    currentMapView.toProjectViewport()?.let(onViewportChanged)
+                }
+            }
+
+            updateBuildingLoadArea()
+            val mapIdleSubscription = currentMapView.mapboxMap.subscribeMapIdle {
+                updateBuildingLoadArea()
+            }
+            fun updateCrosshairPoint() {
+                val point = currentMapView.mapboxMap.cameraState.center
+                crosshairPoint = GeoPoint(point.longitude(), point.latitude())
+            }
+            fun updateMapboxSceneViewport() {
+                mapboxSceneViewport = currentMapView.currentScene3DViewport(
+                    fallback = mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
+                ) ?: mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
+            }
+            updateCrosshairPoint()
+            updateMapboxSceneViewport()
+            val cameraSubscription = currentMapView.mapboxMap.subscribeCameraChanged {
+                updateCrosshairPoint()
+                updateMapboxSceneViewport()
+            }
+            onDispose {
+                mapIdleSubscription.cancel()
+                cameraSubscription.cancel()
+            }
+        }
+    }
+
+    DisposableEffect(mapboxSceneMapView, mapboxSceneMode) {
+        val currentMapView = mapboxSceneMapView
+        if (currentMapView == null) {
+            onDispose { }
+        } else {
+            fun updateEditingCrosshair() {
+                if (mapboxSceneMode != MapboxSceneMode.EDIT) return
+                currentMapView.post {
+                    val camera = currentMapView.mapboxMap.cameraState
+                    crosshairPoint = GeoPoint(
+                        camera.center.longitude(),
+                        camera.center.latitude()
+                    )
+                }
+            }
+            fun updateSettledSceneViewport() {
+                currentMapView.post {
+                    currentMapView.toProjectViewport()?.let(onViewportChanged)
+                    if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+                        buildingLoadArea = currentMapView.toBuildingLoadArea()
+                    }
+                }
+            }
+            updateEditingCrosshair()
+            updateSettledSceneViewport()
+            val cameraSubscription = currentMapView.mapboxMap.subscribeCameraChanged {
+                updateEditingCrosshair()
+            }
+            val mapIdleSubscription = currentMapView.mapboxMap.subscribeMapIdle {
+                updateEditingCrosshair()
+                updateSettledSceneViewport()
+            }
+            onDispose {
+                cameraSubscription.cancel()
+                mapIdleSubscription.cancel()
+            }
+        }
+    }
+
+    DisposableEffect(mapView, hasLocationPermission, uiState.locationSelectionRevision) {
+        val currentMapView = mapView
+        if (currentMapView == null || !hasLocationPermission) {
+            onDispose { }
+        } else {
+            val locationComponent = currentMapView.location
+            var firstLocationReceived = false
+            val positionListener = OnIndicatorPositionChangedListener { point ->
+                currentLocationPoint = point
+                onCurrentLocationReceived(
+                    GeoPoint(point.longitude(), point.latitude()),
+                    currentLocationLabel
+                )
+                if (!firstLocationReceived) {
+                    firstLocationReceived = true
+                    if (uiState.locationSelectionRevision == 0L) {
+                        mapViewportState.setCameraOptions {
+                            center(point)
+                            zoom(Config.DEFAULT_MAP_ZOOM)
+                            bearing(Config.FALLBACK_MAP_BEARING_DEGREES)
+                        }
+                        mapboxSceneViewport = (
+                            mapboxSceneViewport ?: FALLBACK_MAPBOX_SCENE_VIEWPORT
+                            ).copy(
+                            center = GeoPoint(point.longitude(), point.latitude()),
+                            zoom = Config.DEFAULT_MAP_ZOOM,
+                            bearing = Config.FALLBACK_MAP_BEARING_DEGREES
+                        )
+                    }
+                }
+            }
+            locationComponent.updateSettings {
+                enabled = true
+                locationPuck = LocationPuck2D(opacity = 0f)
+                pulsingEnabled = false
+                showAccuracyRing = false
+            }
+            locationComponent.addOnIndicatorPositionChangedListener(positionListener)
+            onDispose {
+                locationComponent.removeOnIndicatorPositionChangedListener(positionListener)
+            }
+        }
+    }
+
+    DisposableEffect(satelliteSnapshot) {
+        val snapshot = satelliteSnapshot
+        onDispose {
+            if (snapshot != null && !snapshot.isRecycled) snapshot.recycle()
+        }
+    }
+
+    val buildingController = if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+        mapboxSceneController
+    } else {
+        controller
+    }
+    LaunchedEffect(loadRequest, buildingController) {
+        if (loadRequest == 0 || buildingController == null) return@LaunchedEffect
+        val calculationLocation = buildingQueryLocation ?: return@LaunchedEffect
+        withFrameNanos { }
+        try {
+            val result = runCatching {
+                buildingController.fetchBuildings(Config.BUILDING_LOAD_TYPE)
+            }
+            val failure = result.exceptionOrNull()
+            if (failure is CancellationException) throw failure
+            result.fold(
+                onSuccess = { buildings ->
+                    onBuildingsLoaded(buildings, calculationLocation)
+                    snackbarHostState.showSnackbar(
+                        message = if (buildings.isEmpty()) {
+                            noBuildingsFoundMessage
+                        } else {
+                            resources.getQuantityString(
+                                R.plurals.buildings_loaded,
+                                buildings.size,
+                                buildings.size
+                            )
+                        },
+                        duration = SnackbarDuration.Short
+                    )
+                },
+                onFailure = { throwable ->
+                    onLoadFailed(throwable)
+                    snackbarHostState.showSnackbar(
+                        message = throwable.message ?: loadingBuildingsMessage,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            )
+        } finally {
+            satelliteSnapshot = null
+        }
+    }
+
+    LaunchedEffect(controller, uiState, crosshairPoint, buildingLoadArea) {
+        if (controller != null) {
+            controller.render(
+                loadedBuildings = uiState.visibleLoadedBuildings,
+                drawnBuildings = uiState.drawnBuildings,
+                drawnWalls = uiState.drawnWalls,
+                drawnTrees = uiState.drawnTrees,
+                selection = uiState.selectedDrawing,
+                activeDrawMode = uiState.activeDrawMode,
+                inProgressVertices = uiState.inProgressVertices,
+                pendingDrawing = uiState.pendingDrawing,
+                crosshairPoint = crosshairPoint,
+                shadows = uiState.shadows,
+                shadowAppearance = uiState.shadowAppearance
+            )
+        }
+    }
+
+    fun startBuildingLoad() {
+        val currentMapView = if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+            mapboxSceneMapView
+        } else {
+            mapView
+        } ?: return
+        val currentLoadArea = currentMapView.toBuildingLoadArea()
+        buildingLoadArea = currentLoadArea
+        if (Config.BUILDING_LOAD_TYPE == BuildingLoadType.ALL &&
+            currentLoadArea?.isWithinLimit != true
+        ) {
+            return
+        }
+        val mapCenter = currentMapView.mapboxMap.cameraState.center
+        buildingQueryLocation = GeoPoint(
+            longitude = mapCenter.longitude(),
+            latitude = mapCenter.latitude()
+        )
+        onLoadStarted()
+        currentMapView.snapshot { bitmap ->
+            currentMapView.post {
+                satelliteSnapshot = bitmap
+                loadRequest++
+            }
+        }
+    }
+
+    fun zoomToValidAreaAndLoad() {
+        val currentMapView = if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+            mapboxSceneMapView
+        } else {
+            mapView
+        } ?: return
+        val area = buildingLoadArea ?: return
+        val largestDimension = max(area.widthMeters, area.heightMeters).toDouble()
+        val zoomIncrease = if (largestDimension > MAX_AUTO_LOAD_METERS) {
+            ln(largestDimension / MAX_AUTO_LOAD_METERS) / ln(2.0) + AUTO_LOAD_ZOOM_PADDING
+        } else {
+            0.0
+        }
+        val camera = currentMapView.mapboxMap.cameraState
+        if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+            currentMapView.mapboxMap.setCamera(
+                com.mapbox.maps.CameraOptions.Builder()
+                    .center(camera.center)
+                    .zoom(camera.zoom + zoomIncrease)
+                    .build()
+            )
+        } else {
+            mapViewportState.setCameraOptions {
+                center(camera.center)
+                zoom(camera.zoom + zoomIncrease)
+            }
+        }
+        autoLoadAfterZoom = true
+    }
+
+    fun requestAutoLoad() {
+        if (Config.BUILDING_LOAD_TYPE == BuildingLoadType.CENTRE_ONLY ||
+            buildingLoadArea?.isWithinLimit == true
+        ) {
+            startBuildingLoad()
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                val area = buildingLoadArea
+                val result = snackbarHostState.showSnackbar(
+                    message = if (area == null) {
+                        checkingMapAreaMessage
+                    } else {
+                        "$zoomInLoadMessage · ${area.formattedDimensions}"
+                    },
+                    actionLabel = if (area == null) null else zoomLoadAction,
+                    duration = if (area == null) SnackbarDuration.Short else SnackbarDuration.Long
+                )
+                if (result == SnackbarResult.ActionPerformed) zoomToValidAreaAndLoad()
+            }
+        }
+    }
+
+    LaunchedEffect(autoLoadAfterZoom, buildingLoadArea) {
+        if (autoLoadAfterZoom && buildingLoadArea?.isWithinLimit == true) {
+            autoLoadAfterZoom = false
+            startBuildingLoad()
+        }
+    }
+
+    val pendingType = when (uiState.pendingDrawing) {
+        is PendingDrawing.Building -> DrawnObjectType.BUILDING
+        is PendingDrawing.Wall -> DrawnObjectType.WALL
+        is PendingDrawing.Tree -> DrawnObjectType.TREE
+        null -> null
+    }
+    val selectedType = uiState.selectedDrawing?.type
+    val propertyType = pendingType ?: selectedType
+    val selectionId = uiState.selectedDrawing?.id
+    val selectedBuilding = uiState.drawnBuildings.find { it.id == selectionId }
+    val selectedLoadedBuilding = uiState.visibleLoadedBuildings.find { building ->
+        AutomaticBuildingMatcher.identity(building).selectionId == selectionId
+    }
+    val selectedOriginalLoadedBuilding = uiState.loadedBuildings.find { building ->
+        AutomaticBuildingMatcher.identity(building).selectionId == selectionId
+    }
+    val selectedWall = uiState.drawnWalls.find { it.id == selectionId }
+    val selectedTree = uiState.drawnTrees.find { it.id == selectionId }
+    val propertyInitialHeight = propertyType?.let { type ->
+        selectedLoadedBuilding?.heightMeters
+            ?: selectedBuilding?.heightMeters
+            ?: selectedWall?.heightMeters
+            ?: selectedTree?.heightMeters
+            ?: when (type) {
+                DrawnObjectType.BUILDING -> DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
+                DrawnObjectType.WALL -> DEFAULT_DRAWN_WALL_HEIGHT_METERS
+                DrawnObjectType.TREE -> DEFAULT_DRAWN_TREE_HEIGHT_METERS
+            }
+    }
+    val showPropertiesSheet = uiState.moveSession == null &&
+        propertyType != null && propertyInitialHeight != null
+    val autoToolState = when {
+        uiState.buildingLoadState is BuildingLoadState.Loading -> AutoToolState.LOADING
+
+        Config.BUILDING_LOAD_TYPE == BuildingLoadType.ALL &&
+            buildingLoadArea == null -> AutoToolState.CHECKING
+
+        Config.BUILDING_LOAD_TYPE == BuildingLoadType.ALL &&
+            buildingLoadArea?.isWithinLimit == false -> AutoToolState.TOO_LARGE
+
+        uiState.buildingLoadState is BuildingLoadState.Error -> AutoToolState.ERROR
+
+        uiState.buildingLoadState is BuildingLoadState.Loaded -> AutoToolState.LOADED
+
+        else -> AutoToolState.READY
+    }
+    val mode = uiState.activeDrawMode
+    fun requestDrawingExit() {
+        if (uiState.hasDraft) {
+            exitEditingAfterDiscard = false
+            showDiscardDraftConfirmation = true
+        } else {
+            onStopDrawing()
+        }
+    }
+
+    fun finishEditing() {
+        when {
+            uiState.moveSession != null -> {
+                onFinishMoving()
+                mapboxSceneMode = MapboxSceneMode.VIEW
+            }
+
+            uiState.pendingDrawing != null ||
+                (uiState.activeDrawMode != null && uiState.hasDraft) -> {
+                exitEditingAfterDiscard = true
+                showDiscardDraftConfirmation = true
+            }
+
+            uiState.activeDrawMode != null -> {
+                onStopDrawing()
+                mapboxSceneMode = MapboxSceneMode.VIEW
+            }
+
+            uiState.selectedDrawing != null -> {
+                onSelectDrawing(null)
+                mapboxSceneMode = MapboxSceneMode.VIEW
+            }
+
+            else -> mapboxSceneMode = MapboxSceneMode.VIEW
+        }
+    }
+
+    BackHandler(
+        enabled = mapboxSceneMode == MapboxSceneMode.EDIT
+    ) {
+        when {
+            uiState.moveSession != null -> onCancelMoving()
+            pendingType != null -> onReturnPendingToDrawing()
+            selectedType != null -> onSelectDrawing(null)
+            uiState.activeDrawMode != null -> requestDrawingExit()
+            else -> finishEditing()
+        }
+    }
+
+    val satelliteStyleState = rememberStandardSatelliteStyleState {
+        configurationsState.apply {
+            val labelVisibility = BooleanValue(Config.SHOW_MAP_LABELS)
+            showPlaceLabels = labelVisibility
+            showPointOfInterestLabels = labelVisibility
+            showRoadLabels = labelVisibility
+            showTransitLabels = labelVisibility
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        MapboxMap(
+            modifier = Modifier.fillMaxSize(),
+            mapViewportState = mapViewportState,
+            onMapClickListener = { point ->
+                if (uiState.activeDrawMode == null && uiState.pendingDrawing == null) {
+                    controller?.queryDrawing(point, onSelectDrawing)
+                }
+                false
+            },
+            compass = { Compass(modifier = Modifier.safeDrawingPadding()) },
+            scaleBar = { },
+            logo = { Logo(modifier = Modifier.safeDrawingPadding()) },
+            attribution = { Attribution(modifier = Modifier.safeDrawingPadding()) },
+            style = {
+                MapboxStandardSatelliteStyle(
+                    standardSatelliteStyleState = satelliteStyleState
+                )
+            }
+        ) {
+            MapEffect(Unit) { currentMapView -> mapView = currentMapView }
+        }
+
+        mapboxSceneViewport?.let { viewport ->
+            ShadowPlannerSceneView(
+                uiState = uiState,
+                mapSnapshotOverlay = satelliteSnapshot?.asImageBitmap(),
+                state = ShadowPlannerSceneState(
+                    viewport = viewport,
+                    sceneMode = mapboxSceneMode,
+                    autoToolState = autoToolState,
+                    canRecenterCurrentLocation = !hasLocationPermission ||
+                        currentLocationPoint != null,
+                    editingCrosshairPoint = crosshairPoint,
+                    hasCompletedEditingTooltips = hasCompletedEditingTooltips,
+                    hasCompletedMainViewTooltips = hasCompletedMainViewTooltips
+                ),
+                actions = ShadowPlannerSceneActions(
+                    navigation = MapNavigationActions(
+                        onOpenSettings = onOpenSettings,
+                        onOpenLocationSearch = onOpenLocationSearch,
+                        onShowLocationInfo = { showSelectedLocationSheet = true },
+                        onRecenterCurrentLocation = requestOrRecenterCurrentLocation,
+                        onOpenProjects = onOpenProjects,
+                        onSaveProject = {
+                            when (entitlementState) {
+                                EntitlementState.Premium -> {
+                                    projectNameDraft = uiState.activeProjectName.orEmpty()
+                                    showSaveProjectDialog = true
+                                }
+
+                                EntitlementState.Free,
+                                is EntitlementState.Unavailable -> onPremiumRequired()
+
+                                EntitlementState.Checking -> Unit
+                            }
+                        }
+                    ),
+                    editing = MapEditingActions(
+                        onFinishEditing = ::finishEditing,
+                        onDrawMode = { selectedMode -> onSelectDrawMode(selectedMode) },
+                        onAutoLoad = ::requestAutoLoad,
+                        onClear = { showClearConfirmation = true }
+                    ),
+                    dateTime = MapDateTimeActions(
+                        onDateTimeChanged = onDateTimeChanged,
+                        onNowSelected = onNowSelected,
+                        entitlementState = entitlementState,
+                        onPremiumRequired = onPremiumRequired
+                    ),
+                    onOpenShadowColor = { showShadowColorSheet = true },
+                    onEditingTooltipsCompleted = onEditingTooltipsCompleted,
+                    onMainViewTooltipsCompleted = onMainViewTooltipsCompleted,
+                    onSceneModeChanged = { mapboxSceneMode = it },
+                    onSceneMapViewReady = { mapboxSceneMapView = it },
+                    onSceneMapClick = { point ->
+                        if (mapboxSceneMode == MapboxSceneMode.EDIT &&
+                            uiState.activeDrawMode == null &&
+                            uiState.pendingDrawing == null
+                        ) {
+                            mapboxSceneController?.queryDrawing(point, onSelectDrawing)
+                        }
+                        false
+                    }
+                )
+            )
+        }
+
+        uiState.moveSession?.let {
+            MoveModeOverlay(
+                onDrag = { start, current ->
+                    val map = mapboxSceneMapView ?: return@MoveModeOverlay
+                    val startPoint = map.mapboxMap.coordinateForPixel(
+                        ScreenCoordinate(start.x.toDouble(), start.y.toDouble())
+                    )
+                    val currentPoint = map.mapboxMap.coordinateForPixel(
+                        ScreenCoordinate(current.x.toDouble(), current.y.toDouble())
+                    )
+                    onMoveSelectedObject(
+                        currentPoint.longitude() - startPoint.longitude(),
+                        currentPoint.latitude() - startPoint.latitude()
+                    )
+                },
+                onDone = onFinishMoving,
+                onCancel = onCancelMoving
+            )
+        }
+
+        if (mapboxSceneMode == MapboxSceneMode.EDIT) {
+            DrawingCrosshair(modifier = Modifier.align(Alignment.Center))
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+        ) {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        bottom = THREE_D_BOTTOM_CONTROL_CLEARANCE
+                    )
+            )
+        }
+
+        if (mapboxSceneMode == MapboxSceneMode.EDIT && mode != null && pendingType == null) {
+            ActiveDrawingControls(
+                mode = mode,
+                vertexCount = uiState.inProgressVertices.size,
+                onAdd = {
+                    val point = crosshairPoint ?: return@ActiveDrawingControls
+                    if (mode == DrawMode.TREE) {
+                        onStartTree(point)
+                    } else {
+                        val last = uiState.inProgressVertices.lastOrNull()
+                        val threshold = with(density) { MIN_POINT_SPACING_DP.dp.toPx() }
+                        if (last == null ||
+                            mapboxSceneMapView?.isFarEnoughFrom(last, point, threshold) != false
+                        ) {
+                            onAddVertex(point)
+                        } else {
+                            onDrawingError(moveFartherMessage)
+                        }
+                    }
+                },
+                onUndo = onUndo,
+                onDone = {
+                    val point = crosshairPoint ?: return@ActiveDrawingControls
+                    if (mode == DrawMode.BUILDING) onFinishBuilding(point) else onFinishWall(point)
+                },
+                onCancel = ::requestDrawingExit,
+                error = uiState.drawingError,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+
+        if (mapboxSceneMode == MapboxSceneMode.EDIT && showPropertiesSheet) {
+            DrawingPropertiesSheet(
+                type = propertyType,
+                initialHeightMeters = propertyInitialHeight,
+                initialRadiusMeters = selectedTree?.radiusMeters
+                    ?: if (propertyType == DrawnObjectType.TREE) {
+                        DEFAULT_DRAWN_TREE_RADIUS_METERS / 2.0
+                    } else {
+                        null
+                    },
+                initialCrownShape = selectedTree?.crownShape ?: TreeCrownShape.CONE,
+                isCreating = pendingType != null,
+                objectSource = uiState.selectedDrawing?.source ?: SceneObjectSource.MANUAL,
+                loadedHeightMeters = selectedOriginalLoadedBuilding?.heightMeters,
+                onBack = {
+                    if (pendingType != null) onReturnPendingToDrawing() else onSelectDrawing(null)
+                },
+                onMove = onStartMoving,
+                onApply = { height, radius, crownShape ->
+                    if (pendingType != null) {
+                        onCommitPendingDrawing(height, radius, crownShape)
+                    } else {
+                        onUpdateSelectedDrawing(height, radius, crownShape)
+                    }
+                },
+                onDelete = {
+                    if (onDeleteSelectedDrawing()) {
+                        coroutineScope.launch {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            val result = snackbarHostState.showSnackbar(
+                                message = objectDeletedMessage,
+                                actionLabel = undoMessage,
+                                duration = SnackbarDuration.Long
+                            )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                onRestoreDeletedObject()
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+    }
+
+    locationPermissionDialogState?.let { dialogState ->
+        LocationPermissionDialog(
+            state = dialogState,
+            onDismiss = { locationPermissionDialogState = null },
+            onContinue = {
+                requestedLocationPermissionThisSession = true
+                onLocationPermissionRequested()
+                locationPermissionDialogState = null
+                locationPermissionLauncher.launch(LocationPermissions)
+            },
+            onOpenSettings = {
+                locationPermissionDialogState = null
+                context.openAppSettings()
+            }
+        )
+    }
+
+    if (showClearConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirmation = false },
+            title = { Text(stringResource(R.string.clear_scene_question)) },
+            text = { Text(stringResource(R.string.clear_scene_details)) },
+            confirmButton = {
+                Button(onClick = {
+                    onClearScene()
+                    showClearConfirmation = false
+                    coroutineScope.launch {
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        val result = withTimeoutOrNull(CLEAR_UNDO_MILLIS) {
+                            snackbarHostState.showSnackbar(
+                                message = sceneClearedMessage,
+                                actionLabel = undoMessage,
+                                duration = SnackbarDuration.Indefinite
+                            )
+                        }
+                        if (result == SnackbarResult.ActionPerformed) {
+                            onRestoreClearedScene()
+                        } else {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                        }
+                    }
+                }) { Text(stringResource(R.string.clear_all)) }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    showClearConfirmation = false
+                }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
+    }
+
+    if (showDiscardDraftConfirmation) {
+        AlertDialog(
+            onDismissRequest = {
+                showDiscardDraftConfirmation = false
+                exitEditingAfterDiscard = false
+            },
+            title = { Text(stringResource(R.string.discard_drawing_question)) },
+            text = { Text(stringResource(R.string.unfinished_points_removed)) },
+            confirmButton = {
+                Button(onClick = {
+                    onStopDrawing()
+                    showDiscardDraftConfirmation = false
+                    if (exitEditingAfterDiscard) {
+                        exitEditingAfterDiscard = false
+                        mapboxSceneMode = MapboxSceneMode.VIEW
+                    }
+                }) { Text(stringResource(R.string.discard)) }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    showDiscardDraftConfirmation = false
+                    exitEditingAfterDiscard = false
+                }) {
+                    Text(stringResource(R.string.keep_drawing))
+                }
+            }
+        )
+    }
+
+    if (showSelectedLocationSheet && uiState.selectedLocationLabel != null) {
+        SelectedLocationSheet(
+            address = uiState.selectedLocationLabel,
+            onDismiss = { showSelectedLocationSheet = false }
+        )
+    }
+
+    if (showShadowColorSheet) {
+        ShadowColorSheet(
+            initialAppearance = uiState.shadowAppearance,
+            onDismissRequest = { showShadowColorSheet = false },
+            onApply = { appearance ->
+                onShadowAppearanceChanged(appearance)
+                showShadowColorSheet = false
+            }
+        )
+    }
+
+    if (showSaveProjectDialog) {
+        SaveProjectDialog(
+            projectName = projectNameDraft,
+            activeProjectName = uiState.activeProjectName,
+            hasActiveProject = uiState.activeProjectId != null,
+            onProjectNameChanged = { projectNameDraft = it },
+            onDismissRequest = { showSaveProjectDialog = false },
+            onSaveUpdate = { name ->
+                showSaveProjectDialog = false
+                onSaveProject(name)
+            },
+            onSaveAsNew = { name ->
+                showSaveProjectDialog = false
+                onSaveProjectAsNew(name)
+            }
+        )
+    }
+}
+
+private val LocationPermissions = arrayOf(
+    Manifest.permission.ACCESS_FINE_LOCATION,
+    Manifest.permission.ACCESS_COARSE_LOCATION
+)
+
+private fun Context.hasLocationPermission(): Boolean = ContextCompat.checkSelfPermission(
+    this,
+    Manifest.permission.ACCESS_FINE_LOCATION
+) == PackageManager.PERMISSION_GRANTED ||
+    ContextCompat.checkSelfPermission(
+        this,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+private fun Activity.shouldShowLocationPermissionRationale(): Boolean =
+    ActivityCompat.shouldShowRequestPermissionRationale(
+        this,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) || ActivityCompat.shouldShowRequestPermissionRationale(
+        this,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    )
+
+private fun resolveLocationPermissionDialogState(
+    wasRequested: Boolean,
+    shouldShowRationale: Boolean
+): LocationPermissionDialogState = if (wasRequested && !shouldShowRationale) {
+    LocationPermissionDialogState.SETTINGS
+} else {
+    LocationPermissionDialogState.RATIONALE
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+private fun Context.openAppSettings() {
+    startActivity(
+        Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            "package:$packageName".toUri()
+        )
+    )
+}
+
+private val THREE_D_BOTTOM_CONTROL_CLEARANCE = 156.dp
+
+private const val MIN_POINT_SPACING_DP = 12f
+private const val MAX_AUTO_LOAD_METERS = 500.0
+private const val AUTO_LOAD_ZOOM_PADDING = 0.1
+private const val CLEAR_UNDO_MILLIS = 8_000L

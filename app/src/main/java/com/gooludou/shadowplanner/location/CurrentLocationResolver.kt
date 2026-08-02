@@ -1,6 +1,6 @@
 package com.gooludou.shadowplanner.location
 
-import com.gooludou.shadowplanner.domain.GeoPoint
+import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.mapbox.geojson.Point
 import com.mapbox.search.ApiType
 import com.mapbox.search.NewQueryType
