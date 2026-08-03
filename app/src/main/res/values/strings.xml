@@ -216,10 +216,9 @@
     <string name="location_search_failed">Unable to search for locations. Check your connection and try again.</string>
     <string name="location_selection_failed">Unable to select that location. Try again.</string>
     <string name="paywall_title">Unlock Shadow Planner Pro</string>
-    <string name="paywall_subtitle">Explore shadows for any date and time</string>
-    <string name="paywall_benefit_dates">Plan sunlight throughout the year</string>
-    <string name="paywall_benefit_compare">Compare shadows at any hour</string>
-    <string name="paywall_benefit_devices">Restore your purchase on your other devices</string>
+    <string name="paywall_subtitle">Explore shadows year-round and save locations to revisit later</string>
+    <string name="paywall_benefit_dates">Check shadows for any date throughout the year</string>
+    <string name="paywall_benefit_projects">Save locations as projects and revisit them anytime</string>
     <string name="featured">Featured</string>
     <string name="best_value">Best value</string>
     <string name="daily">Daily</string>

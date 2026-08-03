@@ -19,11 +19,10 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -190,12 +189,8 @@ private fun UpgradeCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
                     text = stringResource(R.string.paywall_benefit_dates)
                 )
                 PremiumFeature(
-                    icon = Icons.Outlined.Schedule,
-                    text = stringResource(R.string.paywall_benefit_compare)
-                )
-                PremiumFeature(
-                    icon = Icons.Outlined.Sync,
-                    text = stringResource(R.string.paywall_benefit_devices)
+                    icon = Icons.Outlined.FolderOpen,
+                    text = stringResource(R.string.paywall_benefit_projects)
                 )
             }
             Spacer(modifier = Modifier.height(dimensions.spacingLarge))
