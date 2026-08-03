@@ -13,6 +13,7 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
+import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.purchase.model.EntitlementState
 import com.gooludou.shadowplanner.purchase.model.InAppPurchaseState
 import com.gooludou.shadowplanner.purchase.model.PricePhase
@@ -40,7 +41,9 @@ import kotlinx.coroutines.sync.withLock
 
 @Singleton
 @Suppress("TooManyFunctions")
-class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext context: Context) :
+class GooglePlayInAppPurchaseManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) :
     InAppPurchaseManager,
     PurchasesUpdatedListener {
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -70,14 +73,18 @@ class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext con
         if (catalog.products.isEmpty()) {
             productDetailsById = emptyMap()
             _state.value = InAppPurchaseState(
-                entitlement = EntitlementState.Unavailable(PRODUCTS_NOT_CONFIGURED),
-                options = PurchaseOptionsState.Unavailable(PRODUCTS_NOT_CONFIGURED)
+                entitlement = EntitlementState.Unavailable(
+                    context.getString(R.string.purchase_products_not_configured)
+                ),
+                options = PurchaseOptionsState.Unavailable(
+                    context.getString(R.string.purchase_products_not_configured)
+                )
             )
             return
         }
         val connection = ensureConnected()
         if (connection.responseCode != BillingClient.BillingResponseCode.OK) {
-            publishUnavailable(connection.debugMessage)
+            publishUnavailable()
             return
         }
         refreshProductDetails()
@@ -91,8 +98,10 @@ class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext con
         if (connection.responseCode != BillingClient.BillingResponseCode.OK) {
             _state.update {
                 it.copy(
-                    entitlement = EntitlementState.Unavailable(connection.debugMessage),
-                    errorMessage = connection.debugMessage
+                    entitlement = EntitlementState.Unavailable(
+                        context.getString(R.string.billing_unavailable)
+                    ),
+                    errorMessage = context.getString(R.string.billing_unavailable)
                 )
             }
             return
@@ -105,7 +114,7 @@ class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext con
                 BillingClient.BillingResponseCode.OK
         }
         if (failedResult != null) {
-            val message = failedResult.first.debugMessage.ifBlank { PURCHASE_CHECK_FAILED }
+            val message = context.getString(R.string.purchase_check_failed)
             _state.update {
                 it.copy(
                     entitlement = EntitlementState.Unavailable(message),
@@ -159,7 +168,7 @@ class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext con
             _state.update {
                 it.copy(
                     purchaseStatus = PurchaseStatus.Idle,
-                    errorMessage = result.debugMessage.ifBlank { PURCHASE_LAUNCH_FAILED }
+                    errorMessage = context.getString(R.string.purchase_start_failed)
                 )
             }
         }
@@ -190,7 +199,7 @@ class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext con
                 _state.update {
                     it.copy(
                         purchaseStatus = PurchaseStatus.Idle,
-                        errorMessage = billingResult.debugMessage.ifBlank { PURCHASE_FAILED }
+                        errorMessage = context.getString(R.string.purchase_failed)
                     )
                 }
             }
@@ -238,7 +247,7 @@ class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext con
                     queryProductDetails(params)
                 }
         } catch (error: IllegalArgumentException) {
-            val message = error.message ?: PRODUCT_QUERY_FAILED
+            val message = context.getString(R.string.purchase_options_load_failed)
             _state.update {
                 it.copy(
                     options = PurchaseOptionsState.Unavailable(message),
@@ -251,7 +260,7 @@ class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext con
             it.first.responseCode != BillingClient.BillingResponseCode.OK
         }
         if (failedResult != null) {
-            val message = failedResult.first.debugMessage.ifBlank { PRODUCT_QUERY_FAILED }
+            val message = context.getString(R.string.purchase_options_load_failed)
             _state.update {
                 it.copy(
                     options = PurchaseOptionsState.Unavailable(message),
@@ -313,9 +322,9 @@ class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext con
             if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 _state.update {
                     it.copy(
-                        errorMessage = billingResult.debugMessage.ifBlank {
-                            ACKNOWLEDGEMENT_FAILED
-                        }
+                        errorMessage = context.getString(
+                            R.string.purchase_acknowledgement_failed
+                        )
                     )
                 }
             }
@@ -385,8 +394,8 @@ class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext con
         PurchaseProductType.SUB -> BillingClient.ProductType.SUBS
     }
 
-    private fun publishUnavailable(debugMessage: String) {
-        val message = debugMessage.ifBlank { BILLING_UNAVAILABLE }
+    private fun publishUnavailable() {
+        val message = context.getString(R.string.billing_unavailable)
         _state.value = InAppPurchaseState(
             entitlement = EntitlementState.Unavailable(message),
             options = PurchaseOptionsState.Unavailable(message),
@@ -398,13 +407,4 @@ class GooglePlayInAppPurchaseManager @Inject constructor(@ApplicationContext con
         .setResponseCode(BillingClient.BillingResponseCode.OK)
         .build()
 
-    private companion object {
-        const val PRODUCTS_NOT_CONFIGURED = "Purchase products are not configured"
-        const val BILLING_UNAVAILABLE = "Google Play Billing is unavailable"
-        const val PURCHASE_CHECK_FAILED = "Unable to check purchases"
-        const val PRODUCT_QUERY_FAILED = "Unable to load purchase options"
-        const val PURCHASE_LAUNCH_FAILED = "Unable to start purchase"
-        const val PURCHASE_FAILED = "Purchase failed"
-        const val ACKNOWLEDGEMENT_FAILED = "Unable to acknowledge purchase"
-    }
 }

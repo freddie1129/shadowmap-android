@@ -51,6 +51,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.gooludou.shadowplanner.Config
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
+import com.gooludou.shadowplanner.core.geometry.DrawingValidationError
 import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_BUILDING_HEIGHT_METERS
 import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_TREE_HEIGHT_METERS
 import com.gooludou.shadowplanner.core.model.DEFAULT_DRAWN_TREE_RADIUS_METERS
@@ -145,7 +146,6 @@ internal fun ShadowMapScreen(
     val checkingMapAreaMessage = stringResource(R.string.checking_visible_map_area)
     val zoomInLoadMessage = stringResource(R.string.zoom_in_load_buildings)
     val zoomLoadAction = stringResource(R.string.zoom_load)
-    val moveFartherMessage = stringResource(R.string.move_farther_previous_point)
     val objectDeletedMessage = stringResource(R.string.object_deleted)
     val undoMessage = stringResource(R.string.undo)
     val sceneClearedMessage = stringResource(R.string.scene_cleared)
@@ -504,7 +504,7 @@ internal fun ShadowMapScreen(
                 onFailure = { throwable ->
                     onLoadFailed(throwable)
                     snackbarHostState.showSnackbar(
-                        message = throwable.message ?: loadingBuildingsMessage,
+                        message = loadingBuildingsMessage,
                         duration = SnackbarDuration.Short
                     )
                 }
@@ -867,7 +867,7 @@ internal fun ShadowMapScreen(
                         ) {
                             onAddVertex(point)
                         } else {
-                            onDrawingError(moveFartherMessage)
+                            onDrawingError(DrawingValidationError.POINTS_TOO_CLOSE)
                         }
                     }
                 },
@@ -877,7 +877,22 @@ internal fun ShadowMapScreen(
                     if (mode == DrawMode.BUILDING) onFinishBuilding(point) else onFinishWall(point)
                 },
                 onCancel = ::requestDrawingExit,
-                error = uiState.drawingError,
+                error = uiState.drawingError?.let { error ->
+                    stringResource(
+                        when (error) {
+                            DrawingValidationError.TOO_FEW_BUILDING_CORNERS ->
+                                R.string.too_few_building_corners
+                            DrawingValidationError.BUILDING_EDGES_CROSS ->
+                                R.string.building_edges_cannot_cross
+                            DrawingValidationError.BUILDING_TOO_SMALL ->
+                                R.string.building_too_small
+                            DrawingValidationError.TOO_FEW_WALL_POINTS ->
+                                R.string.too_few_wall_points
+                            DrawingValidationError.POINTS_TOO_CLOSE ->
+                                R.string.move_farther_previous_point
+                        }
+                    )
+                },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }

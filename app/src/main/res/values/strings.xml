@@ -210,6 +210,12 @@
         <item quantity="other">%d buildings loaded</item>
     </plurals>
     <string name="move_farther_previous_point">Move farther from the previous point</string>
+    <string name="too_few_building_corners">Add at least three distinct corners</string>
+    <string name="building_edges_cannot_cross">Building edges cannot cross</string>
+    <string name="building_too_small">Building is too small</string>
+    <string name="too_few_wall_points">Add at least two distinct wall points</string>
+    <string name="untitled_project">Untitled project</string>
+    <string name="unable_to_load_buildings">Unable to load buildings</string>
     <string name="clear_scene_details">Remove all buildings, walls, and trees from this map?</string>
     <string name="choose_date">Choose date</string>
     <string name="reset_to_now">Reset to now</string>
@@ -251,6 +257,16 @@
     <string name="restore_purchases">Restore purchases</string>
     <string name="subscription_disclosure">Subscriptions renew automatically until canceled in Google Play.</string>
     <string name="purchase_pending">Your purchase is pending. Premium will unlock after payment completes.</string>
+    <string name="purchase_products_not_configured">Purchase products are not configured</string>
+    <string name="billing_unavailable">Google Play Billing is unavailable</string>
+    <string name="purchase_check_failed">Unable to check purchases</string>
+    <string name="purchase_options_load_failed">Unable to load purchase options</string>
+    <string name="purchase_start_failed">Unable to start purchase</string>
+    <string name="purchase_failed">Purchase failed</string>
+    <string name="purchase_acknowledgement_failed">Unable to acknowledge purchase</string>
+    <string name="remote_config_unavailable">Remote Config is unavailable</string>
+    <string name="purchase_configuration_invalid">Purchase configuration is invalid</string>
+    <string name="remote_config_task_failed">Unable to load purchase configuration</string>
     <string name="purchase_options_empty">Purchase options are currently unavailable.</string>
     <string name="retry">Retry</string>
     <string name="premium">Premium</string>

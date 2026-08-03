@@ -1,6 +1,7 @@
 package com.gooludou.shadowplanner.feature.shadowmap
 
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
+import com.gooludou.shadowplanner.core.geometry.DrawingValidationError
 import com.gooludou.shadowplanner.core.geometry.SceneBuildingMerger
 import com.gooludou.shadowplanner.core.model.AutomaticBuildingIdentity
 import com.gooludou.shadowplanner.core.model.Building
@@ -48,7 +49,7 @@ data class ShadowMapUiState(
     val pendingDrawing: PendingDrawing? = null,
     val selectedDrawing: DrawnObjectSelection? = null,
     val moveSession: MoveSession? = null,
-    val drawingError: String? = null,
+    val drawingError: DrawingValidationError? = null,
     val shadows: List<GeoPolygon> = emptyList(),
     val shadowAppearance: ShadowAppearance = ShadowAppearance.DEFAULT,
     val buildingLoadState: BuildingLoadState = BuildingLoadState.Idle
@@ -95,5 +96,5 @@ sealed interface BuildingLoadState {
 
     data object Loaded : BuildingLoadState
 
-    data class Error(val message: String) : BuildingLoadState
+    data object Error : BuildingLoadState
 }
