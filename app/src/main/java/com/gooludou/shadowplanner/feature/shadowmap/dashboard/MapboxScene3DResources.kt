@@ -104,9 +104,9 @@ internal enum class SkyDisplayMode {
         get() = this != HIDDEN
 
     fun next(): SkyDisplayMode = when (this) {
-        FULL -> HIDDEN
-        HIDDEN -> OVERLAYS_ONLY
-        OVERLAYS_ONLY -> FULL
+        FULL -> OVERLAYS_ONLY
+        OVERLAYS_ONLY -> HIDDEN
+        HIDDEN -> FULL
     }
 }
 

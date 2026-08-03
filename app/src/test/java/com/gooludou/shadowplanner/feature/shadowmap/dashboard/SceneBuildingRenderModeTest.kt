@@ -7,10 +7,10 @@ import org.junit.Test
 
 class SceneBuildingRenderModeTest {
     @Test
-    fun `sky display mode cycles from full to hidden to overlays and back`() {
-        assertEquals(SkyDisplayMode.HIDDEN, SkyDisplayMode.FULL.next())
-        assertEquals(SkyDisplayMode.OVERLAYS_ONLY, SkyDisplayMode.HIDDEN.next())
-        assertEquals(SkyDisplayMode.FULL, SkyDisplayMode.OVERLAYS_ONLY.next())
+    fun `sky display mode cycles from full to overlays to hidden and back`() {
+        assertEquals(SkyDisplayMode.OVERLAYS_ONLY, SkyDisplayMode.FULL.next())
+        assertEquals(SkyDisplayMode.HIDDEN, SkyDisplayMode.OVERLAYS_ONLY.next())
+        assertEquals(SkyDisplayMode.FULL, SkyDisplayMode.HIDDEN.next())
     }
 
     @Test

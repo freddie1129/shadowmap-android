@@ -96,8 +96,8 @@ internal fun MapBottomControls(
                 contentDescription = stringResource(
                     when (displayMode.skyDisplayMode) {
                         SkyDisplayMode.FULL -> R.string.hide_sky_overview
-                        SkyDisplayMode.HIDDEN -> R.string.show_sky_overlays
-                        SkyDisplayMode.OVERLAYS_ONLY -> R.string.show_sky_overview
+                        SkyDisplayMode.OVERLAYS_ONLY -> R.string.hide_sky_overlays
+                        SkyDisplayMode.HIDDEN -> R.string.show_sky_overview
                     }
                 ),
                 onClick = {
