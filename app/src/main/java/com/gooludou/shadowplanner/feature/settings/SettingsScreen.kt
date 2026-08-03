@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Button
@@ -57,6 +58,7 @@ fun SettingsScreen(
     onDeveloperClick: () -> Unit,
     onRateClick: () -> Unit,
     onShareClick: () -> Unit,
+    onLanguageClick: () -> Unit,
     onAboutClick: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -112,6 +114,14 @@ fun SettingsScreen(
                     title = stringResource(R.string.share_shadow_planner),
                     supportingText = stringResource(R.string.share_shadow_planner_summary),
                     onClick = onShareClick
+                )
+            }
+            item {
+                SettingsMenuItem(
+                    icon = Icons.Outlined.Language,
+                    title = stringResource(R.string.language),
+                    supportingText = stringResource(R.string.language_summary),
+                    onClick = onLanguageClick
                 )
             }
             item {
@@ -361,6 +371,7 @@ private fun SettingsScreenLightPreview() {
             onDeveloperClick = {},
             onRateClick = {},
             onShareClick = {},
+            onLanguageClick = {},
             onAboutClick = {},
             onBack = {}
         )
@@ -377,6 +388,7 @@ private fun SettingsScreenDarkPreview() {
             onDeveloperClick = {},
             onRateClick = {},
             onShareClick = {},
+            onLanguageClick = {},
             onAboutClick = {},
             onBack = {}
         )

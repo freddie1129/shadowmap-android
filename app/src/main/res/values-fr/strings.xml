@@ -286,4 +286,6 @@
         <item quantity="one">an</item>
         <item quantity="other">%d ans</item>
     </plurals>
+    <string name="language">Langue</string>
+    <string name="language_summary">Changer la langue de Shadow Planner</string>
 </resources>

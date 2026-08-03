@@ -286,4 +286,6 @@
         <item quantity="one">年</item>
         <item quantity="other">%d 年</item>
     </plurals>
+    <string name="language">语言</string>
+    <string name="language_summary">更改 Shadow Planner 的语言</string>
 </resources>

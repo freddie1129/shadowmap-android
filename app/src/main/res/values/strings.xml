@@ -75,6 +75,8 @@
     <string name="rate_on_google_play_summary">Leave a review and help others find the app</string>
     <string name="share_shadow_planner">Share Shadow Planner</string>
     <string name="share_shadow_planner_summary">Send the app to friends and colleagues</string>
+    <string name="language">Language</string>
+    <string name="language_summary">Change Shadow Planner’s language</string>
     <string name="feedback_greeting">Hi Shadow Planner team,</string>
     <string name="feedback_placeholder">Please describe your feedback or issue above this line.</string>
     <string name="feedback_device_info_header">App and device information</string>
