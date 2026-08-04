@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -144,6 +146,7 @@ fun AppNavigation(
                             },
                             onRateClick = context::rateApp,
                             onShareClick = context::shareApp,
+                            onLanguageClick = context::openLanguageSettings,
                             onAboutClick = { backStack.add(AppDestination.About) },
                             onBack = { backStack.removeLastOrNull() }
                         )
@@ -215,6 +218,19 @@ fun AppNavigation(
         )
         PurchasePaywallHost(showPaywall, purchaseState, purchaseViewModel)
     }
+}
+
+private fun Context.openLanguageSettings() {
+    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Intent(Settings.ACTION_APP_LOCALE_SETTINGS).apply {
+            data = "package:$packageName".toUri()
+        }
+    } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = "package:$packageName".toUri()
+        }
+    }
+    startActivity(intent)
 }
 
 private fun aboutActions(

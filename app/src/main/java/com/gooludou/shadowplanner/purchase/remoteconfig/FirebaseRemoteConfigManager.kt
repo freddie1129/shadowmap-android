@@ -1,5 +1,6 @@
 package com.gooludou.shadowplanner.purchase.remoteconfig
 
+import android.content.Context
 import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
@@ -7,6 +8,7 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import com.gooludou.shadowplanner.BuildConfig
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.purchase.model.PurchaseCatalogState
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -19,7 +21,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 @Singleton
-class FirebaseRemoteConfigManager @Inject constructor() : RemoteConfigManager {
+class FirebaseRemoteConfigManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) : RemoteConfigManager {
     private val remoteConfig = FirebaseRemoteConfig.getInstance()
     private val mutex = Mutex()
     private var initialized = false
@@ -69,7 +73,7 @@ class FirebaseRemoteConfigManager @Inject constructor() : RemoteConfigManager {
                 Log.w(TAG, "Unable to refresh Remote Config", error)
                 if (_purchaseCatalog.value !is PurchaseCatalogState.Ready) {
                     _purchaseCatalog.value = PurchaseCatalogState.Error(
-                        error.message ?: "Remote Config is unavailable"
+                        context.getString(R.string.remote_config_unavailable)
                     )
                 }
             }
@@ -85,7 +89,7 @@ class FirebaseRemoteConfigManager @Inject constructor() : RemoteConfigManager {
                 Log.w(TAG, "Ignoring invalid purchase catalog", error)
                 if (_purchaseCatalog.value !is PurchaseCatalogState.Ready) {
                     _purchaseCatalog.value = PurchaseCatalogState.Error(
-                        error.message ?: "Purchase configuration is invalid"
+                        context.getString(R.string.purchase_configuration_invalid)
                     )
                 }
             }
@@ -103,7 +107,10 @@ class FirebaseRemoteConfigManager @Inject constructor() : RemoteConfigManager {
                 continuation.resume(task.result)
             } else {
                 continuation.resumeWithException(
-                    task.exception ?: IllegalStateException("Firebase task failed")
+                    task.exception
+                        ?: IllegalStateException(
+                            context.getString(R.string.remote_config_task_failed)
+                        )
                 )
             }
         }

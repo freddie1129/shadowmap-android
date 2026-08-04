@@ -9,9 +9,11 @@ import org.locationtech.jts.geom.GeometryFactory
 
 object DrawingGeometryValidator {
     @Suppress("ReturnCount")
-    fun validateBuilding(vertices: List<GeoPoint>): String? {
+    fun validateBuilding(vertices: List<GeoPoint>): DrawingValidationError? {
         val unique = vertices.distinctBy { it.longitude to it.latitude }
-        if (unique.size < MIN_BUILDING_VERTEX_COUNT) return "Add at least three distinct corners"
+        if (unique.size < MIN_BUILDING_VERTEX_COUNT) {
+            return DrawingValidationError.TOO_FEW_BUILDING_CORNERS
+        }
         val origin = unique.first()
         val latitudeScale = EARTH_RADIUS_METERS * PI / 180.0
         val longitudeScale = latitudeScale * cos(origin.latitude * PI / 180.0)
@@ -23,14 +25,16 @@ object DrawingGeometryValidator {
         }.toMutableList()
         coordinates += coordinates.first().copy()
         val polygon = geometryFactory.createPolygon(coordinates.toTypedArray())
-        if (!polygon.isValid) return "Building edges cannot cross"
-        if (polygon.area < MIN_BUILDING_AREA_SQUARE_METERS) return "Building is too small"
+        if (!polygon.isValid) return DrawingValidationError.BUILDING_EDGES_CROSS
+        if (polygon.area < MIN_BUILDING_AREA_SQUARE_METERS) {
+            return DrawingValidationError.BUILDING_TOO_SMALL
+        }
         return null
     }
 
-    fun validateWall(points: List<GeoPoint>): String? =
+    fun validateWall(points: List<GeoPoint>): DrawingValidationError? =
         if (points.distinctBy { it.longitude to it.latitude }.size < MIN_WALL_POINT_COUNT) {
-            "Add at least two distinct wall points"
+            DrawingValidationError.TOO_FEW_WALL_POINTS
         } else {
             null
         }

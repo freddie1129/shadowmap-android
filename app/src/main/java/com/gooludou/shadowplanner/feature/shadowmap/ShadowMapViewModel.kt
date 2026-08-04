@@ -1,10 +1,13 @@
 package com.gooludou.shadowplanner.feature.shadowmap
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
 import com.gooludou.shadowplanner.core.geometry.DrawingGeometryValidator
+import com.gooludou.shadowplanner.core.geometry.DrawingValidationError
 import com.gooludou.shadowplanner.core.model.AutomaticBuildingIdentity
 import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.BuildingSource
@@ -31,6 +34,7 @@ import com.gooludou.shadowplanner.di.DefaultDispatcher
 import com.gooludou.shadowplanner.location.CurrentLocationResolver
 import com.gooludou.shadowplanner.project.ProjectRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -60,6 +64,8 @@ constructor(
     systemZoneId: ZoneId,
     private val projectRepository: ProjectRepository,
     private val currentLocationResolver: CurrentLocationResolver,
+    @ApplicationContext
+    private val context: Context,
     @param:DefaultDispatcher
     private val computationDispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -114,7 +120,7 @@ constructor(
         saveProject(
             state = state,
             projectId = state.activeProjectId ?: UUID.randomUUID().toString(),
-            name = name ?: state.activeProjectName ?: "Untitled project",
+            name = name ?: state.activeProjectName ?: context.getString(R.string.untitled_project),
             createdAt = state.activeProjectCreatedAt ?: clock.millis()
         )
     }
@@ -375,8 +381,8 @@ constructor(
         )
     }
 
-    fun setDrawingError(message: String) {
-        _uiState.value = _uiState.value.copy(drawingError = message)
+    fun setDrawingError(error: DrawingValidationError) {
+        _uiState.value = _uiState.value.copy(drawingError = error)
     }
 
     fun finishBuilding(finalPoint: GeoPoint): Boolean {
@@ -739,13 +745,11 @@ constructor(
         recalculateSunAndShadows()
     }
 
-    fun onBuildingLoadFailed(throwable: Throwable) {
+    fun onBuildingLoadFailed() {
         _uiState.value =
             _uiState.value.copy(
                 buildingLoadState =
-                    BuildingLoadState.Error(
-                        throwable.message ?: "Unable to load buildings"
-                    )
+                    BuildingLoadState.Error
             )
     }
 

@@ -19,11 +19,11 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,6 +51,7 @@ import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod")
 @Composable
 fun SettingsScreen(
     isPremium: Boolean,
@@ -58,6 +59,7 @@ fun SettingsScreen(
     onDeveloperClick: () -> Unit,
     onRateClick: () -> Unit,
     onShareClick: () -> Unit,
+    onLanguageClick: () -> Unit,
     onAboutClick: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -113,6 +115,14 @@ fun SettingsScreen(
                     title = stringResource(R.string.share_shadow_planner),
                     supportingText = stringResource(R.string.share_shadow_planner_summary),
                     onClick = onShareClick
+                )
+            }
+            item {
+                SettingsMenuItem(
+                    icon = Icons.Outlined.Language,
+                    title = stringResource(R.string.language),
+                    supportingText = stringResource(R.string.language_summary),
+                    onClick = onLanguageClick
                 )
             }
             item {
@@ -190,12 +200,8 @@ private fun UpgradeCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
                     text = stringResource(R.string.paywall_benefit_dates)
                 )
                 PremiumFeature(
-                    icon = Icons.Outlined.Schedule,
-                    text = stringResource(R.string.paywall_benefit_compare)
-                )
-                PremiumFeature(
-                    icon = Icons.Outlined.Sync,
-                    text = stringResource(R.string.paywall_benefit_devices)
+                    icon = Icons.Outlined.FolderOpen,
+                    text = stringResource(R.string.paywall_benefit_projects)
                 )
             }
             Spacer(modifier = Modifier.height(dimensions.spacingLarge))
@@ -366,6 +372,7 @@ private fun SettingsScreenLightPreview() {
             onDeveloperClick = {},
             onRateClick = {},
             onShareClick = {},
+            onLanguageClick = {},
             onAboutClick = {},
             onBack = {}
         )
@@ -382,6 +389,7 @@ private fun SettingsScreenDarkPreview() {
             onDeveloperClick = {},
             onRateClick = {},
             onShareClick = {},
+            onLanguageClick = {},
             onAboutClick = {},
             onBack = {}
         )

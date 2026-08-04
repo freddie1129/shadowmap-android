@@ -1,5 +1,6 @@
 package com.gooludou.shadowplanner.feature.shadowmap
 
+import com.gooludou.shadowplanner.core.geometry.DrawingValidationError
 import com.gooludou.shadowplanner.core.model.Building
 import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.DrawnObjectSelection
@@ -33,7 +34,7 @@ data class DrawingActions(
     val onStopDrawing: () -> Unit,
     val onAddVertex: (GeoPoint) -> Unit,
     val onUndo: () -> Unit,
-    val onDrawingError: (String) -> Unit,
+    val onDrawingError: (DrawingValidationError) -> Unit,
     val onFinishBuilding: (GeoPoint) -> Boolean,
     val onFinishWall: (GeoPoint) -> Boolean,
     val onStartTree: (GeoPoint) -> Unit,

@@ -1,5 +1,6 @@
 package com.gooludou.shadowplanner.feature.shadowmap
 
+import android.content.ContextWrapper
 import androidx.lifecycle.SavedStateHandle
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
 import com.gooludou.shadowplanner.core.model.Building
@@ -114,10 +115,10 @@ class ShadowMapViewModelTest {
         val viewModel = createViewModel()
 
         viewModel.onBuildingLoadStarted()
-        viewModel.onBuildingLoadFailed(IllegalStateException("Map failed"))
+        viewModel.onBuildingLoadFailed()
 
         assertEquals(
-            BuildingLoadState.Error("Map failed"),
+            BuildingLoadState.Error,
             viewModel.uiState.value.buildingLoadState
         )
     }
@@ -661,7 +662,8 @@ class ShadowMapViewModelTest {
         currentLocationResolver: CurrentLocationResolver = object : CurrentLocationResolver {
             override suspend fun resolve(location: GeoPoint): Result<LocationSearchResult> =
                 Result.failure(IllegalStateException("Not used in this test"))
-        }
+        },
+        context: ContextWrapper = ContextWrapper(null)
     ) = ShadowMapViewModel(
         savedStateHandle = savedStateHandle,
         shadowCalculator = BuildingShadowCalculator(),
@@ -671,6 +673,7 @@ class ShadowMapViewModelTest {
         systemZoneId = ZoneId.of("Australia/Brisbane"),
         projectRepository = projectRepository,
         currentLocationResolver = currentLocationResolver,
+        context = context,
         computationDispatcher = dispatcher
     )
 

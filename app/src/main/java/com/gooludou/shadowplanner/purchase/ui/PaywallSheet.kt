@@ -126,8 +126,7 @@ private fun PaywallBenefits() {
         verticalArrangement = Arrangement.spacedBy(ShadowMapDesign.dimensions.spacingSmall)
     ) {
         BenefitRow(stringResource(R.string.paywall_benefit_dates))
-        BenefitRow(stringResource(R.string.paywall_benefit_compare))
-        BenefitRow(stringResource(R.string.paywall_benefit_devices))
+        BenefitRow(stringResource(R.string.paywall_benefit_projects))
     }
 }
 
