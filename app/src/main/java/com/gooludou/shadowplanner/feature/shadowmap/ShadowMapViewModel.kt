@@ -745,7 +745,7 @@ constructor(
         recalculateSunAndShadows()
     }
 
-    fun onBuildingLoadFailed(throwable: Throwable) {
+    fun onBuildingLoadFailed() {
         _uiState.value =
             _uiState.value.copy(
                 buildingLoadState =

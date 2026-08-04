@@ -2,6 +2,7 @@ package com.gooludou.shadowplanner.purchase.billing
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
@@ -247,6 +248,7 @@ class GooglePlayInAppPurchaseManager @Inject constructor(
                     queryProductDetails(params)
                 }
         } catch (error: IllegalArgumentException) {
+            Log.w(TAG, "Unable to query product details", error)
             val message = context.getString(R.string.purchase_options_load_failed)
             _state.update {
                 it.copy(
@@ -274,6 +276,10 @@ class GooglePlayInAppPurchaseManager @Inject constructor(
         val snapshots = productDetails.mapNotNull(::toStoreProductDetails)
         val options = PurchaseOptionFlattener.flatten(catalog, snapshots)
         _state.update { it.copy(options = PurchaseOptionsState.Ready(options)) }
+    }
+
+    private companion object {
+        const val TAG = "GooglePlayBilling"
     }
 
     private suspend fun ensureConnected(): BillingResult = connectionMutex.withLock {

@@ -115,7 +115,7 @@ class ShadowMapViewModelTest {
         val viewModel = createViewModel()
 
         viewModel.onBuildingLoadStarted()
-        viewModel.onBuildingLoadFailed(IllegalStateException("Map failed"))
+        viewModel.onBuildingLoadFailed()
 
         assertEquals(
             BuildingLoadState.Error,

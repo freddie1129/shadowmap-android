@@ -66,7 +66,7 @@ internal fun ShadowMapRoute(
                 onNowSelected = viewModel::onNowSelected,
                 onLoadStarted = viewModel::onBuildingLoadStarted,
                 onBuildingsLoaded = viewModel::onBuildingsLoaded,
-                onLoadFailed = viewModel::onBuildingLoadFailed,
+                onLoadFailed = { viewModel.onBuildingLoadFailed() },
                 onViewportChanged = viewModel::onViewportChanged,
                 onShadowAppearanceChanged = viewModel::onShadowAppearanceChanged,
                 onCurrentLocationReceived = viewModel::onCurrentLocationReceived
