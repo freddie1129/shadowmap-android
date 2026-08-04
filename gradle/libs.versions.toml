@@ -23,9 +23,7 @@ filament = "1.71.5"
 ktlint = "1.8.0"
 desugarJdkLibs = "2.1.5"
 gson = "2.13.1"
-firebaseBom = "34.16.0"
 googleServices = "4.5.0"
-playBilling = "9.1.0"
 coil = "3.3.0"
 dataStore = "1.2.0"
 
@@ -65,10 +63,6 @@ filament-android = { group = "com.google.android.filament", name = "filament-and
 filamat-android = { group = "com.google.android.filament", name = "filamat-android", version.ref = "filament" }
 android-desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
-firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
-firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
-firebase-config = { group = "com.google.firebase", name = "firebase-config" }
-play-billing = { group = "com.android.billingclient", name = "billing", version.ref = "playBilling" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "dataStore" }
 

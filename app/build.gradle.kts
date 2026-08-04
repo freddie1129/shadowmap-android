@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
-    alias(libs.plugins.google.services)
 }
 
 val releaseKeystorePropertiesFile = rootProject.file("keystore.properties")
@@ -87,10 +86,6 @@ detekt {
 dependencies {
     coreLibraryDesugaring(libs.android.desugar.jdk.libs)
     implementation(libs.gson)
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.config)
-    implementation(libs.play.billing)
     implementation(libs.coil.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

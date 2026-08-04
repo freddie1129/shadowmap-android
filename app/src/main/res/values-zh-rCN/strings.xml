@@ -2,7 +2,6 @@
     <string name="app_name">Shadow Planner</string>
     <string name="back">返回</string>
     <string name="cancel">取消</string>
-    <string name="close">关闭</string>
     <string name="apply">应用</string>
     <string name="save">保存</string>
     <string name="save_update">保存更改</string>
@@ -32,7 +31,6 @@
     <string name="discard">放弃</string>
     <string name="keep_drawing">继续绘图</string>
     <string name="save_project">保存项目</string>
-    <string name="save_project_premium_feature">保存项目 — Premium 功能</string>
     <string name="project_name">项目名称</string>
     <string name="projects">项目</string>
     <string name="no_saved_projects">没有已保存的项目</string>
@@ -45,15 +43,6 @@
     <string name="location_permission_needed">需要位置权限</string>
     <string name="location_permission_settings_explanation">如需使用当前位置，请在设置中允许 Shadow Planner 访问位置。</string>
     <string name="settings">设置</string>
-    <string name="developer">开发者</string>
-    <string name="developer_settings">开发者设置</string>
-    <string name="developer_settings_summary">测试和 Premium 覆盖设置</string>
-    <string name="force_premium">强制启用 Premium</string>
-    <string name="force_premium_summary">绕过购买检查并解锁所有 Premium 功能</string>
-    <string name="premium_card_title">解锁 Shadow Planner Pro</string>
-    <string name="premium_card_cta">解锁 Pro</string>
-    <string name="premium_card_active_subtitle">所有 Pro 功能均已解锁</string>
-    <string name="premium_status_active">已启用</string>
     <string name="about">关于</string>
     <string name="about_settings_summary">应用信息和实用链接</string>
     <string name="about_app_icon_description">Shadow Planner 应用图标</string>
@@ -81,9 +70,6 @@
     <string name="feedback_app_version">应用版本：%1$s</string>
     <string name="feedback_device">设备：%1$s %2$s</string>
     <string name="feedback_android_version">Android 版本：%1$s</string>
-    <string name="feedback_access">权限：%1$s</string>
-    <string name="feedback_access_premium">Premium</string>
-    <string name="feedback_access_free">免费</string>
     <string name="feedback_subject">Shadow Planner 反馈 — v%1$s</string>
     <string name="map_view">地图视图</string>
     <string name="back_to_map">返回地图</string>
@@ -141,10 +127,6 @@
     <string name="main_view_tooltip_camera_description">在俯视图和 3D 视图之间切换。</string>
     <string name="main_view_tooltip_edit_title">添加自己的对象</string>
     <string name="main_view_tooltip_edit_description">绘制建筑、墙体和树木，创建自己的阴影规划。</string>
-    <string name="clear_stored_data">清除存储的数据</string>
-    <string name="clear_stored_data_summary">重置介绍、权限和开发者测试状态。</string>
-    <string name="clear_stored_data_confirmation">这将清除应用偏好设置和开发者设置。已保存的项目不会被删除。</string>
-    <string name="clear">清除</string>
     <string name="top_down_view">俯视图</string>
     <string name="setting_current_value">%1$s：%2$s</string>
     <string name="change_shadow_colour">更改阴影颜色</string>
@@ -219,26 +201,6 @@
     <string name="reset_to_now">重置为现在</string>
     <string name="location_search_failed">无法搜索位置。请检查网络连接后重试。</string>
     <string name="location_selection_failed">无法选择该位置。请重试。</string>
-    <string name="paywall_title">解锁 Shadow Planner Pro</string>
-    <string name="paywall_subtitle">探索全年阴影，并保存位置以便随时查看</string>
-    <string name="paywall_benefit_dates">查看一年中任意日期的阴影</string>
-    <string name="paywall_benefit_projects">将位置保存为项目，随时再次查看</string>
-    <string name="featured">推荐</string>
-    <string name="best_value">最超值</string>
-    <string name="daily">每日</string>
-    <string name="weekly">每周</string>
-    <string name="monthly">月度访问</string>
-    <string name="yearly">年度访问</string>
-    <string name="save_percent">节省 %1$d%%</string>
-    <string name="free_for">免费 %1$s</string>
-    <string name="intro_price_for">%2$s 仅需 %1$s</string>
-    <string name="price_once">一次性支付 %1$s</string>
-    <string name="price_per_period">每 %2$s %1$s</string>
-    <string name="then_price">之后为 %1$s</string>
-    <string name="price_unavailable">价格不可用</string>
-    <string name="start_free_trial">开始免费试用</string>
-    <string name="buy_for">以 %1$s 购买</string>
-    <string name="subscribe_for">以 %1$s 订阅</string>
     <string name="continue_label">继续</string>
     <string name="skip">跳过</string>
     <string name="next">下一步</string>
@@ -252,34 +214,6 @@
     <string name="onboarding_time_description">在 3D 中探索太阳的位置，查看太阳在天空中移动时阴影如何变化。</string>
     <string name="onboarding_plan_title">规划你的空间</string>
     <string name="onboarding_plan_description">添加建筑、墙体和树木，创建自定义的阳光与阴影规划。</string>
-    <string name="restore_purchases">恢复购买</string>
-    <string name="subscription_disclosure">订阅会自动续期，直到你在 Google Play 中取消订阅。</string>
-    <string name="purchase_pending">购买正在处理中。付款完成后，Pro 功能将解锁。</string>
-    <string name="purchase_products_not_configured">购买选项目前不可用</string>
-    <string name="billing_unavailable">Google Play 不可用</string>
-    <string name="purchase_check_failed">无法验证购买</string>
-    <string name="purchase_options_load_failed">无法加载购买选项</string>
-    <string name="purchase_start_failed">无法开始购买</string>
-    <string name="purchase_failed">无法完成购买</string>
-    <string name="purchase_acknowledgement_failed">无法完成购买</string>
-    <string name="remote_config_unavailable">购买选项暂时不可用</string>
-    <string name="purchase_configuration_invalid">购买选项暂时不可用</string>
-    <string name="remote_config_task_failed">无法加载购买选项</string>
-    <string name="purchase_options_empty">购买选项目前不可用。</string>
-    <string name="retry">重试</string>
-    <string name="premium">Premium</string>
-    <plurals name="billing_days">
-        <item quantity="other">%d 天</item>
-    </plurals>
-    <plurals name="billing_weeks">
-        <item quantity="other">%d 周</item>
-    </plurals>
-    <plurals name="billing_months">
-        <item quantity="other">%d 个月</item>
-    </plurals>
-    <plurals name="billing_years">
-        <item quantity="other">%d 年</item>
-    </plurals>
     <string name="language">语言</string>
     <string name="language_summary">更改 Shadow Planner 的语言</string>
 </resources>

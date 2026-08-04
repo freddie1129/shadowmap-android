@@ -2,7 +2,6 @@
     <string name="app_name">Shadow Planner</string>
     <string name="back">Retour</string>
     <string name="cancel">Annuler</string>
-    <string name="close">Fermer</string>
     <string name="apply">Appliquer</string>
     <string name="save">Enregistrer</string>
     <string name="save_update">Enregistrer les modifications</string>
@@ -32,7 +31,6 @@
     <string name="discard">Abandonner</string>
     <string name="keep_drawing">Continuer le dessin</string>
     <string name="save_project">Enregistrer le projet</string>
-    <string name="save_project_premium_feature">Enregistrer le projet — fonctionnalité Premium</string>
     <string name="project_name">Nom du projet</string>
     <string name="projects">Projets</string>
     <string name="no_saved_projects">Aucun projet enregistré</string>
@@ -45,15 +43,6 @@
     <string name="location_permission_needed">Autorisation de localisation requise</string>
     <string name="location_permission_settings_explanation">Pour utiliser votre position actuelle, autorisez Shadow Planner à accéder à votre position dans les paramètres.</string>
     <string name="settings">Paramètres</string>
-    <string name="developer">Développeur</string>
-    <string name="developer_settings">Paramètres développeur</string>
-    <string name="developer_settings_summary">Tests et dérogations Premium</string>
-    <string name="force_premium">Forcer Premium</string>
-    <string name="force_premium_summary">Contourner les vérifications d’achat et déverrouiller toutes les fonctionnalités Premium</string>
-    <string name="premium_card_title">Déverrouiller Shadow Planner Pro</string>
-    <string name="premium_card_cta">Déverrouiller Pro</string>
-    <string name="premium_card_active_subtitle">Toutes les fonctionnalités Pro sont déverrouillées</string>
-    <string name="premium_status_active">ACTIF</string>
     <string name="about">À propos</string>
     <string name="about_settings_summary">Informations sur l’application et liens utiles</string>
     <string name="about_app_icon_description">Icône de l’application Shadow Planner</string>
@@ -81,9 +70,6 @@
     <string name="feedback_app_version">Version de l’application : %1$s</string>
     <string name="feedback_device">Appareil : %1$s %2$s</string>
     <string name="feedback_android_version">Version d’Android : %1$s</string>
-    <string name="feedback_access">Accès : %1$s</string>
-    <string name="feedback_access_premium">Premium</string>
-    <string name="feedback_access_free">Gratuit</string>
     <string name="feedback_subject">Commentaires Shadow Planner — v%1$s</string>
     <string name="map_view">Vue cartographique</string>
     <string name="back_to_map">Retour à la carte</string>
@@ -141,10 +127,6 @@
     <string name="main_view_tooltip_camera_description">Basculez entre la vue de dessus et la vue 3D.</string>
     <string name="main_view_tooltip_edit_title">Ajouter vos propres objets</string>
     <string name="main_view_tooltip_edit_description">Dessinez des bâtiments, des murs et des arbres pour créer votre propre plan d’ombres.</string>
-    <string name="clear_stored_data">Effacer les données enregistrées</string>
-    <string name="clear_stored_data_summary">Réinitialiser l’introduction, les autorisations et l’état de test développeur.</string>
-    <string name="clear_stored_data_confirmation">Les préférences de l’application et les réglages développeur seront effacés. Les projets enregistrés ne seront pas supprimés.</string>
-    <string name="clear">Effacer</string>
     <string name="top_down_view">Vue de dessus</string>
     <string name="setting_current_value">%1$s : %2$s</string>
     <string name="change_shadow_colour">Modifier la couleur des ombres</string>
@@ -221,26 +203,6 @@
     <string name="reset_to_now">Rétablir maintenant</string>
     <string name="location_search_failed">Impossible de rechercher des emplacements. Vérifiez votre connexion et réessayez.</string>
     <string name="location_selection_failed">Impossible de sélectionner cet emplacement. Réessayez.</string>
-    <string name="paywall_title">Déverrouiller Shadow Planner Pro</string>
-    <string name="paywall_subtitle">Explorez les ombres toute l’année et enregistrez des emplacements pour les retrouver à tout moment</string>
-    <string name="paywall_benefit_dates">Vérifiez les ombres à n’importe quelle date de l’année</string>
-    <string name="paywall_benefit_projects">Enregistrez des emplacements comme projets et retrouvez-les à tout moment</string>
-    <string name="featured">À la une</string>
-    <string name="best_value">Meilleure offre</string>
-    <string name="daily">Quotidien</string>
-    <string name="weekly">Hebdomadaire</string>
-    <string name="monthly">Accès mensuel</string>
-    <string name="yearly">Accès annuel</string>
-    <string name="save_percent">Économisez %1$d%%</string>
-    <string name="free_for">Gratuit pendant %1$s</string>
-    <string name="intro_price_for">%1$s pendant %2$s</string>
-    <string name="price_once">%1$s une seule fois</string>
-    <string name="price_per_period">%1$s par %2$s</string>
-    <string name="then_price">Puis %1$s</string>
-    <string name="price_unavailable">Prix indisponible</string>
-    <string name="start_free_trial">Commencer l’essai gratuit</string>
-    <string name="buy_for">Acheter pour %1$s</string>
-    <string name="subscribe_for">S’abonner pour %1$s</string>
     <string name="continue_label">Continuer</string>
     <string name="skip">Ignorer</string>
     <string name="next">Suivant</string>
@@ -254,42 +216,6 @@
     <string name="onboarding_time_description">Explorez la position du soleil en 3D et voyez comment les ombres changent lorsque le soleil se déplace dans le ciel.</string>
     <string name="onboarding_plan_title">Planifier votre espace</string>
     <string name="onboarding_plan_description">Ajoutez des bâtiments, des murs et des arbres pour créer un plan personnalisé d’ensoleillement et d’ombres.</string>
-    <string name="restore_purchases">Restaurer les achats</string>
-    <string name="subscription_disclosure">Les abonnements se renouvellent automatiquement jusqu’à leur annulation dans Google Play.</string>
-    <string name="purchase_pending">Votre achat est en attente. Les fonctionnalités Pro seront déverrouillées une fois le paiement terminé.</string>
-    <string name="purchase_products_not_configured">Les options d’achat sont actuellement indisponibles</string>
-    <string name="billing_unavailable">Google Play est indisponible</string>
-    <string name="purchase_check_failed">Impossible de vérifier votre achat</string>
-    <string name="purchase_options_load_failed">Impossible de charger les options d’achat</string>
-    <string name="purchase_start_failed">Impossible de démarrer l’achat</string>
-    <string name="purchase_failed">Impossible de terminer l’achat</string>
-    <string name="purchase_acknowledgement_failed">Impossible de terminer l’achat</string>
-    <string name="remote_config_unavailable">Les options d’achat sont temporairement indisponibles</string>
-    <string name="purchase_configuration_invalid">Les options d’achat sont temporairement indisponibles</string>
-    <string name="remote_config_task_failed">Impossible de charger les options d’achat</string>
-    <string name="purchase_options_empty">Les options d’achat sont actuellement indisponibles.</string>
-    <string name="retry">Réessayer</string>
-    <string name="premium">Premium</string>
-    <plurals name="billing_days">
-        <item quantity="one">%d jour</item>
-        <item quantity="many">%d jours</item>
-        <item quantity="other">%d jours</item>
-    </plurals>
-    <plurals name="billing_weeks">
-        <item quantity="one">%d semaine</item>
-        <item quantity="many">%d semaines</item>
-        <item quantity="other">%d semaines</item>
-    </plurals>
-    <plurals name="billing_months">
-        <item quantity="one">%d mois</item>
-        <item quantity="many">%d mois</item>
-        <item quantity="other">%d mois</item>
-    </plurals>
-    <plurals name="billing_years">
-        <item quantity="one">%d an</item>
-        <item quantity="many">%d ans</item>
-        <item quantity="other">%d ans</item>
-    </plurals>
     <string name="language">Langue</string>
     <string name="language_summary">Changer la langue de Shadow Planner</string>
 </resources>

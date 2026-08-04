@@ -2,7 +2,6 @@
     <string name="app_name">Shadow Planner</string>
     <string name="back">Atrás</string>
     <string name="cancel">Cancelar</string>
-    <string name="close">Cerrar</string>
     <string name="apply">Aplicar</string>
     <string name="save">Guardar</string>
     <string name="save_update">Guardar cambios</string>
@@ -32,7 +31,6 @@
     <string name="discard">Descartar</string>
     <string name="keep_drawing">Seguir dibujando</string>
     <string name="save_project">Guardar proyecto</string>
-    <string name="save_project_premium_feature">Guardar proyecto — función Premium</string>
     <string name="project_name">Nombre del proyecto</string>
     <string name="projects">Proyectos</string>
     <string name="no_saved_projects">No hay proyectos guardados</string>
@@ -45,15 +43,6 @@
     <string name="location_permission_needed">Se necesita permiso de ubicación</string>
     <string name="location_permission_settings_explanation">Para usar tu ubicación actual, permite que Shadow Planner acceda a ella en Ajustes.</string>
     <string name="settings">Ajustes</string>
-    <string name="developer">Desarrollador</string>
-    <string name="developer_settings">Ajustes del desarrollador</string>
-    <string name="developer_settings_summary">Pruebas y excepciones Premium</string>
-    <string name="force_premium">Forzar Premium</string>
-    <string name="force_premium_summary">Omitir comprobaciones de compra y desbloquear todas las funciones Premium</string>
-    <string name="premium_card_title">Desbloquea Shadow Planner Pro</string>
-    <string name="premium_card_cta">Desbloquear Pro</string>
-    <string name="premium_card_active_subtitle">Todas las funciones Pro están desbloqueadas</string>
-    <string name="premium_status_active">ACTIVO</string>
     <string name="about">Acerca de</string>
     <string name="about_settings_summary">Información de la app y enlaces útiles</string>
     <string name="about_app_icon_description">Icono de Shadow Planner</string>
@@ -81,9 +70,6 @@
     <string name="feedback_app_version">Versión de la app: %1$s</string>
     <string name="feedback_device">Dispositivo: %1$s %2$s</string>
     <string name="feedback_android_version">Versión de Android: %1$s</string>
-    <string name="feedback_access">Acceso: %1$s</string>
-    <string name="feedback_access_premium">Premium</string>
-    <string name="feedback_access_free">Gratis</string>
     <string name="feedback_subject">Comentarios de Shadow Planner — v%1$s</string>
     <string name="map_view">Vista de mapa</string>
     <string name="back_to_map">Volver al mapa</string>
@@ -141,10 +127,6 @@
     <string name="main_view_tooltip_camera_description">Cambia entre la vista desde arriba y la vista 3D.</string>
     <string name="main_view_tooltip_edit_title">Añadir tus propios objetos</string>
     <string name="main_view_tooltip_edit_description">Dibuja edificios, paredes y árboles para crear tu propio plan de sombras.</string>
-    <string name="clear_stored_data">Borrar datos guardados</string>
-    <string name="clear_stored_data_summary">Restablece la introducción, los permisos y el estado de prueba del desarrollador.</string>
-    <string name="clear_stored_data_confirmation">Esto borra las preferencias de la app y los ajustes del desarrollador. Los proyectos guardados no se eliminarán.</string>
-    <string name="clear">Borrar</string>
     <string name="top_down_view">Vista desde arriba</string>
     <string name="setting_current_value">%1$s: %2$s</string>
     <string name="change_shadow_colour">Cambiar el color de sombra</string>
@@ -221,26 +203,6 @@
     <string name="reset_to_now">Restablecer a ahora</string>
     <string name="location_search_failed">No se han podido buscar ubicaciones. Comprueba tu conexión e inténtalo de nuevo.</string>
     <string name="location_selection_failed">No se ha podido seleccionar esa ubicación. Inténtalo de nuevo.</string>
-    <string name="paywall_title">Desbloquea Shadow Planner Pro</string>
-    <string name="paywall_subtitle">Explora las sombras durante todo el año y guarda ubicaciones para volver a visitarlas cuando quieras</string>
-    <string name="paywall_benefit_dates">Consulta las sombras de cualquier fecha del año</string>
-    <string name="paywall_benefit_projects">Guarda ubicaciones como proyectos y vuelve a ellas cuando quieras</string>
-    <string name="featured">Destacado</string>
-    <string name="best_value">Mejor opción</string>
-    <string name="daily">Diario</string>
-    <string name="weekly">Semanal</string>
-    <string name="monthly">Acceso mensual</string>
-    <string name="yearly">Acceso anual</string>
-    <string name="save_percent">Ahorra un %1$d%%</string>
-    <string name="free_for">Gratis durante %1$s</string>
-    <string name="intro_price_for">%1$s durante %2$s</string>
-    <string name="price_once">%1$s una sola vez</string>
-    <string name="price_per_period">%1$s por %2$s</string>
-    <string name="then_price">Después, %1$s</string>
-    <string name="price_unavailable">Precio no disponible</string>
-    <string name="start_free_trial">Iniciar prueba gratuita</string>
-    <string name="buy_for">Comprar por %1$s</string>
-    <string name="subscribe_for">Suscribirse por %1$s</string>
     <string name="continue_label">Continuar</string>
     <string name="skip">Omitir</string>
     <string name="next">Siguiente</string>
@@ -254,42 +216,6 @@
     <string name="onboarding_time_description">Explora la posición del sol en 3D y observa cómo cambian las sombras mientras el sol recorre el cielo.</string>
     <string name="onboarding_plan_title">Planifica tu espacio</string>
     <string name="onboarding_plan_description">Añade edificios, paredes y árboles para crear un plan personalizado de luz solar y sombras.</string>
-    <string name="restore_purchases">Restaurar compras</string>
-    <string name="subscription_disclosure">Las suscripciones se renuevan automáticamente hasta que las canceles en Google Play.</string>
-    <string name="purchase_pending">Tu compra está pendiente. Las funciones Pro se desbloquearán cuando se complete el pago.</string>
-    <string name="purchase_products_not_configured">Las opciones de compra no están disponibles</string>
-    <string name="billing_unavailable">Google Play no está disponible</string>
-    <string name="purchase_check_failed">No se ha podido verificar tu compra</string>
-    <string name="purchase_options_load_failed">No se han podido cargar las opciones de compra</string>
-    <string name="purchase_start_failed">No se ha podido iniciar la compra</string>
-    <string name="purchase_failed">No se ha podido completar la compra</string>
-    <string name="purchase_acknowledgement_failed">No se ha podido completar la compra</string>
-    <string name="remote_config_unavailable">Las opciones de compra no están disponibles temporalmente</string>
-    <string name="purchase_configuration_invalid">Las opciones de compra no están disponibles temporalmente</string>
-    <string name="remote_config_task_failed">No se han podido cargar las opciones de compra</string>
-    <string name="purchase_options_empty">Las opciones de compra no están disponibles actualmente.</string>
-    <string name="retry">Reintentar</string>
-    <string name="premium">Premium</string>
-    <plurals name="billing_days">
-        <item quantity="one">día</item>
-        <item quantity="many">%d días</item>
-        <item quantity="other">%d días</item>
-    </plurals>
-    <plurals name="billing_weeks">
-        <item quantity="one">semana</item>
-        <item quantity="many">%d semanas</item>
-        <item quantity="other">%d semanas</item>
-    </plurals>
-    <plurals name="billing_months">
-        <item quantity="one">mes</item>
-        <item quantity="many">%d meses</item>
-        <item quantity="other">%d meses</item>
-    </plurals>
-    <plurals name="billing_years">
-        <item quantity="one">año</item>
-        <item quantity="many">%d años</item>
-        <item quantity="other">%d años</item>
-    </plurals>
     <string name="language">Idioma</string>
     <string name="language_summary">Cambiar el idioma de Shadow Planner</string>
 </resources>

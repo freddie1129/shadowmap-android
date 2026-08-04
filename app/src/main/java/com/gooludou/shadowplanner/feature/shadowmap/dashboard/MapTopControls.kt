@@ -28,7 +28,6 @@ import com.gooludou.shadowplanner.core.model.BuildingSource
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.model.GeoPolygon
 import com.gooludou.shadowplanner.core.ui.components.MapRoundIconButton
-import com.gooludou.shadowplanner.core.ui.components.PremiumFeatureIndicator
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import com.gooludou.shadowplanner.feature.locationsearch.LocationSearchEntry
@@ -47,7 +46,6 @@ internal fun MapTopControls(
     modifier: Modifier = Modifier,
     onOpenProjects: () -> Unit,
     onSaveProject: () -> Unit,
-    isSaveProjectPremiumLocked: Boolean,
     onTooltipTargetBoundsChanged: (MainViewTooltipTarget, Rect) -> Unit = { _, _ -> }
 ) {
     val dimensions = ShadowMapDesign.dimensions
@@ -112,24 +110,16 @@ internal fun MapTopControls(
                 Icon(Icons.Outlined.FolderOpen, contentDescription = null)
             }
             Spacer(modifier = Modifier.width(ShadowMapDesign.dimensions.spacingSmall))
-            PremiumFeatureIndicator(showIndicator = isSaveProjectPremiumLocked) {
-                MapRoundIconButton(
-                    onClick = onSaveProject,
-                    contentDescription = stringResource(
-                        if (isSaveProjectPremiumLocked) {
-                            R.string.save_project_premium_feature
-                        } else {
-                            R.string.save_project
-                        }
-                    ),
-                    modifier = Modifier.reportFeatureTourTarget(
-                        MainViewTooltipTarget.SAVE_PROJECT.name
-                    ) { _, bounds ->
-                        onTooltipTargetBoundsChanged(MainViewTooltipTarget.SAVE_PROJECT, bounds)
-                    }
-                ) {
-                    Icon(Icons.Outlined.Save, contentDescription = null)
+            MapRoundIconButton(
+                onClick = onSaveProject,
+                contentDescription = stringResource(R.string.save_project),
+                modifier = Modifier.reportFeatureTourTarget(
+                    MainViewTooltipTarget.SAVE_PROJECT.name
+                ) { _, bounds ->
+                    onTooltipTargetBoundsChanged(MainViewTooltipTarget.SAVE_PROJECT, bounds)
                 }
+            ) {
+                Icon(Icons.Outlined.Save, contentDescription = null)
             }
         }
     }
@@ -188,7 +178,6 @@ private fun Map2DTopControlsPreview() {
             canRecenterCurrentLocation = true,
             onOpenProjects = {},
             onSaveProject = {},
-            isSaveProjectPremiumLocked = true
         )
     }
 }

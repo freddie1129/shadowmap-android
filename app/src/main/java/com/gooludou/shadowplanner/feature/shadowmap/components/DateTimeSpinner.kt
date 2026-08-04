@@ -66,7 +66,6 @@ import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.core.solar.SunriseSunset
 import com.gooludou.shadowplanner.core.solar.SunriseSunsetCalculator
-import com.gooludou.shadowplanner.core.ui.components.PremiumFeatureBadge
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapDesign
 import com.gooludou.shadowplanner.core.ui.theme.ShadowMapTheme
 import java.time.Instant
@@ -122,9 +121,7 @@ fun DateTimeSpinner(
     location: GeoPoint? = null,
     onCollapse: (() -> Unit)? = null,
     onDateTimeChanged: (Long) -> Unit,
-    onNowSelected: () -> Unit,
-    isDateTimeChangeEnabled: Boolean = true,
-    onLockedInteraction: () -> Unit = {}
+    onNowSelected: () -> Unit
 ) {
     val dimensions = ShadowMapDesign.dimensions
     val themeSurface = MaterialTheme.colorScheme.surface
@@ -279,13 +276,7 @@ fun DateTimeSpinner(
                     onReset = {
                         onNowSelected()
                     },
-                    onCalendar = {
-                        if (isDateTimeChangeEnabled) {
-                            showDatePicker = true
-                        } else {
-                            onLockedInteraction()
-                        }
-                    },
+                    onCalendar = { showDatePicker = true },
                     colors = spinnerColors
                 )
                 DateRuler(
@@ -293,8 +284,7 @@ fun DateTimeSpinner(
                     dates = dateRange,
                     dayWidth = DateTimeSpinnerDefaults.dayWidth,
                     colors = spinnerColors,
-                    userScrollEnabled = isDateTimeChangeEnabled,
-                    onLockedInteraction = onLockedInteraction
+                    userScrollEnabled = true
                 )
                 TimeRuler(
                     timeListState,
@@ -520,8 +510,7 @@ private fun DateRuler(
     dates: List<LocalDate>,
     dayWidth: Dp,
     colors: SpinnerColors,
-    userScrollEnabled: Boolean,
-    onLockedInteraction: () -> Unit
+    userScrollEnabled: Boolean
 ) {
     Box(modifier = Modifier.fillMaxWidth().height(DateTimeSpinnerDefaults.rulerHeight)) {
         LazyRow(
@@ -535,14 +524,6 @@ private fun DateRuler(
         }
         RulerEdgeFades(colors.surface)
         CentreArrow(colors.arrow)
-        if (!userScrollEnabled) {
-            PremiumFeatureBadge(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(x = ShadowMapDesign.dimensions.spacingLarge)
-            )
-            LockedRulerOverlay(onLockedInteraction)
-        }
     }
 }
 
@@ -565,18 +546,6 @@ private fun TimeRuler(
         RulerEdgeFades(colors.surface)
         CentreArrow(colors.arrow)
     }
-}
-
-@Composable
-private fun BoxScope.LockedRulerOverlay(onClick: () -> Unit) {
-    val description = stringResource(R.string.premium)
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = description }
-    )
 }
 
 @Composable
@@ -778,8 +747,7 @@ private fun DateTimeSpinnerPreviewContent(darkTheme: Boolean) {
                 location = GeoPoint(longitude = 153.0251, latitude = -27.4698),
                 onCollapse = {},
                 onDateTimeChanged = {},
-                onNowSelected = {},
-                isDateTimeChangeEnabled = false
+                onNowSelected = {}
             )
             DateTimeSpinnerCollapsed(
                 selectedEpochMillis = dateTime.atZone(zoneId).toInstant().toEpochMilli(),

@@ -2,7 +2,6 @@
     <string name="app_name">Shadow Planner</string>
     <string name="back">Zurück</string>
     <string name="cancel">Abbrechen</string>
-    <string name="close">Schließen</string>
     <string name="apply">Anwenden</string>
     <string name="save">Speichern</string>
     <string name="save_update">Änderungen speichern</string>
@@ -32,7 +31,6 @@
     <string name="discard">Verwerfen</string>
     <string name="keep_drawing">Weiterzeichnen</string>
     <string name="save_project">Projekt speichern</string>
-    <string name="save_project_premium_feature">Projekt speichern — Premium-Funktion</string>
     <string name="project_name">Projektname</string>
     <string name="projects">Projekte</string>
     <string name="no_saved_projects">Keine gespeicherten Projekte</string>
@@ -45,15 +43,6 @@
     <string name="location_permission_needed">Standortberechtigung erforderlich</string>
     <string name="location_permission_settings_explanation">Um deinen aktuellen Standort zu verwenden, erlaube Shadow Planner in den Einstellungen den Standortzugriff.</string>
     <string name="settings">Einstellungen</string>
-    <string name="developer">Entwickler</string>
-    <string name="developer_settings">Entwicklereinstellungen</string>
-    <string name="developer_settings_summary">Tests und Premium-Überschreibungen</string>
-    <string name="force_premium">Premium erzwingen</string>
-    <string name="force_premium_summary">Kaufprüfungen umgehen und alle Premium-Funktionen freischalten</string>
-    <string name="premium_card_title">Shadow Planner Pro freischalten</string>
-    <string name="premium_card_cta">Pro freischalten</string>
-    <string name="premium_card_active_subtitle">Alle Pro-Funktionen sind freigeschaltet</string>
-    <string name="premium_status_active">AKTIV</string>
     <string name="about">Über</string>
     <string name="about_settings_summary">App-Informationen und nützliche Links</string>
     <string name="about_app_icon_description">Shadow Planner-App-Symbol</string>
@@ -81,9 +70,6 @@
     <string name="feedback_app_version">App-Version: %1$s</string>
     <string name="feedback_device">Gerät: %1$s %2$s</string>
     <string name="feedback_android_version">Android-Version: %1$s</string>
-    <string name="feedback_access">Zugriff: %1$s</string>
-    <string name="feedback_access_premium">Premium</string>
-    <string name="feedback_access_free">Kostenlos</string>
     <string name="feedback_subject">Shadow Planner-Feedback — v%1$s</string>
     <string name="map_view">Kartenansicht</string>
     <string name="back_to_map">Zur Karte</string>
@@ -141,10 +127,6 @@
     <string name="main_view_tooltip_camera_description">Wechsle zwischen Draufsicht und 3D-Ansicht.</string>
     <string name="main_view_tooltip_edit_title">Eigene Objekte hinzufügen</string>
     <string name="main_view_tooltip_edit_description">Zeichne Gebäude, Wände und Bäume, um deinen eigenen Schattenplan zu erstellen.</string>
-    <string name="clear_stored_data">Gespeicherte Daten löschen</string>
-    <string name="clear_stored_data_summary">Onboarding, Berechtigungen und Entwickler-Teststatus zurücksetzen.</string>
-    <string name="clear_stored_data_confirmation">App-Einstellungen und Entwicklereinstellungen werden gelöscht. Gespeicherte Projekte bleiben erhalten.</string>
-    <string name="clear">Löschen</string>
     <string name="top_down_view">Draufsicht</string>
     <string name="setting_current_value">%1$s: %2$s</string>
     <string name="change_shadow_colour">Schattenfarbe ändern</string>
@@ -220,26 +202,6 @@
     <string name="reset_to_now">Auf jetzt zurücksetzen</string>
     <string name="location_search_failed">Standorte konnten nicht gesucht werden. Prüfe deine Verbindung und versuche es erneut.</string>
     <string name="location_selection_failed">Dieser Standort konnte nicht ausgewählt werden. Versuche es erneut.</string>
-    <string name="paywall_title">Shadow Planner Pro freischalten</string>
-    <string name="paywall_subtitle">Schatten das ganze Jahr erkunden und Standorte zum späteren Aufrufen speichern</string>
-    <string name="paywall_benefit_dates">Schatten an jedem Datum des Jahres prüfen</string>
-    <string name="paywall_benefit_projects">Standorte als Projekte speichern und jederzeit wieder aufrufen</string>
-    <string name="featured">Empfohlen</string>
-    <string name="best_value">Bestes Angebot</string>
-    <string name="daily">Täglich</string>
-    <string name="weekly">Wöchentlich</string>
-    <string name="monthly">Monatlicher Zugang</string>
-    <string name="yearly">Jährlicher Zugang</string>
-    <string name="save_percent">%1$d%% sparen</string>
-    <string name="free_for">Kostenlos für %1$s</string>
-    <string name="intro_price_for">%1$s für %2$s</string>
-    <string name="price_once">Einmalig %1$s</string>
-    <string name="price_per_period">%1$s pro %2$s</string>
-    <string name="then_price">Danach %1$s</string>
-    <string name="price_unavailable">Preis nicht verfügbar</string>
-    <string name="start_free_trial">Kostenlose Testversion starten</string>
-    <string name="buy_for">Für %1$s kaufen</string>
-    <string name="subscribe_for">Für %1$s abonnieren</string>
     <string name="continue_label">Weiter</string>
     <string name="skip">Überspringen</string>
     <string name="next">Weiter</string>
@@ -253,38 +215,6 @@
     <string name="onboarding_time_description">Erkunde die Position der Sonne in 3D und sieh, wie sich Schatten verändern, während die Sonne über den Himmel wandert.</string>
     <string name="onboarding_plan_title">Deinen Bereich planen</string>
     <string name="onboarding_plan_description">Füge Gebäude, Wände und Bäume hinzu, um deinen eigenen Sonnen- und Schattenplan zu erstellen.</string>
-    <string name="restore_purchases">Käufe wiederherstellen</string>
-    <string name="subscription_disclosure">Abonnements verlängern sich automatisch, bis sie in Google Play gekündigt werden.</string>
-    <string name="purchase_pending">Dein Kauf ist noch nicht abgeschlossen. Pro-Funktionen werden nach Abschluss der Zahlung freigeschaltet.</string>
-    <string name="purchase_products_not_configured">Kaufoptionen sind derzeit nicht verfügbar</string>
-    <string name="billing_unavailable">Google Play ist nicht verfügbar</string>
-    <string name="purchase_check_failed">Kauf konnte nicht überprüft werden</string>
-    <string name="purchase_options_load_failed">Kaufoptionen konnten nicht geladen werden</string>
-    <string name="purchase_start_failed">Kauf konnte nicht gestartet werden</string>
-    <string name="purchase_failed">Kauf konnte nicht abgeschlossen werden</string>
-    <string name="purchase_acknowledgement_failed">Kauf konnte nicht abgeschlossen werden</string>
-    <string name="remote_config_unavailable">Kaufoptionen sind vorübergehend nicht verfügbar</string>
-    <string name="purchase_configuration_invalid">Kaufoptionen sind vorübergehend nicht verfügbar</string>
-    <string name="remote_config_task_failed">Kaufoptionen konnten nicht geladen werden</string>
-    <string name="purchase_options_empty">Kaufoptionen sind derzeit nicht verfügbar.</string>
-    <string name="retry">Erneut versuchen</string>
-    <string name="premium">Premium</string>
-    <plurals name="billing_days">
-        <item quantity="one">Tag</item>
-        <item quantity="other">%d Tage</item>
-    </plurals>
-    <plurals name="billing_weeks">
-        <item quantity="one">Woche</item>
-        <item quantity="other">%d Wochen</item>
-    </plurals>
-    <plurals name="billing_months">
-        <item quantity="one">Monat</item>
-        <item quantity="other">%d Monate</item>
-    </plurals>
-    <plurals name="billing_years">
-        <item quantity="one">Jahr</item>
-        <item quantity="other">%d Jahre</item>
-    </plurals>
     <string name="language">Sprache</string>
     <string name="language_summary">Sprache von Shadow Planner ändern</string>
 </resources>

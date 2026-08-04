@@ -9,10 +9,7 @@ import com.gooludou.shadowplanner.BuildConfig
 import com.gooludou.shadowplanner.R
 
 object FeedbackEmailHelper {
-    fun buildIntent(context: Context, isPremium: Boolean): Intent {
-        val accessType = context.getString(
-            if (isPremium) R.string.feedback_access_premium else R.string.feedback_access_free
-        )
+    fun buildIntent(context: Context): Intent {
         val body = buildString {
             appendLine(context.getString(R.string.feedback_greeting))
             appendLine(context.getString(R.string.feedback_placeholder))
@@ -32,7 +29,6 @@ object FeedbackEmailHelper {
             appendLine(
                 context.getString(R.string.feedback_android_version, Build.VERSION.RELEASE)
             )
-            appendLine(context.getString(R.string.feedback_access, accessType))
         }
         val subject = context.getString(R.string.feedback_subject, BuildConfig.VERSION_NAME)
         val mailto = (

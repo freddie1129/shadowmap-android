@@ -3,7 +3,6 @@ package com.gooludou.shadowplanner.feature.shadowmap.dashboard
 import com.gooludou.shadowplanner.core.model.DrawMode
 import com.gooludou.shadowplanner.core.model.GeoPoint
 import com.gooludou.shadowplanner.feature.shadowmap.components.AutoToolState
-import com.gooludou.shadowplanner.purchase.model.EntitlementState
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
 
@@ -51,9 +50,7 @@ internal data class MapEditingActions(
 
 internal data class MapDateTimeActions(
     val onDateTimeChanged: (Long) -> Unit,
-    val onNowSelected: () -> Unit,
-    val entitlementState: EntitlementState,
-    val onPremiumRequired: () -> Unit
+    val onNowSelected: () -> Unit
 )
 
 internal data class ShadowPlannerSceneState(
