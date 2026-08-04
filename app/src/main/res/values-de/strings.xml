@@ -215,7 +215,6 @@
     <string name="building_too_small">Das Gebäude ist zu klein</string>
     <string name="too_few_wall_points">Füge mindestens zwei verschiedene Wandpunkte hinzu</string>
     <string name="untitled_project">Unbenanntes Projekt</string>
-    <string name="unable_to_load_buildings">Gebäude konnten nicht geladen werden</string>
     <string name="clear_scene_details">Alle Gebäude, Wände und Bäume von dieser Karte entfernen?</string>
     <string name="choose_date">Datum auswählen</string>
     <string name="reset_to_now">Auf jetzt zurücksetzen</string>

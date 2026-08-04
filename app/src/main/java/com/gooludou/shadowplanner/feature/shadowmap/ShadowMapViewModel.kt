@@ -1,9 +1,9 @@
 package com.gooludou.shadowplanner.feature.shadowmap
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import android.content.Context
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.core.geometry.AutomaticBuildingMatcher
 import com.gooludou.shadowplanner.core.geometry.DrawingGeometryValidator

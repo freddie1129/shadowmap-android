@@ -882,12 +882,16 @@ internal fun ShadowMapScreen(
                         when (error) {
                             DrawingValidationError.TOO_FEW_BUILDING_CORNERS ->
                                 R.string.too_few_building_corners
+
                             DrawingValidationError.BUILDING_EDGES_CROSS ->
                                 R.string.building_edges_cannot_cross
+
                             DrawingValidationError.BUILDING_TOO_SMALL ->
                                 R.string.building_too_small
+
                             DrawingValidationError.TOO_FEW_WALL_POINTS ->
                                 R.string.too_few_wall_points
+
                             DrawingValidationError.POINTS_TOO_CLOSE ->
                                 R.string.move_farther_previous_point
                         }

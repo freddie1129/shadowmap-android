@@ -207,6 +207,7 @@
     <string name="no_buildings_found">Nenhum edifício encontrado nesta área</string>
     <plurals name="buildings_loaded">
         <item quantity="one">%d edifício carregado</item>
+        <item quantity="many">%d edifícios carregados</item>
         <item quantity="other">%d edifícios carregados</item>
     </plurals>
     <string name="move_farther_previous_point">Afaste-se mais do último ponto</string>
@@ -215,7 +216,6 @@
     <string name="building_too_small">O edifício é pequeno demais</string>
     <string name="too_few_wall_points">Adicione pelo menos dois pontos distintos para a parede</string>
     <string name="untitled_project">Projeto sem título</string>
-    <string name="unable_to_load_buildings">Não foi possível carregar os edifícios</string>
     <string name="clear_scene_details">Remover todos os edifícios, paredes e árvores deste mapa?</string>
     <string name="choose_date">Escolher data</string>
     <string name="reset_to_now">Redefinir para agora</string>
@@ -271,19 +271,23 @@
     <string name="retry">Tentar novamente</string>
     <string name="premium">Premium</string>
     <plurals name="billing_days">
-        <item quantity="one">dia</item>
+        <item quantity="one">%d dia</item>
+        <item quantity="many">%d dias</item>
         <item quantity="other">%d dias</item>
     </plurals>
     <plurals name="billing_weeks">
-        <item quantity="one">semana</item>
+        <item quantity="one">%d semana</item>
+        <item quantity="many">%d semanas</item>
         <item quantity="other">%d semanas</item>
     </plurals>
     <plurals name="billing_months">
-        <item quantity="one">mês</item>
+        <item quantity="one">%d mês</item>
+        <item quantity="many">%d meses</item>
         <item quantity="other">%d meses</item>
     </plurals>
     <plurals name="billing_years">
-        <item quantity="one">ano</item>
+        <item quantity="one">%d ano</item>
+        <item quantity="many">%d anos</item>
         <item quantity="other">%d anos</item>
     </plurals>
     <string name="language">Idioma</string>

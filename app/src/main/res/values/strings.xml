@@ -217,7 +217,6 @@
     <string name="building_too_small">Building is too small</string>
     <string name="too_few_wall_points">Add at least two distinct wall points</string>
     <string name="untitled_project">Untitled project</string>
-    <string name="unable_to_load_buildings">Unable to load buildings</string>
     <string name="clear_scene_details">Remove all buildings, walls, and trees from this map?</string>
     <string name="choose_date">Choose date</string>
     <string name="reset_to_now">Reset to now</string>

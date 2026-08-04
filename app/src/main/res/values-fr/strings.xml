@@ -207,6 +207,7 @@
     <string name="no_buildings_found">Aucun bâtiment trouvé dans cette zone</string>
     <plurals name="buildings_loaded">
         <item quantity="one">%d bâtiment chargé</item>
+        <item quantity="many">%d bâtiments chargés</item>
         <item quantity="other">%d bâtiments chargés</item>
     </plurals>
     <string name="move_farther_previous_point">Éloignez-vous du dernier point</string>
@@ -215,7 +216,6 @@
     <string name="building_too_small">Le bâtiment est trop petit</string>
     <string name="too_few_wall_points">Ajoutez au moins deux points distincts pour le mur</string>
     <string name="untitled_project">Projet sans titre</string>
-    <string name="unable_to_load_buildings">Impossible de charger les bâtiments</string>
     <string name="clear_scene_details">Supprimer tous les bâtiments, murs et arbres de cette carte ?</string>
     <string name="choose_date">Choisir une date</string>
     <string name="reset_to_now">Rétablir maintenant</string>
@@ -271,19 +271,23 @@
     <string name="retry">Réessayer</string>
     <string name="premium">Premium</string>
     <plurals name="billing_days">
-        <item quantity="one">jour</item>
+        <item quantity="one">%d jour</item>
+        <item quantity="many">%d jours</item>
         <item quantity="other">%d jours</item>
     </plurals>
     <plurals name="billing_weeks">
-        <item quantity="one">semaine</item>
+        <item quantity="one">%d semaine</item>
+        <item quantity="many">%d semaines</item>
         <item quantity="other">%d semaines</item>
     </plurals>
     <plurals name="billing_months">
-        <item quantity="one">mois</item>
+        <item quantity="one">%d mois</item>
+        <item quantity="many">%d mois</item>
         <item quantity="other">%d mois</item>
     </plurals>
     <plurals name="billing_years">
-        <item quantity="one">an</item>
+        <item quantity="one">%d an</item>
+        <item quantity="many">%d ans</item>
         <item quantity="other">%d ans</item>
     </plurals>
     <string name="language">Langue</string>

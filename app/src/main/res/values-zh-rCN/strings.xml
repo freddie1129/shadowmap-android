@@ -206,7 +206,6 @@
     <string name="zoom_load">放大并加载</string>
     <string name="no_buildings_found">此区域未找到建筑</string>
     <plurals name="buildings_loaded">
-        <item quantity="one">已加载 %d 个建筑</item>
         <item quantity="other">已加载 %d 个建筑</item>
     </plurals>
     <string name="move_farther_previous_point">请远离上一个点</string>
@@ -215,7 +214,6 @@
     <string name="building_too_small">建筑太小</string>
     <string name="too_few_wall_points">至少添加两个不同的墙体点</string>
     <string name="untitled_project">未命名项目</string>
-    <string name="unable_to_load_buildings">无法加载建筑</string>
     <string name="clear_scene_details">从此地图移除所有建筑、墙体和树木？</string>
     <string name="choose_date">选择日期</string>
     <string name="reset_to_now">重置为现在</string>
@@ -271,19 +269,15 @@
     <string name="retry">重试</string>
     <string name="premium">Premium</string>
     <plurals name="billing_days">
-        <item quantity="one">天</item>
         <item quantity="other">%d 天</item>
     </plurals>
     <plurals name="billing_weeks">
-        <item quantity="one">周</item>
         <item quantity="other">%d 周</item>
     </plurals>
     <plurals name="billing_months">
-        <item quantity="one">月</item>
         <item quantity="other">%d 个月</item>
     </plurals>
     <plurals name="billing_years">
-        <item quantity="one">年</item>
         <item quantity="other">%d 年</item>
     </plurals>
     <string name="language">语言</string>

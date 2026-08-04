@@ -8,9 +8,9 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import com.gooludou.shadowplanner.BuildConfig
 import com.gooludou.shadowplanner.R
 import com.gooludou.shadowplanner.purchase.model.PurchaseCatalogState
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -108,7 +108,9 @@ class FirebaseRemoteConfigManager @Inject constructor(
             } else {
                 continuation.resumeWithException(
                     task.exception
-                        ?: IllegalStateException(context.getString(R.string.remote_config_task_failed))
+                        ?: IllegalStateException(
+                            context.getString(R.string.remote_config_task_failed)
+                        )
                 )
             }
         }

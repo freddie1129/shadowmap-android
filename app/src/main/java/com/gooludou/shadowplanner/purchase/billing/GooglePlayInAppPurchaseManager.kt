@@ -44,8 +44,7 @@ import kotlinx.coroutines.sync.withLock
 @Suppress("TooManyFunctions")
 class GooglePlayInAppPurchaseManager @Inject constructor(
     @ApplicationContext private val context: Context
-) :
-    InAppPurchaseManager,
+) : InAppPurchaseManager,
     PurchasesUpdatedListener {
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val connectionMutex = Mutex()
@@ -412,5 +411,4 @@ class GooglePlayInAppPurchaseManager @Inject constructor(
     private fun okBillingResult(): BillingResult = BillingResult.newBuilder()
         .setResponseCode(BillingClient.BillingResponseCode.OK)
         .build()
-
 }
